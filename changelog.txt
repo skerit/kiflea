@@ -1,0 +1,83 @@
+
+--- Friday 2010/07/16 ---
+
+* Implement a debug grid (useful to see where the tiles are being rendered to)
+  - The grid does not move. set debugGrid to true to enable it.
+    debugGridX and debugGridY are the width and height of a single cell
+
+--- Thursday 2010/07/15 --- 5 files in total: size = 38,4 Kilobytes
+
+* Adding 2 files: kiflea.keyboard.js and kiflea.unpacking.js
+  - kiflea.unpacking.js uses a simplified base64 decoding script
+    (used to use a jQuery plugin for this)
+  - kiflea.keyboard.js stores the onkey events,
+    and a handy array filled with keycodes
+* Loading of layer properties
+* Loading of tile properties
+* Loading of animated tiles!
+* Drawing character on a specific layer
+* Drawing various tilesizes
+  32x32 tiles, 256x128 tiles, 32x46, ... can all be mixed together
+  A 256x128 tile takes up only 1 32x32 tile on a 32x32 layer. The starting point
+  is at the bottom left corner (Which is slightly annoying because <canvas>
+  starts at the top left corner, but it's an easy fix)
+* Drawing world-animated tiles:
+  I plan on having 2 kinds of animated tiles: world-animated and object-animated
+  - world-animated tiles run synchronously. So if you paste the same animated
+    tile all over the map they will always show the same frame.
+  - object-animated can be paused separately, even if they use the same tiles.
+* Simple toggleEngine() function that enables or disables the engine.
+* Lots of debug functions that are probably slowing things down a bit.
+  - When you set the fps to something below 5 (When you set it at that, not
+    when you only have 5 fps) you get the Low FPS debug output.
+    Useful for stepping through rendering problems.
+    
+Performance:
+    - Google Chrome Windows: 15-16ms = 67 fps
+    - Firefox 4.0b1 Windows: 19-20ms = 48-50 fps
+    - IE7 + excanvas: Epic fail.
+    - Opera 10 Windows: Used to work fine, but won't output anything. Fps: 91-100
+    - 
+
+
+--- Wednesday 2010/07/14 --- 3 files in total: size = 11,8 Kilobytes
+
+* Separate into 3 files (kiflea.js, kiflea.misc.js, kiflea.rendering.js)
+* Automatic processing of a map and his tilesets
+* Struggling with base64 and gzipping
+    - gzipping was ultimately abandoned since the server gzipped data anyway
+      and unzipping in javascript (even though it didn't work properly) was slow.
+    - base64 (used for the layout of the maps) had some issues because I was
+      encoding values greater than 255. I luckily found the answer on the internet
+* Started setting up an svn server to keep my progress in. Will only submit
+  a version when I'm not totally ashamed of my code, though.
+* Beginning of basic debugging functions
+* Cleaning up of the index page
+* Displaying the map!
+* Changing the map as you move (but no character sprite, yet!)
+
+Performance:
+    - Google Chrome Windows: 4-5ms = 250-ish fps
+    - Firefox 4.0b1 Windows: 9-10ms = 100-ish fps
+    - IE7 + excanvas: Lol. 1 frame per eternity.
+    - Opera 10 Windows: 12-13ms = 76-80-ish fps
+      (Strange note: when Opera has focus it's 2ms faster. )
+
+--- Tuesday 2010/07/13 --- 1 file in total
+
+* First few lines were written!
+* Loading of the canvas and rendering with fps settings
+* Loading of the tileset by imagename and parameters
+    (Manually specifying file, tiles-per-row (tpr), ...)
+* Drawing of a tile on the canvas
+* Drawing an animation (a complete tileset image) with fps settings
+
+
+Besides the usual jQuery plugins I configured, I had never actually written
+a something in javascript before. My knowledge of it was very basic.
+
+Thanks to Mozilla's canvas tutorial I was quickly on my way to drawing spiffy
+items to the canvas element, though!
+
+I spent most of my time working on a few routines to get an animation going.
+Then I dropped it 'till thursday, because the basics had to come first.
