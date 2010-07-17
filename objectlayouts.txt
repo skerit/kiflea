@@ -1,0 +1,115 @@
+Here are a few dumps (print_r like function) of certain objects used in the code.
+Can be useful to find your way.
+
+maps object:
+   'grasland.tmx.xml' ...
+        'width' => "100"
+        'height' => "100"
+        'tileWidth' => "32"
+        'tileHeight' => "32"
+        'layers' ...
+            'Grond' ...
+                'data' ...
+                    '0' => "14"
+                    '1' => "11"
+                    '2' => "12"
+                    '3' => "13"
+                    '9998' => "0"
+                    '9999' => "0"
+                    '10000' => "0"
+                'name' => "Bomen"
+                'width' => "100"
+                'height' => "100"
+                'opacity' => "undefined"
+                'properties' ...
+                    'Bomen' => "10"
+        'tilesets' ...
+            'grassland' ...
+                'name' => "grassland"
+                'source' => "images/grassland.png"
+                'tileWidth' => "32"
+                'tileHeight' => "32"
+                'firstgid' => "1"
+            'explosion' ...
+                'name' => "explosion"
+                'source' => "images/explosion.png"
+                'tileWidth' => "256"
+                'tileHeight' => "128"
+                'firstgid' => "481"
+            'npcs' ...
+                'name' => "npcs"
+                'source' => "images/npcs.png"
+                'tileWidth' => "32"
+                'tileHeight' => "48"
+                'firstgid' => "493"
+
+
+tileset object:
+    'grassland' ...
+	'image' => the actual image to draw
+        'tileWidth' => "32"
+        'tileHeight' => "32"
+        'tpr' => "30"
+        'tpc' => "16"
+        'total' => "480"
+        'firstgid' => "1"
+    'explosion' ...
+	'image' => the actual image to draw
+        'tileWidth' => "256"
+        'tileHeight' => "128"
+        'tpr' => "3"
+        'tpc' => "4"
+        'total' => "12"
+        'firstgid' => "481"
+    'npcs' ...
+	'image' => the actual image to draw
+        'tileWidth' => "32"
+        'tileHeight' => "48"
+        'tpr' => "18"
+        'tpc' => "5"
+        'total' => "90"
+        'firstgid' => "493"
+
+
+tileproperties object:
+    'grassland' ...
+    'explosion' ...
+        '481' ...
+            'beginanimation' => "1"
+            'fps' => "6"
+            'nextframe' => "482"
+            'replay' => "-1"
+        '482' ...
+            'nextframe' => "483"
+        '483' ...
+            'nextframe' => "484"
+    'npcs' ...
+        '493' ...
+            'testid' => "0"
+        '502' ...
+            'beginanimation' => "1"
+            'nextframe' => "504"
+        '511' ...
+            'beginanimation' => "1"
+            'fps' => "1"
+            'nextframe' => "512"
+            'replay' => "-1"
+
+animatedTiles object:
+    'grassland' ...
+    'explosion' ...
+        '481' ...
+            'played' => "0"
+            'framessince' => "6"
+            'fps' => "6"
+            'replay' => "-1"
+            'currentframe' => "481"
+            'nextframe' => "482"
+    'npcs' ...
+        '511' ...
+            'played' => "0"
+            'framessince' => "3"
+            'fps' => "1"
+            'replay' => "-1"
+            'currentframe' => "511"
+            'nextframe' => "512"

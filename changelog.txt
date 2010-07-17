@@ -4,6 +4,17 @@
 * Implement a debug grid (useful to see where the tiles are being rendered to)
   - The grid does not move. set debugGrid to true to enable it.
     debugGridX and debugGridY are the width and height of a single cell
+* Fix the world-animated tiles.
+  - Every time a tile was drawn it would count as a frame, but since there can
+    be multiple instances of the same tile in a world this caused the framerate
+    to to multiply to the ammount of those tiles in view (so if you saw a tile
+    3 times, its framerate would have tripled.)
+    This has now been fixed, but it seems to cause a slight jitter in FF
+
+Performance:
+    - Google Chrome Ubuntu: 9-11ms = 111 fps
+    - Firefox 3.6.6 Ubuntu: 35-40ms = 25 fps
+    - Firefox 4.0b1 Ubuntu: 30-37ms = 25-29 fps
 
 --- Thursday 2010/07/15 --- 5 files in total: size = 38,4 Kilobytes
 
@@ -33,11 +44,12 @@
     Useful for stepping through rendering problems.
     
 Performance:
-    - Google Chrome Windows: 15-16ms = 67 fps
-    - Firefox 4.0b1 Windows: 19-20ms = 48-50 fps
-    - IE7 + excanvas: Epic fail.
-    - Opera 10 Windows: Used to work fine, but won't output anything. Fps: 91-100
-    - 
+    - Google Chrome Windows: 15-16ms = 67 fps (2.6 ghz dualcore 2 Gib mem)
+    - Firefox 4.0b1 Windows: 19-20ms = 48-50 fps (2.6 ghz dualcore 2 Gib mem)
+    - IE7 + excanvas: Epic fail. (2.6 ghz dualcore 2 Gib mem)
+    - Opera 10 Windows: Used to work fine, but won't output anything. Fps: 91-100 (2.6 ghz dualcore 2 Gib mem)
+    - Firefox 3.6.6 Ubuntu: 37-40ms = 20-25 fps (2,67ghz i7 Quadcore 6 Gib mem)
+    - Firefox 4.0b1 Ubuntu: 29-30ms = 32 fps (2,67ghz i7 Quadcore 6 Gib mem)
 
 
 --- Wednesday 2010/07/14 --- 3 files in total: size = 11,8 Kilobytes

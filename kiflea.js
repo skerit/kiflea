@@ -36,6 +36,7 @@ var fpsr;               // The real fps (1000 / msf)
 var tileSet = [];       // All the tilesets are stored in this array
 var animation = [];     // Animations can be put in this array (old school way - needs updating)
 var animatedTiles = {}; // This array keeps a progress of animated tiles. The first level of tilesetnames are defined at loading
+var sameFrame = {};	// In order to correctly draw world-animated tiles we need to know if we're still on the same frame 
 var tileProperties = {};// Certain tiles have special properties, like they can be the beginning of an animation
 var toLoad = 0;         // Increases with each map/tileset that needs to be loaded
 var loaded = 0;         // Increases with each loaded map/tileset. Game will only start if they're equal
@@ -157,7 +158,7 @@ function startEngine() {
  */
 function getMaps(){
 
-    debugEcho('Load all the maps!', false);
+    debugEcho('Loading specified maps', false);
     
     toLoad = loadMaps.length;
 
@@ -169,7 +170,7 @@ function getMaps(){
         
         $.ajax({
           type: "GET",
-          url: loadMaps[i],
+          url: currentMap,
           dataType: "xml",
           success: function(xml, textStatus, error){
             processMap(xml, currentMap)
@@ -180,11 +181,11 @@ function getMaps(){
     debugEcho('Ending getMaps() function -- processing still in progress');
 }
 
-
 /**
  *  Process a map and his tilesets!
  */
 function processMap(xml, sourcename) {
+    
     
     debugEcho('Processing "<b>' + sourcename + '</b>" map', false);
     
@@ -301,7 +302,6 @@ function processMap(xml, sourcename) {
         //debugArray(maps[0]['layers']['Grond']['data']);
         //debugArray(oneMap['tilesets']['explosion']);
         loaded++;
-        
 
     });
     

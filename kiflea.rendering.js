@@ -212,6 +212,9 @@ function renderLoop(){
         }
     }
 
+    // Clear the sameFrame variable, used by animated tiles
+    sameFrame = {};
+
     // Start the real fps counter
     msrTimer = now();
 }
@@ -268,8 +271,28 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity){
             );
         }
         
-        // The entire world has shown a frame
-        animatedTiles[tileSetName][tileNumber]["framessince"]++;
+        // We're going to check if this is a new frame being drawn
+        // We need to make sure these objects exist
+        // This array is emptied at the end of every frame
+        if(sameFrame[tileSetName] === undefined) {
+            // Initiate this tileset in the sameFrame array   
+            sameFrame[tileSetName] = {};
+        }
+        
+        if(sameFrame[tileSetName][tileNumber] === undefined) {
+            
+            // Make sure we've already created this tileSetName in the array before doing the next write
+            if(sameFrame[tileSetName] === undefined) sameFrame[tileSetName] = {};
+            
+            // Say that the current tile has already been drawn this frame.
+            // This will prevent the framessince counter from being increased
+            // if this same tile is on the map multiple times.
+            // Without this the framerate would double if there were 2 of these.
+            sameFrame[tileSetName][tileNumber] = true;
+            
+            // Add a frame to the counter
+            animatedTiles[tileSetName][tileNumber]["framessince"]++;
+        }
         
         // Count the ammount of frames that need to pass before showing the next one
         frameWait = (fpsr / animatedTiles[tileSetName][tileNumber]["fps"]);
