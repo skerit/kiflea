@@ -18,6 +18,7 @@
   looked at the current map the user is on. It's purpose is actually to draw a specific
   tile of a specific tileset to specific coordinates on the canvas (although it
   still adjusts for tiled "start a tile at the bottom" thing)
+* Objects are now animated while they move.
 
 --- Friday 2010/07/16 ---
 

@@ -71,7 +71,7 @@ tileset object:
         'firstgid' => "493"
 
 
-tileproperties object:
+tileproperties object: debugEcho('<pre>' + dump(tileProperties) + '</pre>');
     'grassland' ...
     'explosion' ...
         '481' ...
@@ -94,6 +94,46 @@ tileproperties object:
             'fps' => "1"
             'nextframe' => "512"
             'replay' => "-1"
+    'naked' ...
+        '1' ...
+            'downtile' => "1"
+            'fps' => "5"
+            'lefttile' => "16"
+            'movingobject' => "1"
+            'nextframe' => "2"
+            'righttile' => "6"
+            'uptile' => "11"
+        '2' ...
+            'nextframe' => "3"
+        '3' ...
+            'nextframe' => "4"
+        '4' ...
+            'nextframe' => "5"
+        '5' ...
+            'nextframe' => "2"
+        '6' ...
+            'movingobject' => "1"
+            'nextframe' => "7"
+    'armor' ...
+        '21' ...
+            'downtile' => "1"
+            'fps' => "5"
+            'lefttile' => "16"
+            'movingobject' => "1"
+            'nextframe' => "22"
+            'righttile' => "6"
+            'uptile' => "11"
+        '22' ...
+            'nextframe' => "23"
+        '23' ...
+            'nextframe' => "24"
+        '24' ...
+            'nextframe' => "25"
+        '25' ...
+            'nextframe' => "22"
+        '26' ...
+            'movingobject' => "1"
+            'nextframe' => "27"
 
 animatedTiles object:
     'grassland' ...
@@ -126,7 +166,7 @@ have to make a few code adjustments)
 
 Users start with 'U', objects start with 'O'
 
-animatedObjects:
+animatedObjects: debugEcho('<pre>' + dump(animatedObjects) + '</pre>');
     'U00001' ... 			// The ID of the object (this is a user)
 	    'x' => "10"			// Where this object currently is (x and y)
 	    'y' => "10"			// These can be floats
@@ -137,9 +177,12 @@ animatedObjects:
 	    'msMoved' => "100"		// How many ms have we spent on this move?
 	    'lastMoved' => "1000"	// When did this object last move?
 	    'map' => "grasland.tmx.xml"	// In what map is this object?
-	    'sprites' ...		// This object's sprite in the 'default' map's tilesets
+	    'sprites' ...		// This object's starting sprite in the 'default' map's tilesets
 	        0 => "1"		// Each object can have different layers of images
 	        1 => "21"		// This is to simulate clothes in users
+	    'spritesToDraw' ...		// This object's sprite when moved
+	        0 => "1"		
+	        1 => "21"		
 	    'currentSprite' => "1"
 
 

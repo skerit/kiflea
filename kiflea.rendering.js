@@ -110,11 +110,11 @@ function renderLoop(){
                     var objY = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * 32)) + (animatedObjects[objectId]['y'] * 32) - mappOffsetY;
                 }
                 // Loop through all the layers of this object
-                for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['sprites'].length; spriteNr++){
+                for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['spritesToDraw'].length; spriteNr++){
                     
-                    debugEchoLfps('Drawing object ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['sprites'][spriteNr] );
+                    debugEchoLfps('Drawing object ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
                     
-                    drawTile(animatedObjects[objectId]['sprites'][spriteNr], objX, objY, null, objectId);
+                    drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr], objX, objY, null, objectId);
                 }
                 
                 
@@ -208,35 +208,49 @@ function renderLoop(){
  */
 function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, objectId){
     
+    // World-animated tiles are identified by their tilenumber (so every instance
+    // of one of these tiles has the same ID in the animation. That's what we want)
+    // Object-animated tiles are identified by their objectId.
+    // We need something to store one or the other in
+    var animationId;
+    
+    // Now let's decide which one it is
+    if(objectId === undefined) {
+        animationId = tileNumberOnMap;
+    } else {
+        animationId = objectId;
+        debugEcho('is object!');
+    }
+    
     // Check if this tile already exists in the array
-    if(animatedTiles[tileSetName][tileNumberOnMap] === undefined){
+    if(animatedTiles[tileSetName][animationId] === undefined){
         
-        debugEchoLfps('Initiate new animated tile: ' + tileNumberOnMap);
+        debugEchoLfps('Initiate new animated tile: ' + animationId);
         
-        animatedTiles[tileSetName][tileNumberOnMap] = {
+        animatedTiles[tileSetName][animationId] = {
             "played": 0,
             "framessince": 0,
-            "fps": tileProperties[tileSetName][tileNumberOnMap]['fps'],
-            "replay": tileProperties[tileSetName][tileNumberOnMap]['replay'],
+            "fps": tileProperties[tileSetName][animationId]['fps'],
+            "replay": tileProperties[tileSetName][animationId]['replay'],
             "currentframe": tileNumberOnMap,
-            "nextframe": tileProperties[tileSetName][tileNumberOnMap]['nextframe']
+            "nextframe": tileProperties[tileSetName][animationId]['nextframe']
         };
         
     } else {
         // If the currentframe is zero it means this animation is over!
-        if(animatedTiles[tileSetName][tileNumberOnMap]["currentframe"] == 0){
+        if(animatedTiles[tileSetName][animationId]["currentframe"] == 0){
             return;
         } else { //If the animation isn't done, load some variables!
-            var currentFrame = animatedTiles[tileSetName][tileNumberOnMap]["currentframe"];
+            var currentFrame = animatedTiles[tileSetName][animationId]["currentframe"];
         }
     }
     
-    debugEchoLfps('Going to draw animated tile "<b>' + animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] + '</b>"!');
+    debugEchoLfps('Going to draw animated tile "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>"!');
     
     // We used to adjust tilenumber with their firstgid in drawTileSpecific, but that didn't make drawTileSpecific very specific.
     // Now we put one in drawTile and drawTileAnimated. Ideally we would stop using the tileNumberOnMap for tileproperties, but
     // hey, this works.
-    var adjustedFrame = animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] - (tileSet[tileSetName]['firstgid']-1);
+    var adjustedFrame = animatedTiles[tileSetName][animationId]['currentframe'] - (tileSet[tileSetName]['firstgid']-1);
     
         try {
         // Draw the current frame
@@ -247,22 +261,22 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
                          dy          // The destination y position
                          );
         
-        debugEchoLfps('Animated tile "<b>' + animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] + '</b>" has been drawn');
+        debugEchoLfps('Animated tile "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>" has been drawn');
         
         } catch(error) {
-            debugEchoLfps('[drawAnimated] Error drawing <b>animated</b> tile "<b>' + animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
+            debugEchoLfps('[drawAnimated] Error drawing <b>animated</b> tile "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
             );
         }
         
-        // We're going to check if this is a new frame being drawn
-        // We need to make sure these objects exist
+        // If this is a world-animated tile we're going to check if this is a new frame being drawn
+        // We need to make sure this object exists before we assign a value in it
         // This array is emptied at the end of every frame
-        if(sameFrame[tileSetName] === undefined) {
+        if(sameFrame[tileSetName] === undefined && objectId === undefined) {
             // Initiate this tileset in the sameFrame array   
             sameFrame[tileSetName] = {};
         }
         
-        if(sameFrame[tileSetName][tileNumberOnMap] === undefined) {
+        if(sameFrame[tileSetName][tileNumberOnMap] === undefined && objectId === undefined) {
             
             // Make sure we've already created this tileSetName in the array before doing the next write
             if(sameFrame[tileSetName] === undefined) sameFrame[tileSetName] = {};
@@ -274,46 +288,46 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
             sameFrame[tileSetName][tileNumberOnMap] = true;
             
             // Add a frame to the counter
-            animatedTiles[tileSetName][tileNumberOnMap]["framessince"]++;
+            animatedTiles[tileSetName][animationId]["framessince"]++;
         }
         
         // Count the ammount of frames that need to pass before showing the next one
-        frameWait = (fpsr / animatedTiles[tileSetName][tileNumberOnMap]["fps"]);
+        frameWait = (fpsr / animatedTiles[tileSetName][animationId]["fps"]);
         
         // If there have been more frames then we should wait ...
-        if(animatedTiles[tileSetName][tileNumberOnMap]["framessince"] >= frameWait){
+        if(animatedTiles[tileSetName][animationId]["framessince"] >= frameWait){
             
-            debugEchoLfps('Nextframe! From "<b>' + animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] + '</b>" to "<b>' + animatedTiles[tileSetName][tileNumberOnMap]["nextframe"] + '</b>"');
-            debugEchoLfps('<pre>' + dump(animatedTiles[tileSetName][tileNumberOnMap]) + '</pre>');
+            debugEchoLfps('Nextframe! From "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>" to "<b>' + animatedTiles[tileSetName][animationId]["nextframe"] + '</b>"');
+            debugEchoLfps('<pre>' + dump(animatedTiles[tileSetName][animationId]) + '</pre>');
             
             // This animation is ready for the next frame!
-            animatedTiles[tileSetName][tileNumberOnMap]["currentframe"] = animatedTiles[tileSetName][tileNumberOnMap]["nextframe"];
+            animatedTiles[tileSetName][animationId]["currentframe"] = animatedTiles[tileSetName][animationId]["nextframe"];
             
-            animatedTiles[tileSetName][tileNumberOnMap]["framessince"] = 0; // Reset the framessince
+            animatedTiles[tileSetName][animationId]["framessince"] = 0; // Reset the framessince
             
             // If there is no new nextframe, end or loop back
-            if(animatedTiles[tileSetName][tileNumberOnMap]["nextframe"] === undefined){
+            if(animatedTiles[tileSetName][animationId]["nextframe"] === undefined){
                 
-                animatedTiles[tileSetName][tileNumberOnMap]["played"]++;        // Add a play to the counter
+                animatedTiles[tileSetName][animationId]["played"]++;        // Add a play to the counter
                 
                 // If the animation is done we have to reset or remove it
-                if(animatedTiles[tileSetName][tileNumberOnMap]["replay"] != 1){
+                if(animatedTiles[tileSetName][animationId]["replay"] != 1){
                     
                     // If the animation is bigger than zero (and one, as seen above) decrease the counter
-                    if(animatedTiles[tileSetName][tileNumberOnMap]["replay"]>0) animatedTiles[tileSetName][tileNumberOnMap]["replay"]--;
+                    if(animatedTiles[tileSetName][animationId]["replay"]>0) animatedTiles[tileSetName][animationId]["replay"]--;
                 } else{
                     // Setting the currentframe to zero will stop the animation the next time
-                    animatedTiles[tileSetName][tileNumberOnMap]["currentframe"] = 0;
+                    animatedTiles[tileSetName][animationId]["currentframe"] = 0;
                 }
                 
-                animatedTiles[tileSetName][tileNumberOnMap]["framessince"] = 0; // Reset the framessince
+                animatedTiles[tileSetName][animationId]["framessince"] = 0; // Reset the framessince
                 
             }else { // If there IS a nextframe, set it!
                 
                 var tempNextFrame = tileProperties[tileSetName][currentFrame]['nextframe'];
                 
                 // Set the new nextframe: back to the beginning or end it all?
-                animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] = tempNextFrame;
+                animatedTiles[tileSetName][animationId]['currentframe'] = tempNextFrame;
                 
             }
             
@@ -349,27 +363,18 @@ function drawTile(tileNumber, dx, dy, opacity, objectId) {
         sourceMap = defaultSprites;
         
         // We also have to determine if the object is moving.
-        if(animatedObjects[objectId]['moveToX'] > animatedObjects[objectId]['x'] || animatedObjects[objectId]['moveToY'] > animatedObjects[objectId]['y']){
+        if(animatedObjects[objectId]['moveToX'] != animatedObjects[objectId]['x'] || animatedObjects[objectId]['moveToY'] != animatedObjects[objectId]['y']){
             var movingObject = true; // Is this object moving?
             //debugEcho('Moving object!');
         }
     }
     
-    for (var name in maps[sourceMap]['tilesets']){
-        
-        // Save the starting tile
-        var tileStart = tileSet[name]['firstgid'] - 1;
-        
-        // Calculate untill what tile we can find in here
-        var tileLimit = tileSet[name]['total'] + tileStart;
-        
-        if(tileNumber > tileStart && tileNumber < tileLimit) {
-            tileSetName = name;
-            tileSetTpr = tileSet[name]['tpr'];
-        }
-        
-    };
-
+    // We know the map and the tilenumber, but not the tilesetname.
+    // Look that up using our getTileSetInfo function.
+    tileSetInfo = new getTileSetInfo(sourceMap, tileNumber);
+    tileSetName = tileSetInfo['tileSetName'];
+    tileSetTpr = tileSetInfo['tpr'];
+    
     // We're going to fix the tileNumber next (to get the right tilenumber of the
     // map, not the tileset) But in the tileProperties object they are still stored
     // by their map tilenumber, which is logical.
@@ -381,7 +386,7 @@ function drawTile(tileNumber, dx, dy, opacity, objectId) {
     tileNumber = tileNumber - (maps[sourceMap]['tilesets'][tileSetName]['firstgid']-1);
 
     if(tileProperties[tileSetName][tileNumberOnMap] != undefined &&
-       tileProperties[tileSetName][tileNumberOnMap]['beginanimation'] != undefined){
+       (tileProperties[tileSetName][tileNumberOnMap]['beginanimation'] != undefined || movingObject == true)){
         try {
             drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap);
         } catch(error) {
@@ -463,6 +468,7 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
  * When an object is moved, it happens gradually. Smoothly.
  * This function checks if the object needs to be moved and
  * makes sure that happens smoothly.
+ * This now also changes the sprite to draw on movement
  * @param   objectId    {string}    The ID of the object
  */
 function slideMovingObject(objectId){
@@ -472,6 +478,17 @@ function slideMovingObject(objectId){
         
         // How much time has past since we started this move?
         animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
+        
+        // Detect the direction of the move (left or right)
+        if((animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX'])>0){
+            // Move to the right
+            var movementDirection = 'righttile';
+        } else {
+            var movementDirection = 'lefttile';
+        }
+        
+        // Change the direction of the tile with our function
+        changeMovingObjectSprite(objectId, movementDirection);
         
         // Our progress in this move (between 0 and 1)
         var objectMoveProgress = animatedObjects[objectId]['msMoved']/userMoveMsPerTile;
@@ -501,7 +518,18 @@ function slideMovingObject(objectId){
         
         // How much time has past since we started this move?
         animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
+
+        // Detect the direction of the move (left or right)
+        if((animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY'])>0){
+            // Move down
+            var movementDirection = 'downtile';
+        } else {
+            var movementDirection = 'uptile';
+        }
         
+        // Change the direction of the tile with our function
+        changeMovingObjectSprite(objectId, movementDirection);
+
         // Our progress in this move (between 0 and 1)
         var objectMoveProgress = animatedObjects[objectId]['msMoved']/userMoveMsPerTile;
         
@@ -535,4 +563,61 @@ function slideMovingObject(objectId){
  */
 function getLayerTile(mapname, layername, x, y) {
     return maps[mapname]['layers'][layername]['data'][y * maps[mapname]['width'] + x];
+}
+
+/**
+ *Get the info of a tileset knowing only the map it's from and a tilenumber it has
+ *@param mapname    {string}    The name of the map
+ *@param tilenumer  {int}       The number of the tile in the tileset
+ */
+function getTileSetInfo(sourceMap, tileNumber){
+    
+    // Loop through all the tilesets in this map to determine which one we need
+    for (var name in maps[sourceMap]['tilesets']){
+        
+        // Save the starting tile
+        var tileStart = tileSet[name]['firstgid'] - 1;
+        
+        // Calculate untill what tile we can find in here
+        var tileLimit = tileSet[name]['total'] + tileStart;
+        
+        if(tileNumber > tileStart && tileNumber < tileLimit) {
+            //Return everything but the image
+            return {
+                'tileSetName': name,
+                'tileWidth': tileSet[name]['tileWidth'],
+                'tileHeight': tileSet[name]['tileHeight'],
+                'tpr': tileSet[name]['tpr'],
+                'tpc': tileSet[name]['tpc'],
+                'total': tileSet[name]['total'],
+                'firstgid': tileSet[name]['firstgid']
+            };
+        }
+    };
+}
+
+/**
+ *Change the sprite of a moving object
+ *@param objectId           {string}    The Id of the object to change
+ *@param movementDirection  {string}    The direction this object has to face
+*/
+function changeMovingObjectSprite(objectId, movementDirection){
+    
+        //Change the sprite of every layer if there is one specified for this move
+        for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['sprites'].length; spriteNr++){
+
+            // We know the map and the tilenumber, but not the tilesetname.
+            // Look that up using our getTileSetInfo function.
+            tileSetInfo = new getTileSetInfo(defaultSprites, animatedObjects[objectId]['sprites'][spriteNr]);
+            tileSetName = tileSetInfo['tileSetName'];
+            tileSetCorrectGid = tileSetInfo['firstgid'] - 1; // Yes, we have to correct for tileset gids again.
+
+            // Check if this object has a sprite for this movement
+           if(tileProperties[tileSetName][animatedObjects[objectId]['sprites'][spriteNr]][movementDirection] !== undefined){
+               debugEchoLfps('Object <b>' + objectId + '</b> has a sprite for this direction: ' + movementDirection + ' on layer ' + spriteNr);
+                
+                // Now set it AANDD don't forget to modify for the tileset firstgid.
+                animatedObjects[objectId]['spritesToDraw'][spriteNr] = parseInt(tileProperties[tileSetName][animatedObjects[objectId]['sprites'][spriteNr]][movementDirection])+tileSetCorrectGid;
+            }
+        };
 }

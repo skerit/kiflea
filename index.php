@@ -25,7 +25,7 @@
 	<script type="text/javascript" src="kiflea.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
-			fps = 3000;
+			fps = 20;
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
 			defaultTilesPerRow = 30;
@@ -53,7 +53,8 @@
 					"msMoved": 100,
 					"lastMoved": 1000,
 					"map": "grassland.tmx.xml",
-					"sprites": [1,21], 
+					"sprites": [1,21],
+					"spritesToDraw": [1,21], 
 					"currentSprite": 1
 				},
 				"U00002":{
@@ -66,7 +67,8 @@
 					"msMoved": 100,
 					"lastMoved": 1000,
 					"map": "grassland.tmx.xml",
-					"sprites": [1], 
+					"sprites": [1],
+					"spritesToDraw": [1], 
 					"currentSprite": 1
 				},
 				"U00003":{
@@ -79,7 +81,8 @@
 					"msMoved": 100,
 					"lastMoved": 1000,
 					"map": "grassland.tmx.xml",
-					"sprites": [1,21], 
+					"sprites": [1],
+					"spritesToDraw": [1,21], 
 					"currentSprite": 1
 				}
 			}
