@@ -1,4 +1,24 @@
 
+--- Saturday 2010/07/17 ---
+
+* Fixed a bug that would cause multiple map-loadings to be stored under the same
+  name. This didn't pop-up before because I only loaded one map, but as soon as
+  I had 2 they would both be stored under the name of the last map. This was
+  because the script was downloading the maps asynchronously and eventually
+  passing the wrong name to the success function.
+* Started work on object-animated tiles!
+  - Objects can be layered. This will enable "clothes" for users.
+  - Our own user is now an object. It's treated like anyone else.
+  - Currently ALL the objects in the animatedObjects array are drawn.
+    This is no problem is we only get the objects we need to draw from the
+    game server, but for offline games this could cause a slowdown.
+* Replaced a silly jQuery loop with simple javascript (which was just as long, really)
+  This gave a few more frames per second on Firefox.
+* Fixed drawTileSpecific, which wasn't as specific as it should be because it still
+  looked at the current map the user is on. It's purpose is actually to draw a specific
+  tile of a specific tileset to specific coordinates on the canvas (although it
+  still adjusts for tiled "start a tile at the bottom" thing)
+
 --- Friday 2010/07/16 ---
 
 * Implement a debug grid (useful to see where the tiles are being rendered to)

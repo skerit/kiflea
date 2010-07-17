@@ -32,69 +32,20 @@ function renderLoop(){
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     
-    // Adjust the user's x position if the current position
-    // does not equal our destination.
-    if(userPosition.x != userPosition.moveToX){
-        
-        // How much time has past since we started this move?
-        userPosition.msMoved = now() - userPosition.lastMoved;
-        
-        // Our progress in this move (between 0 and 1)
-        var userMoveProgress = userPosition.msMoved/userMoveMsPerTile;
-        
-        debugMove('userMoveProgress: ' + userMoveProgress, false);
-        
-        // If we've spent too much time on this move
-        // or we're within ms of reaching our goal: finish it.
-        if(userPosition.msMoved >= (userMoveMsPerTile - 10)){
-            userPosition.x = userPosition.moveToX;
-            userPosition.fromX = userPosition.x;
-        } else { // Else calculate our current position
-            
-            debugMove('<b>From ' + userPosition.fromX + ' to ' + userPosition.moveToX);
-            debugMove('Moving X: ' + userPosition.x + ' to ... ');
-            
-            userPosition.x = userPosition.fromX + ((userPosition.moveToX - userPosition.fromX)*userMoveProgress);
-        }
-        
-        debugMove('New X: ' + userPosition.x);
-        
-    }
-    
-    // Adjust the user's y position if the current position
-    // does not equal our destination.
-    if(userPosition.y != userPosition.moveToY){
-        
-        // How much time has past since we started this move?
-        userPosition.msMoved = now() - userPosition.lastMoved;
-        
-        // Our progress in this move (between 0 and 1)
-        var userMoveProgress = userPosition.msMoved/userMoveMsPerTile;
-        
-        debugMove('userMoveProgress: ' + userMoveProgress, false);
-        
-        // If we've spent too much time on this move
-        // or we're within ms of reaching our goal: finish it.
-        if(userPosition.msMoved >= (userMoveMsPerTile - 10)){
-            userPosition.y = userPosition.moveToY;
-            userPosition.fromY = userPosition.y;
-        } else { // Else calculate our current position
-            
-            debugMove('<b>From ' + userPosition.fromY + ' to ' + userPosition.moveToY);
-            debugMove('Moving Y: ' + userPosition.y + ' to ... ');
-            
-            userPosition.y = userPosition.fromY + ((userPosition.moveToY - userPosition.fromY)*userMoveProgress);
-        }
-        
-        debugMove('New Y: ' + userPosition.y);
-        
+    // Every object has to be moved gradually. We have to do this now already,
+    // because otherwise we'd get jittering. Especially true for our own user.
+    // Unfortunately, other moving objects have a very slight jitter if you're
+    // also moving.
+    for (var objectId in animatedObjects){
+            // If the object needs to be moved, do it smoothly
+            slideMovingObject(objectId);
     }
     
     // Calculate the "mapOffset" of the user if we're moving when the map is drawn
     // This has to be floored, because pixels can't have a decimal value
-    // And this would create 1 pixel spacing between the tiles.
-    var mappOffsetX = Math.floor((32 * decimal(userPosition.x)));
-    var mappOffsetY = Math.floor((32 * decimal(userPosition.y)));
+    // And this would create 1 pixel spacing between the tiles while moving.
+    var mappOffsetX = Math.floor((32 * decimal(animatedObjects[userPosition.uid]['x'])));
+    var mappOffsetY = Math.floor((32 * decimal(animatedObjects[userPosition.uid]['y'])));
     
     if(mappOffsetX > 0 || mappOffsetY > 0){
         debugMove('mapOffsetX: ' + mappOffsetX + ' - mapOffsetY: ' + mappOffsetY);
@@ -103,18 +54,16 @@ function renderLoop(){
     // Loop through the layers and render them
     $.each(maps[userPosition.map]['layers'], function(layerName, layerContent) {
 
-        // For every visible row
+        // For every visible row (+ the drawExtras row, needed for tiles that are bigger than the default map tile)
         for (var tileY = 0; tileY <= visibleTilesY+drawExtras; tileY++) {
             
-            // And for every tile in that row
+            // And for every tile in that row (+ the drawExtras)
             for (var tileX = (0-drawExtras); tileX <= visibleTilesX; tileX++) {
-                
-                //debugEchoLfps('Loop again');
                 
                 // Calculate the coördinates of the tile we need, based on our current position
                 // (Example: The tile in row 10, column 5)
-                var rowTile = userPosition.x + (tileX + (Math.floor(visibleTilesX / 2)) + 1) - visibleTilesX;
-                var colTile = userPosition.y + (tileY + (Math.floor(visibleTilesY / 2)) + 1) - visibleTilesY;
+                var rowTile = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2)) + 1) - visibleTilesX;
+                var colTile = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2)) + 1) - visibleTilesY;
                 
                 // Now that we know what piece of the map we need
                 // we need to get the corresponding tileset image
@@ -142,10 +91,34 @@ function renderLoop(){
         }
 
         // If this layer has the "drawUsers" property set to "1"
-        // We draw the users on top of this.
+        // We draw all the objects on top of it.
         if(maps[userPosition.map]['layers'][layerName]['properties']['drawUsers']==1){
-            drawTileSpecific('npcs', userPosition.currentSprite, (canvasWidth - defaultTileWidth) / 2, (canvasHeight - 48) / 2)
-            drawTile(userPosition.currentSprite, (canvasWidth - defaultTileWidth) / 2, (canvasHeight - 48) / 2);
+            //drawTile(userPosition.currentSprite, (canvasWidth - defaultTileWidth) / 2, (canvasHeight - 48) / 2);
+            
+            // Loop through every object
+            for (var objectId in animatedObjects){
+                
+                debugEchoLfps('Found object ' + objectId);
+                
+                // If this is our own user, set the coordinates at the center of the screen.
+                if(objectId == userPosition.uid) {
+                    debugEchoLfps('This object is our own user ' + objectId);
+                    var objX = (canvasWidth - defaultTileWidth) / 2;
+                    var objY = (canvasHeight - defaultTileWidth) / 2;
+                } else {
+                    var objX = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * 32)) + (animatedObjects[objectId]['x'] * 32) - mappOffsetX;
+                    var objY = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * 32)) + (animatedObjects[objectId]['y'] * 32) - mappOffsetY;
+                }
+                // Loop through all the layers of this object
+                for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['sprites'].length; spriteNr++){
+                    
+                    debugEchoLfps('Drawing object ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['sprites'][spriteNr] );
+                    
+                    drawTile(animatedObjects[objectId]['sprites'][spriteNr], objX, objY, null, objectId);
+                }
+                
+                
+            }
         }
     });
     
@@ -195,8 +168,10 @@ function renderLoop(){
     
     if(debugOn==true) debug('Fake ms: ' + msf.toPrecision(4) + ' - Real ms: ' + msr.toPrecision(4)  + ' - Fake fps: ' + Math.round(fpsf).toPrecision(3) + ' - Real fps: ' + Math.round(fpsr).toPrecision(3) );
 
+    // Draw a grid over the screen.
     if(debugGrid == true) {
-        // For every row, do this:
+        
+        // Draw horizontal lines
         for(var row = 0; row < (canvasWidth/debugGridX); row++ ){
             ctx.beginPath();
             ctx.moveTo(0, row*debugGridX);  
@@ -204,6 +179,7 @@ function renderLoop(){
             ctx.stroke();
         }
         
+        // Draw vertical lines
         for(var col = 0; col < (canvasWidth/debugGridY); col++ ){
             ctx.beginPath();
             ctx.moveTo(col*debugGridY, 0);  
@@ -227,47 +203,54 @@ function renderLoop(){
  *@param float     opacity     A number between 0 and 1 (can be 0 and 1)
  *                             Does nothing currently, as canvas does not
  *                             support adjusting the opacity of images.
+ *@param integer   tileNumberOnMap
+ *@param string    objectId    If it's an object, give its ID.
  */
-function drawAnimated(tileSetName, tileNumber, dx,dy, opacity){
+function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, objectId){
     
     // Check if this tile already exists in the array
-    if(animatedTiles[tileSetName][tileNumber] === undefined){
+    if(animatedTiles[tileSetName][tileNumberOnMap] === undefined){
         
-        debugEchoLfps('Initiate new animated tile: ' + tileNumber);
+        debugEchoLfps('Initiate new animated tile: ' + tileNumberOnMap);
         
-        animatedTiles[tileSetName][tileNumber] = {
+        animatedTiles[tileSetName][tileNumberOnMap] = {
             "played": 0,
             "framessince": 0,
-            "fps": tileProperties[tileSetName][tileNumber]['fps'],
-            "replay": tileProperties[tileSetName][tileNumber]['replay'],
-            "currentframe": tileNumber,
-            "nextframe": tileProperties[tileSetName][tileNumber]['nextframe']
+            "fps": tileProperties[tileSetName][tileNumberOnMap]['fps'],
+            "replay": tileProperties[tileSetName][tileNumberOnMap]['replay'],
+            "currentframe": tileNumberOnMap,
+            "nextframe": tileProperties[tileSetName][tileNumberOnMap]['nextframe']
         };
         
     } else {
         // If the currentframe is zero it means this animation is over!
-        if(animatedTiles[tileSetName][tileNumber]["currentframe"] == 0){
+        if(animatedTiles[tileSetName][tileNumberOnMap]["currentframe"] == 0){
             return;
         } else { //If the animation isn't done, load some variables!
-            var currentFrame = animatedTiles[tileSetName][tileNumber]["currentframe"];
+            var currentFrame = animatedTiles[tileSetName][tileNumberOnMap]["currentframe"];
         }
     }
     
-    debugEchoLfps('Going to draw animated tile "<b>' + animatedTiles[tileSetName][tileNumber]['currentframe'] + '</b>"!');
+    debugEchoLfps('Going to draw animated tile "<b>' + animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] + '</b>"!');
+    
+    // We used to adjust tilenumber with their firstgid in drawTileSpecific, but that didn't make drawTileSpecific very specific.
+    // Now we put one in drawTile and drawTileAnimated. Ideally we would stop using the tileNumberOnMap for tileproperties, but
+    // hey, this works.
+    var adjustedFrame = animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] - (tileSet[tileSetName]['firstgid']-1);
     
         try {
         // Draw the current frame
         drawTileSpecific(
                          tileSetName,                                           // The name of the tileset
-                         animatedTiles[tileSetName][tileNumber]['currentframe'],  // The number of the tile
+                         adjustedFrame,  // The number of the tile
                          dx,         // The destination x position
                          dy          // The destination y position
                          );
         
-        debugEchoLfps('Animated tile "<b>' + animatedTiles[tileSetName][tileNumber]['currentframe'] + '</b>" has been drawn');
+        debugEchoLfps('Animated tile "<b>' + animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] + '</b>" has been drawn');
         
         } catch(error) {
-            debugEchoLfps('[drawAnimated] Error drawing <b>animated</b> tile "<b>' + animatedTiles[tileSetName][tileNumber]['currentframe'] + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
+            debugEchoLfps('[drawAnimated] Error drawing <b>animated</b> tile "<b>' + animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
             );
         }
         
@@ -279,7 +262,7 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity){
             sameFrame[tileSetName] = {};
         }
         
-        if(sameFrame[tileSetName][tileNumber] === undefined) {
+        if(sameFrame[tileSetName][tileNumberOnMap] === undefined) {
             
             // Make sure we've already created this tileSetName in the array before doing the next write
             if(sameFrame[tileSetName] === undefined) sameFrame[tileSetName] = {};
@@ -288,48 +271,49 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity){
             // This will prevent the framessince counter from being increased
             // if this same tile is on the map multiple times.
             // Without this the framerate would double if there were 2 of these.
-            sameFrame[tileSetName][tileNumber] = true;
+            sameFrame[tileSetName][tileNumberOnMap] = true;
             
             // Add a frame to the counter
-            animatedTiles[tileSetName][tileNumber]["framessince"]++;
+            animatedTiles[tileSetName][tileNumberOnMap]["framessince"]++;
         }
         
         // Count the ammount of frames that need to pass before showing the next one
-        frameWait = (fpsr / animatedTiles[tileSetName][tileNumber]["fps"]);
+        frameWait = (fpsr / animatedTiles[tileSetName][tileNumberOnMap]["fps"]);
         
         // If there have been more frames then we should wait ...
-        if(animatedTiles[tileSetName][tileNumber]["framessince"] >= frameWait){
+        if(animatedTiles[tileSetName][tileNumberOnMap]["framessince"] >= frameWait){
             
-            debugEchoLfps('Nextframe! From "<b>' + animatedTiles[tileSetName][tileNumber]['currentframe'] + '</b>" to "<b>' + animatedTiles[tileSetName][tileNumber]["nextframe"] + '</b>"');
+            debugEchoLfps('Nextframe! From "<b>' + animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] + '</b>" to "<b>' + animatedTiles[tileSetName][tileNumberOnMap]["nextframe"] + '</b>"');
+            debugEchoLfps('<pre>' + dump(animatedTiles[tileSetName][tileNumberOnMap]) + '</pre>');
             
             // This animation is ready for the next frame!
-            animatedTiles[tileSetName][tileNumber]["currentframe"] = animatedTiles[tileSetName][tileNumber]["nextframe"];
+            animatedTiles[tileSetName][tileNumberOnMap]["currentframe"] = animatedTiles[tileSetName][tileNumberOnMap]["nextframe"];
             
-            animatedTiles[tileSetName][tileNumber]["framessince"] = 0; // Reset the framessince
+            animatedTiles[tileSetName][tileNumberOnMap]["framessince"] = 0; // Reset the framessince
             
             // If there is no new nextframe, end or loop back
-            if(animatedTiles[tileSetName][tileNumber]["nextframe"] === undefined){
+            if(animatedTiles[tileSetName][tileNumberOnMap]["nextframe"] === undefined){
                 
-                animatedTiles[tileSetName][tileNumber]["played"]++;        // Add a play to the counter
+                animatedTiles[tileSetName][tileNumberOnMap]["played"]++;        // Add a play to the counter
                 
                 // If the animation is done we have to reset or remove it
-                if(animatedTiles[tileSetName][tileNumber]["replay"] != 1){
+                if(animatedTiles[tileSetName][tileNumberOnMap]["replay"] != 1){
                     
                     // If the animation is bigger than zero (and one, as seen above) decrease the counter
-                    if(animatedTiles[tileSetName][tileNumber]["replay"]>0) animatedTiles[tileSetName][tileNumber]["replay"]--;
+                    if(animatedTiles[tileSetName][tileNumberOnMap]["replay"]>0) animatedTiles[tileSetName][tileNumberOnMap]["replay"]--;
                 } else{
                     // Setting the currentframe to zero will stop the animation the next time
-                    animatedTiles[tileSetName][tileNumber]["currentframe"] = 0;
+                    animatedTiles[tileSetName][tileNumberOnMap]["currentframe"] = 0;
                 }
                 
-                animatedTiles[tileSetName][tileNumber]["framessince"] = 0; // Reset the framessince
+                animatedTiles[tileSetName][tileNumberOnMap]["framessince"] = 0; // Reset the framessince
                 
             }else { // If there IS a nextframe, set it!
                 
                 var tempNextFrame = tileProperties[tileSetName][currentFrame]['nextframe'];
                 
                 // Set the new nextframe: back to the beginning or end it all?
-                animatedTiles[tileSetName][tileNumber]['currentframe'] = tempNextFrame;
+                animatedTiles[tileSetName][tileNumberOnMap]['currentframe'] = tempNextFrame;
                 
             }
             
@@ -347,31 +331,59 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity){
  *@param float     opacity     A number between 0 and 1 (can be 0 and 1)
  *                             Does nothing currently, as canvas does not
  *                             support adjusting the opacity of images.
+ *@param integer   object      If we want to draw an object we have to give
+ *                             its id
  */
-function drawTile(tileNumber, dx, dy, opacity) {
+function drawTile(tileNumber, dx, dy, opacity, objectId) {
     
     // The name of the tileset we will pass on
     var tileSetName;
     var tileSetTpr;
+    var sourceMap;  // From which map do we have to fetch the tilesets?
     
-    $.each(maps[userPosition.map]['tilesets'], function(key, value) {
+    // If this isn't an object the sourcemap is the current map we're on
+    if(objectId === undefined) {
+        sourceMap = userPosition.map;
+    }else {
+        // If it is an object we have to get the tilesets from the default "map". Hackish, but it works
+        sourceMap = defaultSprites;
+        
+        // We also have to determine if the object is moving.
+        if(animatedObjects[objectId]['moveToX'] > animatedObjects[objectId]['x'] || animatedObjects[objectId]['moveToY'] > animatedObjects[objectId]['y']){
+            var movingObject = true; // Is this object moving?
+            //debugEcho('Moving object!');
+        }
+    }
+    
+    for (var name in maps[sourceMap]['tilesets']){
         
         // Save the starting tile
-        var tileStart = tileSet[key]['firstgid'] - 1;
+        var tileStart = tileSet[name]['firstgid'] - 1;
         
         // Calculate untill what tile we can find in here
-        var tileLimit = tileSet[key]['total'] + tileStart;
+        var tileLimit = tileSet[name]['total'] + tileStart;
         
         if(tileNumber > tileStart && tileNumber < tileLimit) {
-            tileSetName = key;
-            tileSetTpr = tileSet[key]['tpr'];
+            tileSetName = name;
+            tileSetTpr = tileSet[name]['tpr'];
         }
         
-    });
+    };
 
-    if(tileProperties[tileSetName][tileNumber] != undefined && tileProperties[tileSetName][tileNumber]['beginanimation'] != undefined){
+    // We're going to fix the tileNumber next (to get the right tilenumber of the
+    // map, not the tileset) But in the tileProperties object they are still stored
+    // by their map tilenumber, which is logical.
+    var tileNumberOnMap = tileNumber;
+
+    // tileNumbers are fixed per MAP, not per tileset.(So a second tileset in a
+    // map wouldn't start from 1 but from 21, for example.)
+    // We still need to know which piece to get from the tileset, so this fixes that
+    tileNumber = tileNumber - (maps[sourceMap]['tilesets'][tileSetName]['firstgid']-1);
+
+    if(tileProperties[tileSetName][tileNumberOnMap] != undefined &&
+       tileProperties[tileSetName][tileNumberOnMap]['beginanimation'] != undefined){
         try {
-            drawAnimated(tileSetName, tileNumber, dx,dy, opacity);
+            drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap);
         } catch(error) {
             debugEchoLfps('[drawTile] Error drawing <b>animated</b> tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
             );
@@ -381,15 +393,14 @@ function drawTile(tileNumber, dx, dy, opacity) {
         try {
             drawTileSpecific(tileSetName, tileNumber, dx,dy, opacity);
         } catch(error) {
-            debugEchoLfps('[drawTile] Error drawing tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
-            );
+            debugEchoLfps('[drawTile] Error drawing tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)');
         }
     }
 
 }
 
 /**
- *Draw a specific tile to the canvas
+ *Draw a single specific tile from a specific tileset to the canvas
  *@param string    tileSetName  The name of the tileset to get the tile out of 
  *@param integer   tileNumber  The number of the tile in the tileset
  *@param float     dx          The destination X-coördinate
@@ -418,18 +429,17 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
     if(!tileWidth){
         tileWidth = tileSet[tileSetName]['tileWidth'];
     }
-     
+
     // Fetch the height of a tile
     if(!tileHeight){
         tileHeight = tileSet[tileSetName]['tileHeight'];
     }
-    
+
     // Set opacity to 1 if it's undefined
     if(!opacity) opacity = 1;
 
     //End the function if no tileNumber is given
     if (!tileNumber) return;
-    tileNumber = tileNumber - (maps[userPosition.map]['tilesets'][tileSetName]['firstgid']-1);
     
     // Calculate this tileNumber's source x parameter (sx) on the tileset
     var sx = (Math.floor((tileNumber - 1) % tilesPerRow) * tileWidth);
@@ -441,8 +451,78 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
         // Draw the tile on the canvas
         ctx.drawImage(tileSet[tileSetName]["image"], sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
     } catch (error) {
-        debugEchoLfps(error.code + ' - ' + error.message + ' - TPR: ' + tilesPerRow + ' - Width: ' + tileWidth + ' - Height: ' + tileHeight);
+        debugEchoLfps('[drawTileSpecific] Error: ' + error.code + ' - ' +
+                      error.message + '<br/>'+
+                      'Error drawing tilenumber <b>' + tileNumber + '</b> from tileSet <b>' + tileSetName + '</b> ' +
+                      'from coordinates (' + sx + ',' + sy + ') to (' + dx + ',' + dy + ') with tpr: ' + tilesPerRow + ' - tileWidth: ' + tileWidth +
+                      ' - tileHeight: ' + tileHeight);
     }
+}
+
+/**
+ * When an object is moved, it happens gradually. Smoothly.
+ * This function checks if the object needs to be moved and
+ * makes sure that happens smoothly.
+ * @param   objectId    {string}    The ID of the object
+ */
+function slideMovingObject(objectId){
+    
+    // Adjust the object's x position if the current position does not equal its destination.
+    if(animatedObjects[objectId]['x'] != animatedObjects[objectId]['moveToX']){
+        
+        // How much time has past since we started this move?
+        animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
+        
+        // Our progress in this move (between 0 and 1)
+        var objectMoveProgress = animatedObjects[objectId]['msMoved']/userMoveMsPerTile;
+        
+        debugMove('Object <b>' + objectId + '</b> moving progress (X): ' + objectMoveProgress, false);
+        
+        // If we've spent too much time on this move
+        // or we're within ms of reaching our goal: finish it.
+        if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile - 10)){
+            animatedObjects[objectId]['x'] = animatedObjects[objectId]['moveToX'];
+            animatedObjects[objectId]['fromX'] = animatedObjects[objectId]['x'];
+        } else { // Else calculate our current position
+            
+            debugMove('<b>From ' + animatedObjects[objectId]['fromX'] + ' to ' + animatedObjects[objectId]['moveToX']);
+            debugMove('Moving X: ' + animatedObjects[objectId]['x'] + ' to ... ');
+            
+            animatedObjects[objectId]['x'] = animatedObjects[objectId]['fromX'] + ((animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX'])*objectMoveProgress);
+        }
+        
+        debugMove('Object ' + objectId + '\'s new X: ' + animatedObjects[objectId]['x']);
+        
+    }
+    
+    // Adjust the user's y position if the current position
+    // does not equal our destination.
+    if(animatedObjects[objectId]['y'] != animatedObjects[objectId]['moveToY']){
+        
+        // How much time has past since we started this move?
+        animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
+        
+        // Our progress in this move (between 0 and 1)
+        var objectMoveProgress = animatedObjects[objectId]['msMoved']/userMoveMsPerTile;
+        
+        debugMove('Object <b>' + objectId + '</b> moving progress (Y): ' + objectMoveProgress, false);
+        
+        // If we've spent too much time on this move
+        // or we're within ms of reaching our goal: finish it.
+        if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile - 10)){
+            animatedObjects[objectId]['y'] = animatedObjects[objectId]['moveToY'];
+            animatedObjects[objectId]['fromY'] = animatedObjects[objectId]['y'];
+        } else { // Else calculate our current position
+            
+            debugMove('<b>From ' + animatedObjects[objectId]['fromY'] + ' to ' + animatedObjects[objectId]['moveToY']);
+            debugMove('Moving Y: ' + animatedObjects[objectId]['y'] + ' to ... ');
+            
+            animatedObjects[objectId]['y'] = animatedObjects[objectId]['fromY'] + ((animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY'])*objectMoveProgress);
+        }
+        
+        debugMove('Object ' + objectId + '\'s new Y: ' + animatedObjects[objectId]['y']);
+        
+    } 
 }
 
 /**

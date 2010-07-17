@@ -121,34 +121,34 @@ function onKeyDown(keypress) {
     switch (keypress.keyCode) {
 
         case key.Uparrow: // Arrow up
-            if((now()-userPosition.lastMoved) > userMoveMsPerTile ) {
-                userPosition.currentSprite = userPosition.sprites.up;
-                userPosition.moveToY--;
-                userPosition.lastMoved = now();
+            if((now()-animatedObjects[userPosition.uid]['lastMoved']) > userMoveMsPerTile ) {
+                animatedObjects[userPosition.uid]['moveToY']--;
+                //userPosition.moveToY--;
+                animatedObjects[userPosition.uid]['lastMoved'] = now();
             }
             break
 
         case key.Rightarrow: // Arrow right
-            if((now()-userPosition.lastMoved) > userMoveMsPerTile) {
-                userPosition.currentSprite = userPosition.sprites.right;
-                userPosition.moveToX++;
-                userPosition.lastMoved = now();
+            if((now()-animatedObjects[userPosition.uid]['lastMoved']) > userMoveMsPerTile) {
+                animatedObjects[userPosition.uid]['moveToX']++;
+                //userPosition.moveToX++;
+                animatedObjects[userPosition.uid]['lastMoved'] = now();
             }
             break;
 
         case key.Downarrow: // Arrow down
-            if((now()-userPosition.lastMoved) > userMoveMsPerTile) {
-                userPosition.currentSprite = userPosition.sprites.down;
-                userPosition.moveToY++;
-                userPosition.lastMoved = now();
+            if((now()-animatedObjects[userPosition.uid]['lastMoved']) > userMoveMsPerTile) {
+                animatedObjects[userPosition.uid]['moveToY']++;
+                //userPosition.moveToY++;
+                animatedObjects[userPosition.uid]['lastMoved'] = now();
             }
             break;
         
         case key.Leftarrow: // Arrow left
-            if((now()-userPosition.lastMoved) > userMoveMsPerTile) {
-                userPosition.currentSprite = userPosition.sprites.left;
-                userPosition.moveToX--;
-                userPosition.lastMoved = now();
+            if((now()-animatedObjects[userPosition.uid]['lastMoved']) > userMoveMsPerTile) {
+                animatedObjects[userPosition.uid]['moveToX']--;
+                //userPosition.moveToX--;
+                animatedObjects[userPosition.uid]['lastMoved'] = now();
             }
             break;
     }

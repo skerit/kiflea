@@ -41,7 +41,9 @@ var tileProperties = {};// Certain tiles have special properties, like they can 
 var toLoad = 0;         // Increases with each map/tileset that needs to be loaded
 var loaded = 0;         // Increases with each loaded map/tileset. Game will only start if they're equal
 var backgroundColor = "rgb(255,255,255)";   // The colour outside of the map. Should be moved to the map itself.
-var loadMaps = ['map.tmx.xml'];             // All the mapfiles that need to be loaded (tilesets are defined in the map files)
+var defaultSprites = 'default.tmx.xml';	    // The map which holds the tiles for the objects and users and such.
+					    // This map isn't actually useable, but this way we can use tiled to quickly edit tile preferences.
+var loadMaps = ['map.tmx.xml', defaultSprites];             // All the mapfiles that need to be loaded (tilesets are defined in the map files)
 var maps = {};          // An array that stores the data of all the maps
 var visibleTilesX;      // The ammount of tiles visible per row (should be deprecated)
 var visibleTilesY;      // The ammount of tiles visible per col (should be deprecated)
@@ -52,26 +54,25 @@ var loopInterval = 0;
 // necesarry to draw outside those bounds.
 var drawExtras = 5;
 
-// Data on the whereabouts of our user
+// Data on the whereabouts of our user (This variable will be scaled down, as most of its data will be put in the objects variable)
 var userPosition = {
-    "x": 10, // Where is the user currently
-    "y": 10,
-    "moveToX": 10, // Where is the user going?
-    "moveToY": 10,
-    "fromX": 10,
-    "fromY": 10,
-    "msMoved": 100, // How many ms have we spent on this move?
-    "lastMoved": 1000, // when did the user last moved?
-    "map": "grasland.tmx.xml", // In what map is the user?
-    "sprites": { // what sprites to use for walking (up, down, left, right)
-	"up": 494,
-	"down": 493,
-	"left": 495,
-	"right": 496
+    "uid": "U00001",	// The userid (and object id)
+    "x": 0, 		// Where is the user currently
+    "y": 0,
+    "moveToX": 0, 	// Where is the user going?
+    "moveToY": 0,
+    "fromX": 0,
+    "fromY": 0,
+    "msMoved": 100, 	// How many ms have we spent on this move?
+    "lastMoved": 1000, 	// when did the user last moved?
+    "map": "grassland.tmx.xml", // In what map is the user?
+    "sprites": { 
+	"stand": 493 	// what sprites to use for walking (the rest are defined in tiled)
 	}, 
     "currentSprite": 493 // the current sprite to use
     };
     
+var animatedObjects = {}	    // The variable that will contain all the objects, including the user's data
 var userSpawnX = 10;                // The X position our user starts at
 var userSpawnY = 10;                // The Y position our user starts at
 var userMoveTilePerSecond = 10;     // Tile per second
@@ -118,7 +119,7 @@ function startEngine() {
     
     // Start the debug counter
     debugCounter = now();
-    
+    debugEcho('<pre>' + dump(userPosition) + '</pre>');
     // Retrieve the canvas DOM node, this gives us access to its drawing functions
     ctx = document.getElementById(canvasId).getContext('2d');
     
@@ -164,14 +165,17 @@ function getMaps(){
 
     for (var i = 0; i < loadMaps.length; i++){
         
-        // For some reason directly passing loadMaps[i] to the success function
-        // does not work. So we store it in a local variable first
+        // We have to store the current name in a variable because before the
+	// successcommand has fired i will already be incremented.
         var currentMap = loadMaps[i];
+	
+	debugEcho('Array: <pre>' + dump(loadMaps)+'</pre> ' + currentMap);
         
         $.ajax({
           type: "GET",
           url: currentMap,
           dataType: "xml",
+	  async: false, // Important: when this is turned on it will let the loop continue and change the currentMap. Causing every map to be stored under the same name
           success: function(xml, textStatus, error){
             processMap(xml, currentMap)
           }

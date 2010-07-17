@@ -113,3 +113,42 @@ animatedTiles object:
             'replay' => "-1"
             'currentframe' => "511"
             'nextframe' => "512"
+
+
+This is a guideline for future objects:
+
+Regular, in-game objects-object:
+
+The server should only send us objects we need on the current map.
+So we don't need to break objects down by map. (Though if anyone
+should ever want to use the engine for an off-line game they might
+have to make a few code adjustments)
+
+Users start with 'U', objects start with 'O'
+
+animatedObjects:
+    'U00001' ... 			// The ID of the object (this is a user)
+	    'x' => "10"			// Where this object currently is (x and y)
+	    'y' => "10"			// These can be floats
+	    'moveToX' => "10"		// Where this object is going to (x and y)
+	    'moveToY' => "10"		// These should be integers
+	    'fromX' => "10"		// Where this object is coming from (x and y)
+	    'fromY' => "10"		// These should be integers
+	    'msMoved' => "100"		// How many ms have we spent on this move?
+	    'lastMoved' => "1000"	// When did this object last move?
+	    'map' => "grasland.tmx.xml"	// In what map is this object?
+	    'sprites' ...		// This object's sprite in the 'default' map's tilesets
+	        0 => "1"		// Each object can have different layers of images
+	        1 => "21"		// This is to simulate clothes in users
+	    'currentSprite' => "1"
+
+
+
+
+temp: - tileset armor
+    'tileWidth' => "32"
+    'tileHeight' => "64"
+    'tpr' => "5"
+    'tpc' => "4"
+    'total' => "20"
+    'firstgid' => "21"
