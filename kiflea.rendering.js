@@ -67,7 +67,7 @@ function renderLoop(){
     }
 
     // Loop through the layers and render them
-    $.each(maps[userPosition.map]['layers'], function(layerName, layerContent) {
+    for(var layerName in maps[userPosition.map]['layers']) {
 
         // For every visible row (+ the drawExtras row, needed for tiles that are bigger than the default map tile)
         for (var tileY = 0; tileY <= visibleTilesY+drawExtras; tileY++) {
@@ -86,7 +86,7 @@ function renderLoop(){
                 
                 // When we get to an empty tile we can skip towards the next loop
                 if(tileNumber == 0 || tileNumber === undefined) continue;
-                
+
                 // Now calculate where to draw this tile
                 var destinationX = (tileX * (32)) - mappOffsetX;
                 var destinationY = (tileY * (32)) - mappOffsetY;
@@ -135,7 +135,7 @@ function renderLoop(){
                 
             }
         }
-    });
+    };
     
     debugEchoLfps('Finished the layers');
     
@@ -302,14 +302,17 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
             "nextframe": tileProperties[tileSetName][animationId]['nextframe']
         };
         
-    } else {
+    } else { // This isn't a new animation. We're continuing...
         // If the currentframe is zero it means this animation is over!
         if(animatedTiles[tileSetName][animationId]["currentframe"] == 0){
             return;
         } else { //If the animation isn't done, load some variables!
-            var currentFrame = animatedTiles[tileSetName][animationId]["currentframe"];
+            // Nothing needs to be done
         }
     }
+    
+    // Create a variable to hold our currentFrame (as to not duplicate code
+    var currentFrame = animatedTiles[tileSetName][animationId]["currentframe"];
     
     debugEchoLfps('Going to draw animated tile "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>"!');
     
@@ -390,10 +393,15 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
                 
             }else { // If there IS a nextframe, set it!
                 
-                var tempNextFrame = tileProperties[tileSetName][currentFrame]['nextframe'];
-                
-                // Set the new nextframe: back to the beginning or end it all?
-                animatedTiles[tileSetName][animationId]['currentframe'] = tempNextFrame;
+                // Without this IF everything still worked, but an error would still be thrown
+                // because sometimes "tileProperties[tileSetName][currentFrame]" wouldn't exist.
+                if(tileProperties[tileSetName][currentFrame] !==undefined){
+                    var tempNextFrame = tileProperties[tileSetName][currentFrame]['nextframe']; // Great, I forgot why this is different from the nextframe in the "if" outside this if. Look it up.
+                    
+                    // Set the new nextframe: back to the beginning or end it all?
+                    animatedTiles[tileSetName][animationId]['currentframe'] = tempNextFrame;
+                    
+                }
                 
             }
             

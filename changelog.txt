@@ -14,6 +14,18 @@
 * Implemented very basic events.
 * Implemented very basic dialog, too. Every object says the same thing, right now.
 
+Performance before debugging, after walkable tiles (same as friday):
+    - Google Chrome Ubuntu: 9-11ms = 111 fps
+    - Firefox 3.6.6 Ubuntu: 35-40ms = 25 fps
+    - Firefox 4.0b1 Ubuntu: 30-37ms = 25-29 fps
+    
+* Fixed a bug in the loading of walkable tiles. It used to take +/- 400ms,
+  now "only" 60-90ms. The cause was an undefined variable at times slowing things down.
+* Removed another jQuery 'each' function in the renderloop code. Doesn't really
+  speed things up as it only had to cycle 6 or 7 items, but still.
+* Can't really say much for performance after only 2 edits. Chrome is now leaning
+  towards 9ms much more.
+
 --- Saturday 2010/07/17 ---
 
 * Fixed a bug that would cause multiple map-loadings to be stored under the same

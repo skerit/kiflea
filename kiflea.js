@@ -350,21 +350,21 @@ function getWalkableTiles(sourcename){
 		// Get the number of the tile from the tileset to use
 		var tileNumber = layerContent['data'][pos];
 		
-		try {
-		    // what tileset is this from?
-		    var tileSetInfo = getTileSetInfo(sourcename, tileNumber);
-		    
+		// what tileset is this from?
+		var tileSetInfo = getTileSetInfo(sourcename, tileNumber);
+		
+		if(tileSetInfo !== undefined){
 		    // Get the name of the tileset out of the returned array
 		    var tileSetName = tileSetInfo['tileSetName'];
 		    
 		    if(tileProperties[tileSetName][tileNumber] !== undefined){
 			if(tileProperties[tileSetName][tileNumber]['impenetrable'] !== undefined){
-			walkableTiles[pos] = 1;
+			    walkableTiles[pos] = 1;
 			}
+			
 		    }
-		} catch(error){
-		    // I should really find out what's causing an error to throw here, as it happens a lot
 		}
+		    
 	    }
 	}
     });

@@ -18,8 +18,9 @@
 			position:absolute;
 			bottom:0;
 			width:99%;
-			height:60px;   /* Height of the footer */
+			height:35px;   /* Height of the footer */
 			font-family: sans-serif;
+			background: rgba(100,100,100,0.5);
 		     }
 		img {border: none;}
 	</style>
@@ -158,5 +159,6 @@
 		<a href="http://kipdola.be/trac/repos/" style="padding: 0pt; border: medium none;">
 		<img title="Trac" alt="trac_logo_mini.png" src="http://kipdola.be/trac/repos/chrome/common/trac_logo_mini.png"></a>
 		A <a href="http://www.kipdola.be">Kipdola Studios production.</a>
+		<div style="float:right;"<button id="removefooter" onclick="$('#footer').hide();">Hide footer</button></div>
 	</div>
 </body>
