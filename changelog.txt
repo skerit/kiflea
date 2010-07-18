@@ -1,4 +1,12 @@
 
+--- Sunday 2010/07/18 ---
+
+* Created walkable tiles.
+  A tile can have a "impenetrable" property. It doesn't matter on what layer you
+  put it, that world-tile will then be impenetrable.
+  (This way you can define certain tiles as "never walk through" or override it
+  with a fake tile)
+
 --- Saturday 2010/07/17 ---
 
 * Fixed a bug that would cause multiple map-loadings to be stored under the same

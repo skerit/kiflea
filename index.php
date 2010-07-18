@@ -92,6 +92,7 @@
 </head>
 <body>
 	<div id="main">
+		<img src="images/kiflea-logo-v2-small.png">
 		<h2 class="title">Kipdola's Flat Earth Engine</h2>
 		<canvas id="flatearth" width="480" height="480"></canvas>
 		<div id="debug"><p>debug information</p></div>

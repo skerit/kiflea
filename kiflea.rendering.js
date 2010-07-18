@@ -24,7 +24,22 @@ function renderLoop(){
     
     // If we haven't loaded everything yet don't continue
     if(loaded<toLoad) return;
+
+    // If msf isn't defined this is the actual beginning and everything has loaded
+    // We still need those walkable tiles, though.
+    if(msf === undefined) {
     
+        debugEcho('Fetching walkable tiles');
+        toLoad++;
+        //Loop through every map and fetch the walkable tiles
+        for(map in maps) maps[map]['walkableTiles'] = getWalkableTiles(map);
+        
+        // We can finally start
+        debugEcho('The engine has started');
+        loaded++;
+        
+    }
+
     // Start the fake ms counter
     msfTimer = (new Date()).getTime();
     
@@ -69,7 +84,7 @@ function renderLoop(){
                 // we need to get the corresponding tileset image
                 var tileNumber = getLayerTile(userPosition.map, layerName, Math.floor(rowTile), Math.floor(colTile));
                 
-                // When we get to an empty tile we can skip towars the next loop
+                // When we get to an empty tile we can skip towards the next loop
                 if(tileNumber == 0 || tileNumber === undefined) continue;
                 
                 // Now calculate where to draw this tile
@@ -491,27 +506,33 @@ function slideMovingObject(objectId){
         }
         
         // Change the direction of the tile with our function
+        // This has to happen wheter the tile is walkable or not
         changeMovingObjectSprite(objectId, movementDirection);
         
-        // Our progress in this move (between 0 and 1)
-        var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
-        
-        debugMove('Object <b>' + objectId + '</b> has to move <b>' + moveAmmount + ' tiles, moving progress (X): ' + objectMoveProgress, false);
-        
-        // If we've spent too much time on this move
-        // or we're within ms of reaching our goal: finish it.
-        if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
-            animatedObjects[objectId]['x'] = animatedObjects[objectId]['moveToX'];
-            animatedObjects[objectId]['fromX'] = animatedObjects[objectId]['x'];
-        } else { // Else calculate our current position
+        // Check if our wanted destination is actually walkable. If it isn't, revert.
+        if(isTileWalkable(userPosition.map,animatedObjects[userPosition.uid]['moveToX'], animatedObjects[userPosition.uid]['moveToY']) == false){
+            animatedObjects[userPosition.uid]['moveToX'] = animatedObjects[userPosition.uid]['fromX'];
+        } else { // If it is walkable, actually move
+            // Our progress in this move (between 0 and 1)
+            var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
             
-            debugMove('<b>From ' + animatedObjects[objectId]['fromX'] + ' to ' + animatedObjects[objectId]['moveToX']);
-            debugMove('Moving X: ' + animatedObjects[objectId]['x'] + ' to ... ');
+            debugMove('Object <b>' + objectId + '</b> has to move <b>' + moveAmmount + ' tiles, moving progress (X): ' + objectMoveProgress, false);
             
-            animatedObjects[objectId]['x'] = animatedObjects[objectId]['fromX'] + ((animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX'])*objectMoveProgress);
+            // If we've spent too much time on this move
+            // or we're within ms of reaching our goal: finish it.
+            if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
+                animatedObjects[objectId]['x'] = animatedObjects[objectId]['moveToX'];
+                animatedObjects[objectId]['fromX'] = animatedObjects[objectId]['x'];
+            } else { // Else calculate our current position
+                
+                debugMove('<b>From ' + animatedObjects[objectId]['fromX'] + ' to ' + animatedObjects[objectId]['moveToX']);
+                debugMove('Moving X: ' + animatedObjects[objectId]['x'] + ' to ... ');
+                
+                animatedObjects[objectId]['x'] = animatedObjects[objectId]['fromX'] + ((animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX'])*objectMoveProgress);
+            }
+            
+            debugMove('Object ' + objectId + '\'s new X: ' + animatedObjects[objectId]['x']);
         }
-        
-        debugMove('Object ' + objectId + '\'s new X: ' + animatedObjects[objectId]['x']);
         
     }
     
@@ -534,27 +555,33 @@ function slideMovingObject(objectId){
         }
         
         // Change the direction of the tile with our function
+        // Has to happen even if the tile isn't walkable
         changeMovingObjectSprite(objectId, movementDirection);
 
-        // Our progress in this move (between 0 and 1)
-        var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
-        
-        debugMove('Object <b>' + objectId + '</b> moving progress (Y): ' + objectMoveProgress, false);
-        
-        // If we've spent too much time on this move
-        // or we're within ms of reaching our goal: finish it.
-        if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
-            animatedObjects[objectId]['y'] = animatedObjects[objectId]['moveToY'];
-            animatedObjects[objectId]['fromY'] = animatedObjects[objectId]['y'];
-        } else { // Else calculate our current position
+        // Check if our wanted destination is actually walkable. If it isn't, revert.
+        if(isTileWalkable(userPosition.map,animatedObjects[userPosition.uid]['moveToX'], animatedObjects[userPosition.uid]['moveToY']) == false){
+            animatedObjects[userPosition.uid]['moveToY'] = animatedObjects[userPosition.uid]['fromY'];
+        } else { // If it is walkable, actually move
+            // Our progress in this move (between 0 and 1)
+            var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
             
-            debugMove('<b>From ' + animatedObjects[objectId]['fromY'] + ' to ' + animatedObjects[objectId]['moveToY']);
-            debugMove('Moving Y: ' + animatedObjects[objectId]['y'] + ' to ... ');
+            debugMove('Object <b>' + objectId + '</b> moving progress (Y): ' + objectMoveProgress, false);
             
-            animatedObjects[objectId]['y'] = animatedObjects[objectId]['fromY'] + ((animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY'])*objectMoveProgress);
+            // If we've spent too much time on this move
+            // or we're within ms of reaching our goal: finish it.
+            if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
+                animatedObjects[objectId]['y'] = animatedObjects[objectId]['moveToY'];
+                animatedObjects[objectId]['fromY'] = animatedObjects[objectId]['y'];
+            } else { // Else calculate our current position
+                
+                debugMove('<b>From ' + animatedObjects[objectId]['fromY'] + ' to ' + animatedObjects[objectId]['moveToY']);
+                debugMove('Moving Y: ' + animatedObjects[objectId]['y'] + ' to ... ');
+                
+                animatedObjects[objectId]['y'] = animatedObjects[objectId]['fromY'] + ((animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY'])*objectMoveProgress);
+            }
+            
+            debugMove('Object ' + objectId + '\'s new Y: ' + animatedObjects[objectId]['y']);
         }
-        
-        debugMove('Object ' + objectId + '\'s new Y: ' + animatedObjects[objectId]['y']);
         
     } 
 }

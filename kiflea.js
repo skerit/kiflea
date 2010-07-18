@@ -282,12 +282,24 @@ function processMap(xml, sourcename) {
 		// Loop through each property and save it in the temporary array
 		$(this).find('property').each(function(){
 		    
-		    // If this is the nextframe property we need to add the firstgid to it
-		    if($(this).attr('name') == 'nextframe') {
-			tempProperties[$(this).attr('name')] = parseInt($(this).attr('value')) + parseInt(firstGid-1);
-		    }else { // All other properties may be stored as is.
-		        tempProperties[$(this).attr('name')] = $(this).attr('value');
+		    // Save the name and value in a variable, to make our code prettier to read
+		    var propertyName = $(this).attr('name');
+		    var propertyValue = $(this).attr('value');
+		    
+		    // Look at the name of the given property, and do things accordingly
+		    switch(propertyName) {
+			// We define nextframes in tiled according to their order in THAT tileset
+			// We don't use tilegids there because these can change as new tilesets are
+			// added or removed.
+			case 'nextframe':
+			  tempProperties[propertyName] = parseInt(propertyValue) + parseInt(firstGid-1);
+			  break;
+			
+			// If it's none of the above, just save the value as is
+			default:
+			  tempProperties[propertyName] = propertyValue;
 		    }
+		    
 		});
 		
 		// Store all the properties in tileProperties array
@@ -297,6 +309,9 @@ function processMap(xml, sourcename) {
 
         });
 
+	// Initiate the walkableTiles object, filled later (after tilesets have loaded)
+	oneMap['walkableTiles'] = [];
+
 	// Now store this map in the global maps variable
         maps[sourcename] = oneMap;
 
@@ -304,6 +319,72 @@ function processMap(xml, sourcename) {
 
     });
     
+}
+
+/**
+ *Determine what tiles (coordinates) can be walked on in a map
+ *@param 	sourcename		{string}	The name of the map
+ */
+function getWalkableTiles(sourcename){
+    
+    oneMap = maps[sourcename];
+    
+    // Create an array we'll fill up and return later
+    var walkableTiles = [];
+    
+    // Calculate the total ammount of tiles on each layer
+    var totalTileAmmount = oneMap['width'] * oneMap['height'];
+    
+    // Loop through the layers
+    $.each(oneMap['layers'], function(layerName, layerContent) {
+
+	// Loop through every tile in this layer
+	for(var pos = 0; pos < totalTileAmmount; pos++){
+	//debugEcho('Loop through the tiles ' + pos);
+	
+	    if(layerContent['data'][pos] !== undefined){
+		
+		// Get the number of the tile from the tileset to use
+		var tileNumber = layerContent['data'][pos];
+		
+		try {
+		    // what tileset is this from?
+		    var tileSetInfo = getTileSetInfo(sourcename, tileNumber);
+		    
+		    // Get the name of the tileset out of the returned array
+		    var tileSetName = tileSetInfo['tileSetName'];
+		    
+		    if(tileProperties[tileSetName][tileNumber] !== undefined){
+			if(tileProperties[tileSetName][tileNumber]['impenetrable'] !== undefined){
+			walkableTiles[pos] = 1;
+			}
+		    }
+		} catch(error){
+		    // I should really find out what's causing an error to throw here, as it happens a lot
+		}
+	    }
+	}
+    });
+    
+    debugEcho('Return walkable tiles for map ' + sourcename);
+    return walkableTiles;
+}
+
+/**
+ *Determine if a tile is walkable
+ *@param	mapName		{string}	The name of the map
+ *@param	x		{integer}	The x tile we want
+ *@param	y		{integer}	The y tile we want
+ *@returns 			{bool}		Yes or no
+ */
+function isTileWalkable(mapName, x, y){
+    wantedTile = y * maps[mapName]['width'] + x;
+    if(maps[mapName]['walkableTiles'][wantedTile] !== undefined){
+        debugMove('We\'ve hit an unwalkable tile');
+	return false;
+    }else {
+	return true;
+    }
 }
 
 /**
