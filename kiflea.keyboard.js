@@ -128,11 +128,12 @@ function onKeyDown(keypress) {
 
         case key.Uparrow: // Arrow up
             // Only store up to 2 movements, otherwise the user could be moving for a long time
-            if(moveAmmountY<2 && moveAmmountX == 0) {
+            if(moveAmmountY<userMoveQueue && moveAmmountX == 0) {
                 
                 // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
                 if(moveAmmountY == 0){
                     animatedObjects[userPosition.uid]['lastMoved'] = now();
+                    animatedObjects[userPosition.uid]['direction'] = 'up';
                 }
                 
                 // Actually change our direction
@@ -142,11 +143,12 @@ function onKeyDown(keypress) {
 
         case key.Rightarrow: // Arrow right
             // Only store up to 2 movements, otherwise the user could be moving for a long time
-            if(moveAmmountX<2 && moveAmmountY == 0) {
+            if(moveAmmountX<userMoveQueue && moveAmmountY == 0) {
                 
                 // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
                 if(moveAmmountX == 0){
                     animatedObjects[userPosition.uid]['lastMoved'] = now();
+                    animatedObjects[userPosition.uid]['direction'] = 'right';
                 }
                 
                 // Actually change our direction
@@ -156,11 +158,12 @@ function onKeyDown(keypress) {
 
         case key.Downarrow: // Arrow down
             // Only store up to 2 movements, otherwise the user could be moving for a long time
-            if(moveAmmountY<2 && moveAmmountX == 0) {
+            if(moveAmmountY<userMoveQueue && moveAmmountX == 0) {
                 
                 // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
                 if(moveAmmountY == 0){
                     animatedObjects[userPosition.uid]['lastMoved'] = now();
+                    animatedObjects[userPosition.uid]['direction'] = 'down';
                 }
                 
                 // Actually change our direction
@@ -170,17 +173,96 @@ function onKeyDown(keypress) {
         
         case key.Leftarrow: // Arrow left
             // Only store up to 2 movements, otherwise the user could be moving for a long time
-            if(moveAmmountX<2 && moveAmmountY == 0) {
+            if(moveAmmountX<userMoveQueue && moveAmmountY == 0) {
                 
                 // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
                 if(moveAmmountX == 0){
                     animatedObjects[userPosition.uid]['lastMoved'] = now();
+                    animatedObjects[userPosition.uid]['direction'] = 'left';
                 }
                 
                 // Actually change our direction
                 animatedObjects[userPosition.uid]['moveToX']--;
             }
             break
+        
+        case key.Enter:
+            getEvent(userPosition.map, animatedObjects[userPosition.uid]['x'], animatedObjects[userPosition.uid]['y'],animatedObjects[userPosition.uid]['direction']);
+            break;
     }
+    
+}
+
+/**
+ *Get the event of the object you're currently facing
+ *@param    mapName     {string}    The name of the map we want the event of
+ *@param    x           {integer}   The x tile we want the event of
+ *@param    y           {integer}   The y tile we want the vent of
+ *@param    direction   {string}    If this is given, we want the event of the object we're facing
+ *                                  Else we get the event of the object on x,y
+ */
+function getEvent(mapName, x, y, direction){
+    
+    switch (direction){
+        
+        case undefined:
+            break;
+        
+        case 'left':
+            x = x-1;
+            break;
+        
+        case 'right':
+            x = x+1;
+            break;
+        
+        case 'up':
+            y = y-1;
+            break;
+        
+        case 'down':
+            y = y+1;
+            break;
+    }
+    
+    for(objects in animatedObjects){
+        if(animatedObjects[objects]['x'] == x && animatedObjects[objects]['y'] == y){
+            showText('This is a huge chunk of text that will hopefully get wrapped in some way. Yes, I am an object. Very good of you to see!');
+        }
+    }
+    
+}
+
+function showText(text){
+    
+    // The text needs to be broken down.
+    var tempText = [];
+    var tempLength = text.length;
+    
+    // If there are more characters than we can show per line...
+    for(var cursor = 0; text.length > (cursor * charsPerLine); cursor++){
+    
+        // The templength is the ammount of chars we have left.
+        tempLength -= charsPerLine;
+    
+        // If the templength is below zero, it means there are less than charsPerLine
+        // Characters to show, so we need to change the splicelength
+        if(tempLength >= 0){
+            var spliceLength = charsPerLine;    // If it's ok, the splicelength is default
+        } else {
+            spliceLength = (tempLength+charsPerLine);   // If not, calculate the splicelength
+        }
+        
+        // Store every line in this array
+        tempText.push(trim(text.slice((cursor)*charsPerLine, (spliceLength + (charsPerLine*cursor)))));
+    }
+    
+    textObjects.push({
+        'text': tempText,               // An array with every line
+        'dismissed': 0,
+        'fpsshown': 0,
+        'pieces': tempText.length,      // The ammount of lines
+        'cursor': 0                     // Where we're currently
+    });
     
 }

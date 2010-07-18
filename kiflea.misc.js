@@ -43,9 +43,7 @@ function now(){
  *@param array {array} The array you want to show
  */
 function debugArray(array){
-    $.each(array, function(i, val) {
-        echoOutput.append(i + " => " + val + "<br/>");
-    });
+    debugEcho('<pre>' + dump(array) + '</pre>');
 }
 
 /**
@@ -163,3 +161,13 @@ function debug(message){
     debugOutput.html('<p>' + message + '</p>');
 }
 
+/**
+ *Javascript is missing a trim function, this will do that
+ *@param    value   {string}
+ *@returns  {string}    The string without leading or trailing spaces
+ */
+function trim(value) {
+  value = value.replace(/^\s+/,'');
+  value = value.replace(/\s+$/,'');
+  return value;
+}

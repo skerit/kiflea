@@ -6,6 +6,13 @@
   put it, that world-tile will then be impenetrable.
   (This way you can define certain tiles as "never walk through" or override it
   with a fake tile)
+* Edited the map a bit
+* Created basic events (talking to any object will output 'object found!')
+* Moved the debug-fps to the canvas itself, not the html output.
+  This looks much nicer. It also increases the framerate in Chrome, but decreases
+  it in Firefox. Which isn't very logical.
+* Implemented very basic events.
+* Implemented very basic dialog, too. Every object says the same thing, right now.
 
 --- Saturday 2010/07/17 ---
 

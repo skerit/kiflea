@@ -72,12 +72,15 @@ var userPosition = {
     "currentSprite": 493 // the current sprite to use
     };
     
-var animatedObjects = {}	    // The variable that will contain all the objects, including the user's data
+var animatedObjects = {};	    // The variable that will contain all the objects, including the user's data
+var textObjects = [];		    // The variable that will store text messages
+var charsPerLine = 52;		    // The ammount of letters that fit on one line
 var userSpawnX = 10;                // The X position our user starts at
 var userSpawnY = 10;                // The Y position our user starts at
 var userMoveTilePerSecond = 10;     // Tile per second
 var userMoveMsPerTile = 100;        // MS per tile (one of these has to go)
 var userMoveSmoothness = 2;         // How smooth you want the character to move (0 - ?)
+var userMoveQueue = 2;		    // How many moves we can queue up. Shouldn't be to much
 var debugCounter;                   // Every echoDebug() called will also print this time.
 var debugMovement = false;	    // output debug to the echo div on movement
 var debugGrid = false;              // Do you want to draw a grid on the canvas?

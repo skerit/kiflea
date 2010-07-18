@@ -181,10 +181,10 @@ function renderLoop(){
     msr = (now() - msrTimer);
     fpsr = (1000/msr);
     
-    if(debugOn==true) debug('Fake ms: ' + msf.toPrecision(4) + ' - Real ms: ' + msr.toPrecision(4)  + ' - Fake fps: ' + Math.round(fpsf).toPrecision(3) + ' - Real fps: ' + Math.round(fpsr).toPrecision(3) );
-
     // Draw a grid over the screen.
     if(debugGrid == true) {
+        
+        ctx.strokeStyle = "rgba(20, 20, 20, 0.7)";  
         
         // Draw horizontal lines
         for(var row = 0; row < (canvasWidth/debugGridX); row++ ){
@@ -208,6 +208,57 @@ function renderLoop(){
 
     // Start the real fps counter
     msrTimer = now();
+    
+    // If we've enabled debugging, we actually want the fps (bad name, I know)
+    // Draw it on the canvas for better framerates
+    if(debugOn==true){
+        ctx.fillStyle = "rgba(20, 20, 20, 0.7)";  
+        ctx.fillRect (2, canvasHeight-33, canvasWidth-4, 20);
+        ctx.strokeStyle = "white";  
+        ctx.font = "12px monospace";
+        ctx.strokeText('Fake ms: ' + msf.toPrecision(4) + ' - Real ms: ' + msr.toPrecision(4)  + ' - Fake fps: ' + Math.round(fpsf).toPrecision(3) + ' - Real fps: ' + Math.round(fpsr).toPrecision(3), 5, canvasHeight-20);
+    };
+    
+    // Now start showing text objects
+    for(message in textObjects){
+        ctx.fillStyle = "rgba(20, 20, 20, 0.7)";  
+        ctx.fillRect (2, canvasHeight-99, canvasWidth-4, 55);
+        ctx.strokeStyle = "white";  
+        ctx.font = "15px monospace";
+        
+        
+        // Show 2 lines at once
+        for(var loop = 0; loop < 2; loop++){
+            var cursor = loop + textObjects[message]['cursor'];
+            
+            if(textObjects[message]['text'][cursor] !== undefined) {
+                ctx.strokeText(textObjects[message]['text'][cursor], 5, (canvasHeight-80)+(20*(cursor%2)));
+            }
+        }
+        
+
+        // This item has been shown for a frame more
+        textObjects[message]['fpsshown']++;
+        
+        // If the item has been shown too long, increment the cursor
+        if(textObjects[message]['fpsshown'] > (fpsr*3)){
+
+            // If the cursor hasn't reached as many pieces yet, there is more text to show
+            if(textObjects[message]['cursor']+2 < textObjects[message]['pieces']){
+                textObjects[message]['cursor'] = textObjects[message]['cursor'] + 2;
+                
+                // Don't forget to reset the fpsshown
+                textObjects[message]['fpsshown'] = 0;
+                
+            } else { // If it has, remove this text object
+                textObjects.splice(0,1);
+            }
+        }
+
+        // Hmm, we only have to get the first item. We should rewrite this a bit.
+        break;
+
+    }
 }
 
 /**
