@@ -117,39 +117,69 @@ function onKeyDown(keypress) {
     // In a long time. It's best to reset it.
     if(debugCounter > 1000) debugCounterReset();
 
+    // Calculate how many tiles Y has to move
+    var moveAmmountY = Math.abs((animatedObjects[userPosition.uid]['moveToY'] - animatedObjects[userPosition.uid]['fromY']));
+
+    // Calculate how many tiles X has to move
+    var moveAmmountX = Math.abs((animatedObjects[userPosition.uid]['moveToX'] - animatedObjects[userPosition.uid]['fromX']));
+
     // Select the correct key and execute its functions
     switch (keypress.keyCode) {
 
         case key.Uparrow: // Arrow up
-            if((now()-animatedObjects[userPosition.uid]['lastMoved']) > userMoveMsPerTile ) {
+            // Only store up to 2 movements, otherwise the user could be moving for a long time
+            if(moveAmmountY<2 && moveAmmountX == 0) {
+                
+                // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
+                if(moveAmmountY == 0){
+                    animatedObjects[userPosition.uid]['lastMoved'] = now();
+                }
+                
+                // Actually change our direction
                 animatedObjects[userPosition.uid]['moveToY']--;
-                //userPosition.moveToY--;
-                animatedObjects[userPosition.uid]['lastMoved'] = now();
             }
             break
 
         case key.Rightarrow: // Arrow right
-            if((now()-animatedObjects[userPosition.uid]['lastMoved']) > userMoveMsPerTile) {
+            // Only store up to 2 movements, otherwise the user could be moving for a long time
+            if(moveAmmountX<2 && moveAmmountY == 0) {
+                
+                // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
+                if(moveAmmountX == 0){
+                    animatedObjects[userPosition.uid]['lastMoved'] = now();
+                }
+                
+                // Actually change our direction
                 animatedObjects[userPosition.uid]['moveToX']++;
-                //userPosition.moveToX++;
-                animatedObjects[userPosition.uid]['lastMoved'] = now();
             }
-            break;
+            break
 
         case key.Downarrow: // Arrow down
-            if((now()-animatedObjects[userPosition.uid]['lastMoved']) > userMoveMsPerTile) {
+            // Only store up to 2 movements, otherwise the user could be moving for a long time
+            if(moveAmmountY<2 && moveAmmountX == 0) {
+                
+                // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
+                if(moveAmmountY == 0){
+                    animatedObjects[userPosition.uid]['lastMoved'] = now();
+                }
+                
+                // Actually change our direction
                 animatedObjects[userPosition.uid]['moveToY']++;
-                //userPosition.moveToY++;
-                animatedObjects[userPosition.uid]['lastMoved'] = now();
             }
-            break;
+            break
         
         case key.Leftarrow: // Arrow left
-            if((now()-animatedObjects[userPosition.uid]['lastMoved']) > userMoveMsPerTile) {
+            // Only store up to 2 movements, otherwise the user could be moving for a long time
+            if(moveAmmountX<2 && moveAmmountY == 0) {
+                
+                // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
+                if(moveAmmountX == 0){
+                    animatedObjects[userPosition.uid]['lastMoved'] = now();
+                }
+                
+                // Actually change our direction
                 animatedObjects[userPosition.uid]['moveToX']--;
-                //userPosition.moveToX--;
-                animatedObjects[userPosition.uid]['lastMoved'] = now();
             }
-            break;
+            break
     }
 }

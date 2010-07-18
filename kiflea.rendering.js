@@ -479,8 +479,11 @@ function slideMovingObject(objectId){
         // How much time has past since we started this move?
         animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
         
+        // Calculate how many tiles we have to move
+        var moveAmmount = (animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX']);
+
         // Detect the direction of the move (left or right)
-        if((animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX'])>0){
+        if(moveAmmount>0){
             // Move to the right
             var movementDirection = 'righttile';
         } else {
@@ -491,13 +494,13 @@ function slideMovingObject(objectId){
         changeMovingObjectSprite(objectId, movementDirection);
         
         // Our progress in this move (between 0 and 1)
-        var objectMoveProgress = animatedObjects[objectId]['msMoved']/userMoveMsPerTile;
+        var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
         
-        debugMove('Object <b>' + objectId + '</b> moving progress (X): ' + objectMoveProgress, false);
+        debugMove('Object <b>' + objectId + '</b> has to move <b>' + moveAmmount + ' tiles, moving progress (X): ' + objectMoveProgress, false);
         
         // If we've spent too much time on this move
         // or we're within ms of reaching our goal: finish it.
-        if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile - 10)){
+        if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
             animatedObjects[objectId]['x'] = animatedObjects[objectId]['moveToX'];
             animatedObjects[objectId]['fromX'] = animatedObjects[objectId]['x'];
         } else { // Else calculate our current position
@@ -519,6 +522,9 @@ function slideMovingObject(objectId){
         // How much time has past since we started this move?
         animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
 
+        // Calculate how many tiles we have to move
+        var moveAmmount = (animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY']);
+
         // Detect the direction of the move (left or right)
         if((animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY'])>0){
             // Move down
@@ -531,13 +537,13 @@ function slideMovingObject(objectId){
         changeMovingObjectSprite(objectId, movementDirection);
 
         // Our progress in this move (between 0 and 1)
-        var objectMoveProgress = animatedObjects[objectId]['msMoved']/userMoveMsPerTile;
+        var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
         
         debugMove('Object <b>' + objectId + '</b> moving progress (Y): ' + objectMoveProgress, false);
         
         // If we've spent too much time on this move
         // or we're within ms of reaching our goal: finish it.
-        if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile - 10)){
+        if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
             animatedObjects[objectId]['y'] = animatedObjects[objectId]['moveToY'];
             animatedObjects[objectId]['fromY'] = animatedObjects[objectId]['y'];
         } else { // Else calculate our current position

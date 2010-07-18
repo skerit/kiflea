@@ -19,6 +19,10 @@
   tile of a specific tileset to specific coordinates on the canvas (although it
   still adjusts for tiled "start a tile at the bottom" thing)
 * Objects are now animated while they move.
+* Movement is now way more smooth. (The screen doesn't jump anymore after holding
+  an arrow key down for too long). The animation is still a bit wonky, but that's
+  a problem for much later.
+* 2 hours of work has been spent on an awful logo. It'll have to do for now.
 
 --- Friday 2010/07/16 ---
 

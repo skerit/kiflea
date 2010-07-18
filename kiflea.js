@@ -119,7 +119,7 @@ function startEngine() {
     
     // Start the debug counter
     debugCounter = now();
-    debugEcho('<pre>' + dump(userPosition) + '</pre>');
+
     // Retrieve the canvas DOM node, this gives us access to its drawing functions
     ctx = document.getElementById(canvasId).getContext('2d');
     
@@ -168,8 +168,6 @@ function getMaps(){
         // We have to store the current name in a variable because before the
 	// successcommand has fired i will already be incremented.
         var currentMap = loadMaps[i];
-	
-	debugEcho('Array: <pre>' + dump(loadMaps)+'</pre> ' + currentMap);
         
         $.ajax({
           type: "GET",
@@ -301,10 +299,7 @@ function processMap(xml, sourcename) {
 
 	// Now store this map in the global maps variable
         maps[sourcename] = oneMap;
-        
-        //debugArray(maps[sourcename]['tilesets']);
-        //debugArray(maps[0]['layers']['Grond']['data']);
-        //debugArray(oneMap['tilesets']['explosion']);
+
         loaded++;
 
     });
