@@ -185,3 +185,19 @@ function trim(value) {
   value = value.replace(/\s+$/,'');
   return value;
 }
+
+/**
+ *Make a copy of an object, so we can use it regulary and not by reference
+ *@param    obj     {object}    // The object you want
+ *@returns  {object}            // The same object, but modifyable
+ */
+function deepCopy(obj) {
+    if (typeof obj !== "object") return obj;
+
+    var retVal = new obj.constructor();
+    for (var key in obj) {
+        if (!obj.hasOwnProperty(key)) continue;
+        retVal[key] = deepCopy(obj[key]);
+    }
+    return retVal;
+}

@@ -77,8 +77,8 @@ function renderLoop(){
                 
                 // Calculate the coördinates of the tile we need, based on our current position
                 // (Example: The tile in row 10, column 5)
-                var rowTile = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2)) + 1) - visibleTilesX;
-                var colTile = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2)) + 1) - visibleTilesY;
+                var rowTile = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2))+1) - visibleTilesX;
+                var colTile = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2))+1) - visibleTilesY;
                 
                 // Now that we know what piece of the map we need
                 // we need to get the corresponding tileset image
@@ -87,9 +87,9 @@ function renderLoop(){
                 // When we get to an empty tile we can skip towards the next loop
                 if(tileNumber == 0 || tileNumber === undefined) continue;
 
-                // Now calculate where to draw this tile
-                var destinationX = (tileX * (32)) - mappOffsetX;
-                var destinationY = (tileY * (32)) - mappOffsetY;
+                // Now calculate where to draw this tile, based on the size of the tiles of the map, not the tileset
+                var destinationX = (tileX * maps[userPosition.map]['tileWidth']) - mappOffsetX;
+                var destinationY = (tileY * maps[userPosition.map]['tileHeight']) - mappOffsetY;
                 
                 // And now draw that tile!
                 try {
@@ -262,60 +262,6 @@ function renderLoop(){
         break;
 
     }
-}
-
-/**
- *Draw the HUD
- */
-function drawHud(){
-   
-   // Loop through the layers
-   for(var layer = 0; layer < hudLayers['layers'].length; layer++){
-    
-        // Variables for our destination
-        var hudOrientation = hudLayers['layers'][layer]['orientation'];
-        var dx;
-        var dy;
-        var dwidth = hudLayers['layers'][layer]['width'];
-        var dheight = hudLayers['layers'][layer]['height'];
-        var tileSetName = hudLayers['layers'][layer]['tileset'];
-        var sx = hudLayers['layers'][layer]['sx'];
-        var sy = hudLayers['layers'][layer]['sy'];
-        
-        // Now where to draw the hud? Look at the orientation.
-        switch(hudOrientation){
-
-            case 'topright':
-                dx = canvasWidth - hudLayers['layers'][layer]['dx'] - dwidth;
-                dy = hudLayers['layers'][layer]['dy'];
-                break;
-
-            case 'topleft':
-                dx = hudLayers['layers'][layer]['dx'];
-                dy = hudLayers['layers'][layer]['dy'];
-                break;
-
-            case 'bottomright':
-                dx = canvasWidth - hudLayers['layers'][layer]['dx'] - dwidth;
-                dy = canvasHeight - hudLayers['layers'][layer]['dy'] - dheight;
-                break;
-
-            case 'bottomleft':
-                dx = hudLayers['layers'][layer]['dx'];
-                dy = canvasHeight - hudLayers['layers'][layer]['dy'] - dheight;
-                break;
-        }
-        
-        if(hudLayers['layers'][layer]['widthdepend'] !== undefined){
-            // This needs to be refined, of course. but let's just test it for now.
-            // The width of this item depends on our health.
-            dwidth = (animatedObjects[userPosition.uid]['health']/animatedObjects[userPosition.uid]['fullhealth']) * dwidth;
-        }
-        
-        debugHud('Drawhud from ' + tileSet[tileSetName]['image'] + ' (' + sx + ',' + sy + ',' + dwidth + ',' + dheight + ') to (' +dx + ',' + dy + ',' + dwidth + ',' + dheight + ')');
-        ctx.drawImage(tileSet[tileSetName]['image'], sx, sy, dwidth, dheight, dx, dy, dwidth, dheight);
-    
-   }
 }
 
 /**

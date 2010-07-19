@@ -15,14 +15,14 @@
 		ul.cc {padding-left: 15px;margin:0;}
 		p.cc {padding-top: 5px;}
 		#footer {
-			position:absolute;
-			bottom:0;
 			width:99%;
 			height:35px;   /* Height of the footer */
 			font-family: sans-serif;
 			background: rgba(100,100,100,0.5);
+			clear:both;
 		     }
 		img {border: none;}
+		#container {height: 95%};
 	</style>
 	<!--[if IE]><script type="text/javascript" src="excanvas.compiled.js"></script><![endif]-->
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
@@ -30,6 +30,7 @@
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
 	<script type="text/javascript" src="kiflea.keyboard.js"></script>
 	<script type="text/javascript" src="kiflea.misc.js"></script>
+	<script type="text/javascript" src="kiflea.hud.js"></script>
 	<script type="text/javascript" src="kiflea.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
@@ -46,6 +47,7 @@
 			userMoveSmoothness = 5;
 			drawExtras = 5;
 			debugGrid = false;
+			debugHudOn = false;
 			debugMovement = false;
 			backgroundColor = "rgb(255,255,255)";
 			defaultSprites = 'default.tmx.xml';
@@ -64,7 +66,8 @@
 					"sprites": [1,21],
 					"spritesToDraw": [1,21], 
 					"currentSprite": 1,
-					"health": 55,
+					"selection": 0,
+					"currenthealth": 55,
 					"fullhealth": 100
 				},
 				"U00002":{
@@ -79,7 +82,10 @@
 					"map": "grassland.tmx.xml",
 					"sprites": [1],
 					"spritesToDraw": [1], 
-					"currentSprite": 1
+					"currentSprite": 1,
+					"selection": 0,
+					"currenthealth": 10,
+					"fullhealth": 100
 				},
 				"U00003":{
 					"x": 5,
@@ -93,7 +99,10 @@
 					"map": "grassland.tmx.xml",
 					"sprites": [1],
 					"spritesToDraw": [1,21], 
-					"currentSprite": 1
+					"currentSprite": 1,
+					"selection": 0,
+					"currenthealth": 78,
+					"fullhealth": 100
 				}
 			}
 			startEngine();
@@ -115,7 +124,7 @@
 	
 	</script>
 </head>
-<body>
+<body style="height:95%">
 	<div id="container">
 		<div id="main">
 			<img src="images/kiflea-logo-v2-small.png">
@@ -126,9 +135,9 @@
 			<button id="toggleengine" onclick="toggleEngine();">Toggle engine</button>
 			<button id="togglegrid" onclick="debugGrid=!debugGrid;">Toggle grid</button>
 			<button id="togglefps" onclick="debugOn=!debugOn;">Toggle debug</button><br/>
-			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['health']--;">Detract life</button>
+			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['currenthealth']--;">Detract life</button>
 			<br/><br/>
-			<input id="dummyinput">
+			<input id="dummyinput" style="margin-bottom:150px;">
 		</div>
 		<div id="info">
 			<p>The Kiflea engine aims to bring fun 2D on-line gaming to your browser.<br/><br/>
@@ -157,11 +166,13 @@
 			<hr>
 		</div>
 		<div id="echo"></div>
+		<div id="footer">
+			<a href="http://kipdola.be/trac/repos/" style="padding: 0pt; border: medium none;">
+			<img title="Trac" alt="trac_logo_mini.png" src="http://kipdola.be/trac/repos/chrome/common/trac_logo_mini.png"></a>
+			A <a href="http://www.kipdola.be">Kipdola Studios production.</a>
+			<div style="float:right;"<button id="removefooter" onclick="$('#footer').hide();">Hide footer</button></div>
+		</div>
 	</div>
-	<div id="footer">
-		<a href="http://kipdola.be/trac/repos/" style="padding: 0pt; border: medium none;">
-		<img title="Trac" alt="trac_logo_mini.png" src="http://kipdola.be/trac/repos/chrome/common/trac_logo_mini.png"></a>
-		A <a href="http://www.kipdola.be">Kipdola Studios production.</a>
-		<div style="float:right;"<button id="removefooter" onclick="$('#footer').hide();">Hide footer</button></div>
-	</div>
+
+
 </body>

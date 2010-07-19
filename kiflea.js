@@ -90,6 +90,7 @@ var debugGridY = 32;
 
 var loadHud = 'hud.json'	    // The URL of the HUD file we'll be loading
 var hudLayers = {};		    // We'll store the HUD in here.
+var previousHudLayers = {};	    // To determine wheter we've clicked on the HUD we need to know where they WERE.
 
 /**
  *Enables or disables the engine
@@ -154,6 +155,12 @@ function startEngine() {
     //window.onkeyup = onKeyUp;
     //window.onblur = OnBlur;
     //window.onfocus = OnFocus;
+    jQuery(document).ready(function(){
+       $('#'+canvasId).click(function(e){
+	  //alert(e.pageX +', '+ e.pageY);
+	  onMouseclick(e.pageX-this.offsetLeft, e.pageY-this.offsetTop);
+       }); 
+    })
     
     // Set focus to the dummyInput!
     $("#dummyinput").focus();
@@ -193,18 +200,6 @@ function getMaps(){
     debugEcho('Ending getMaps() function -- processing still in progress');
 }
 
-/**
- *  Load the HUD
- *  This does happen async, let's hope it doesn't interfere with anything
- */
-function getHud(){
-    
-    // Use a jquery function to fetch the json
-    $.getJSON('hud.json', function(data) {
-	hudLayers = data;	// Store the data
-    });
-    
-}
 
 /**
  *  Process a map and his tilesets!
@@ -359,16 +354,16 @@ function getWalkableTiles(sourcename){
     var totalTileAmmount = oneMap['width'] * oneMap['height'];
     
     // Loop through the layers
-    $.each(oneMap['layers'], function(layerName, layerContent) {
+    for(var layerName in oneMap['layers']){
 
 	// Loop through every tile in this layer
 	for(var pos = 0; pos < totalTileAmmount; pos++){
 	//debugEcho('Loop through the tiles ' + pos);
 	
-	    if(layerContent['data'][pos] !== undefined){
+	    if(oneMap['layers'][layerName]['data'][pos] !== undefined){
 		
 		// Get the number of the tile from the tileset to use
-		var tileNumber = layerContent['data'][pos];
+		var tileNumber = oneMap['layers'][layerName]['data'][pos];
 		
 		// what tileset is this from?
 		var tileSetInfo = getTileSetInfo(sourcename, tileNumber);
@@ -379,7 +374,7 @@ function getWalkableTiles(sourcename){
 		    
 		    if(tileProperties[tileSetName][tileNumber] !== undefined){
 			if(tileProperties[tileSetName][tileNumber]['impenetrable'] !== undefined){
-			    walkableTiles[pos] = 1;
+			    walkableTiles[pos] = 0; // It's much more logical to set "walkable" to 0
 			}
 			
 		    }
@@ -387,7 +382,7 @@ function getWalkableTiles(sourcename){
 		    
 	    }
 	}
-    });
+    };
     
     debugEcho('Return walkable tiles for map ' + sourcename);
     return walkableTiles;

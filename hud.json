@@ -8,7 +8,8 @@
 		"width": 319,
 		"height": 78,
 		"dx": 25,
-		"dy": 50
+		"dy": 50,
+		"show": 0
 	},
 	{
 		"orientation": "topleft",
@@ -19,7 +20,9 @@
 		"width": 177,
 		"height": 20,
 		"dx": 10,
-		"dy": 5
+		"dy": 5,
+		"action": "hpup",
+		"show": 1
 	},
 	{
 		"orientation": "topleft",
@@ -27,11 +30,36 @@
 		"tileset": "hp",
 		"sx": 6,
 		"sy": 4,
-		"width": 177,
+		"width": {"dependon":"own", "field":"health", "value":177},
 		"height": 20,
 		"dx": 10,
 		"dy": 5,
-		"widthdepend": "ownhealth"
+		"action": "hpup",
+		"show": 1
+	},
+	{
+		"orientation": "topleft",
+		"name": "healthbaseselection",
+		"tileset": "hp",
+		"sx": 6,
+		"sy": 28,
+		"width": 177,
+		"height": 20,
+		"dx": 10,
+		"dy": 30,
+		"show": {"dependon":"selection", "field":"health", "value":1}
+	},
+	{
+		"orientation": "topleft",
+		"name": "healthpointsselection",
+		"tileset": "hp",
+		"sx": 6,
+		"sy": 4,
+		"width": {"dependon":"selection", "field":"health", "value":177},
+		"height": 20,
+		"dx": 10,
+		"dy": 30,
+		"show": {"dependon":"selection", "field":"health", "value":1}
 	}]
 
 }

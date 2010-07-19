@@ -1,4 +1,29 @@
 
+--- Monday 2010/07/19 ---
+
+* Moved the HUD functions into a new file.
+* Removed yet another jQuery function used during load.
+  jQuery should only be used to load JSON and XML files from now on.
+* The fields in the JSON file can contain an object, which will then be calculated
+  To clarify, this way you can calculate the width of an object (like a healthbar)
+  based on the health of a user. There are only a few functions like this I created
+  but they can always be expanded.
+* Found out about passing objects "by reference" the hard way. Got a "deepCopy"
+  function from someone on stackoverflow, so that I can copy an object. It simply
+  iterates over the object and returns it. It's probably a waste of resources but
+  for now it'll have to do.
+* Implemented basic clicking events. You can move around the map and select objects
+  If the object has a health, its health is also shown under yours. You can of
+  course also select yourself.
+* Created a function that determines wheter you've clicked a HUD element or not,
+  and returns that layer.
+* Created basic functions that respond to clicks on a hud layer.
+  Clicking your own healthbar will atm increase your health. Hehe.
+
+Performance:
+    - Firefox 3.6.6 Windows: 35-37ms = 28-29 fps (Feels much snappier than on Ubuntu)
+    - Firefox 3.6.6 Ubuntu Intel Pentium Dual CPU 2.0 Ghz: 73ms = 14 fps (but still quite playable!)
+
 --- Sunday 2010/07/18 ---
 
 * Created walkable tiles.
