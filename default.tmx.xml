@@ -226,6 +226,12 @@
    </properties>
   </tile>
  </tileset>
+ <tileset firstgid="41" name="messageantifarea" tilewidth="650" tileheight="999">
+  <image source="images/messageantifarea.png"/>
+ </tileset>
+ <tileset firstgid="42" name="hp" tilewidth="232" tileheight="112">
+  <image source="images/hp.gif"/>
+ </tileset>
  <layer name="Emptylayer" width="1" height="1">
   <data encoding="base64">
    AAAAAA==

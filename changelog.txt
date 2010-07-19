@@ -25,6 +25,10 @@ Performance before debugging, after walkable tiles (same as friday):
   speed things up as it only had to cycle 6 or 7 items, but still.
 * Can't really say much for performance after only 2 edits. Chrome is now leaning
   towards 9ms much more.
+* We now have a basic HUD system, done in 2 hours time. The notation is done in
+  a JSON file, not XML. It's very easy.
+* Sometimes walkable tiles won't work, and you can walk on anything. I believe
+  this could be a race condition, as it sometimes-does and sometimes-does-not work.
 
 --- Saturday 2010/07/17 ---
 

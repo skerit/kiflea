@@ -83,9 +83,13 @@ var userMoveSmoothness = 2;         // How smooth you want the character to move
 var userMoveQueue = 2;		    // How many moves we can queue up. Shouldn't be to much
 var debugCounter;                   // Every echoDebug() called will also print this time.
 var debugMovement = false;	    // output debug to the echo div on movement
+var debugHudOn = false;		    // output debug to the echo div on HUD
 var debugGrid = false;              // Do you want to draw a grid on the canvas?
 var debugGridX = 32;
 var debugGridY = 32;
+
+var loadHud = 'hud.json'	    // The URL of the HUD file we'll be loading
+var hudLayers = {};		    // We'll store the HUD in here.
 
 /**
  *Enables or disables the engine
@@ -142,6 +146,9 @@ function startEngine() {
     // Load the maps and their tilesets
     getMaps();
     
+    // Load the HUD
+    getHud();
+    
     // Bind key functions
     window.onkeydown = onKeyDown;
     //window.onkeyup = onKeyUp;
@@ -184,6 +191,19 @@ function getMaps(){
     }
     
     debugEcho('Ending getMaps() function -- processing still in progress');
+}
+
+/**
+ *  Load the HUD
+ *  This does happen async, let's hope it doesn't interfere with anything
+ */
+function getHud(){
+    
+    // Use a jquery function to fetch the json
+    $.getJSON('hud.json', function(data) {
+	hudLayers = data;	// Store the data
+    });
+    
 }
 
 /**

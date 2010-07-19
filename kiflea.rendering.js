@@ -209,6 +209,9 @@ function renderLoop(){
     // Start the real fps counter
     msrTimer = now();
     
+    // Draw the HUD
+    drawHud();
+    
     // If we've enabled debugging, we actually want the fps (bad name, I know)
     // Draw it on the canvas for better framerates
     if(debugOn==true){
@@ -259,6 +262,60 @@ function renderLoop(){
         break;
 
     }
+}
+
+/**
+ *Draw the HUD
+ */
+function drawHud(){
+   
+   // Loop through the layers
+   for(var layer = 0; layer < hudLayers['layers'].length; layer++){
+    
+        // Variables for our destination
+        var hudOrientation = hudLayers['layers'][layer]['orientation'];
+        var dx;
+        var dy;
+        var dwidth = hudLayers['layers'][layer]['width'];
+        var dheight = hudLayers['layers'][layer]['height'];
+        var tileSetName = hudLayers['layers'][layer]['tileset'];
+        var sx = hudLayers['layers'][layer]['sx'];
+        var sy = hudLayers['layers'][layer]['sy'];
+        
+        // Now where to draw the hud? Look at the orientation.
+        switch(hudOrientation){
+
+            case 'topright':
+                dx = canvasWidth - hudLayers['layers'][layer]['dx'] - dwidth;
+                dy = hudLayers['layers'][layer]['dy'];
+                break;
+
+            case 'topleft':
+                dx = hudLayers['layers'][layer]['dx'];
+                dy = hudLayers['layers'][layer]['dy'];
+                break;
+
+            case 'bottomright':
+                dx = canvasWidth - hudLayers['layers'][layer]['dx'] - dwidth;
+                dy = canvasHeight - hudLayers['layers'][layer]['dy'] - dheight;
+                break;
+
+            case 'bottomleft':
+                dx = hudLayers['layers'][layer]['dx'];
+                dy = canvasHeight - hudLayers['layers'][layer]['dy'] - dheight;
+                break;
+        }
+        
+        if(hudLayers['layers'][layer]['widthdepend'] !== undefined){
+            // This needs to be refined, of course. but let's just test it for now.
+            // The width of this item depends on our health.
+            dwidth = (animatedObjects[userPosition.uid]['health']/animatedObjects[userPosition.uid]['fullhealth']) * dwidth;
+        }
+        
+        debugHud('Drawhud from ' + tileSet[tileSetName]['image'] + ' (' + sx + ',' + sy + ',' + dwidth + ',' + dheight + ') to (' +dx + ',' + dy + ',' + dwidth + ',' + dheight + ')');
+        ctx.drawImage(tileSet[tileSetName]['image'], sx, sy, dwidth, dheight, dx, dy, dwidth, dheight);
+    
+   }
 }
 
 /**

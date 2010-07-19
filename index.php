@@ -63,7 +63,9 @@
 					"map": "grassland.tmx.xml",
 					"sprites": [1,21],
 					"spritesToDraw": [1,21], 
-					"currentSprite": 1
+					"currentSprite": 1,
+					"health": 55,
+					"fullhealth": 100
 				},
 				"U00002":{
 					"x": 2,
@@ -123,7 +125,8 @@
 			<button id="clearecho" onclick="echoOutput.empty();">Clear echo div</button>
 			<button id="toggleengine" onclick="toggleEngine();">Toggle engine</button>
 			<button id="togglegrid" onclick="debugGrid=!debugGrid;">Toggle grid</button>
-			<button id="togglefps" onclick="debugOn=!debugOn;">Toggle debug</button>
+			<button id="togglefps" onclick="debugOn=!debugOn;">Toggle debug</button><br/>
+			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['health']--;">Detract life</button>
 			<br/><br/>
 			<input id="dummyinput">
 		</div>
