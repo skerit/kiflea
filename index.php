@@ -56,8 +56,8 @@
 			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites
 			animatedObjects = {	// Test data for objects
 				"U00001": {
-					"x": 1,
-					"y": 1,
+					"x": 10,
+					"y": 10,
 					"moveToX": 10,
 					"moveToY": 10,
 					"fromX": 10,
@@ -70,11 +70,12 @@
 					"currentSprite": 1,
 					"selection": 0,
 					"currenthealth": 55,
-					"fullhealth": 100
+					"fullhealth": 100,
+					"path": []
 				},
 				"U00002":{
-					"x": 2,
-					"y": 2,
+					"x": 15,
+					"y": 15,
 					"moveToX": 15,
 					"moveToY": 15,
 					"fromX": 15,
@@ -87,11 +88,12 @@
 					"currentSprite": 1,
 					"selection": 0,
 					"currenthealth": 10,
-					"fullhealth": 100
+					"fullhealth": 100,
+					"path": []
 				},
 				"U00003":{
-					"x": 5,
-					"y": 5,
+					"x": 25,
+					"y": 25,
 					"moveToX": 25,
 					"moveToY": 25,
 					"fromX": 25,
@@ -104,7 +106,8 @@
 					"currentSprite": 1,
 					"selection": 0,
 					"currenthealth": 78,
-					"fullhealth": 100
+					"fullhealth": 100,
+					"path": [{'x': 10, 'y': 10},{'x':10, 'y':10}]
 				}
 			}
 			startEngine();

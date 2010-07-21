@@ -1,4 +1,15 @@
 
+--- Wednesday 2010/07/21 ---
+
+* Implemented pathwalking.
+  Finding a path is very nice, it has to be walked, too!
+  Clicking an unreachable path is still crashing the engine, though.
+* Made the maps a bit trickier (more impenetrable tiles) to test pathfinding
+  I've also deleted the fake npcs. They were just world-animated tiles.
+* Changed slideMovingObjects a bit to handle unwalkable tiles better.
+  An object (or the user himself) will now gracefully stop before an unwalkable
+  tile.
+
 --- Tuesday 2010/07/20 ---
 
 * Created a pathfinding function. It's quite easy to do, especially since we're

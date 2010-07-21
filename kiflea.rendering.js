@@ -52,8 +52,13 @@ function renderLoop(){
     // Unfortunately, other moving objects have a very slight jitter if you're
     // also moving.
     for (var objectId in animatedObjects){
-            // If the object needs to be moved, do it smoothly
-            slideMovingObject(objectId);
+        
+        // See if the destination of the object has to be adjusted, if there is
+        // a path declared for it.
+        walkPath(objectId);
+        
+        // If the object needs to be moved, do it smoothly
+        slideMovingObject(objectId);
     }
     
     // Calculate the "mapOffset" of the user if we're moving when the map is drawn
@@ -545,6 +550,61 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
 }
 
 /**
+ * If an object has a certain path it needs to walk, make sure that path gets
+ * executed properly. Since the actual moving will be up to slideMovingObject
+ * we can increment the x or y value multiple times. But always one or the other
+ * never both of them at the same time.
+ * @param   objectId    {string}    The ID of the object
+ */
+function walkPath(objectId){
+    
+    // Does this object have a path? Otherwise we can end this function already
+    if(animatedObjects[objectId]['path'].length == 0) return;
+    
+    // Now store the first step in the path
+    var step = animatedObjects[objectId]['path'][0];
+    
+    // Check the X and the Y of this step.
+    if(animatedObjects[objectId]['moveToX'] != step['x']){
+        
+        // Now see if the moveToY of the object isn't different.
+        // We must NEVER modify both the moveToX AND the moveToY variable, as this
+        // would cause our object to move diagonally. And we don't want that
+        if(animatedObjects[objectId]['y'] == animatedObjects[objectId]['moveToY']){
+            
+            // Set the "lastMoved" variable if we're starting a path
+            if(animatedObjects[objectId]['x'] == animatedObjects[objectId]['moveToX']){
+                animatedObjects[objectId]['lastMoved'] = now();
+            }
+            
+            // Set the new X
+            animatedObjects[objectId]['moveToX'] = step['x'];
+            
+            // And we can remove this step from the path
+            animatedObjects[objectId]['path'].splice(0,1);
+        }
+        
+    } else { // If the X is the same, the Y must be different
+        
+        if(animatedObjects[objectId]['x'] == animatedObjects[objectId]['moveToX']){
+            
+            // Set the "lastMoved" variable if we're starting a path
+            if(animatedObjects[objectId]['y'] == animatedObjects[objectId]['moveToY']){
+                animatedObjects[objectId]['lastMoved'] = now();
+            }
+            
+            // Set the new Y
+            animatedObjects[objectId]['moveToY'] = step['y'];
+            
+            // And we can remove this step from the path
+            animatedObjects[objectId]['path'].splice(0,1);
+        }
+        
+    }
+    
+}
+
+/**
  * When an object is moved, it happens gradually. Smoothly.
  * This function checks if the object needs to be moved and
  * makes sure that happens smoothly.
@@ -562,21 +622,33 @@ function slideMovingObject(objectId){
         // Calculate how many tiles we have to move
         var moveAmmount = (animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX']);
 
-        // Detect the direction of the move (left or right)
+        // Detect the direction of the move (left or right and numerical)
         if(moveAmmount>0){
             // Move to the right
             var movementDirection = 'righttile';
+            var directionAmmount = +1;
         } else {
             var movementDirection = 'lefttile';
+            var directionAmmount = -1;
         }
+
+        // What is the next tile in this direction?
+        var nextTile = Math.floor(animatedObjects[objectId]['x'])+directionAmmount;
+        
+        // If the next tile is past our destination, we don't need to take it into account
+        if((nextTile*directionAmmount) > (animatedObjects[objectId]['moveToX'] * directionAmmount)) nextTile -= directionAmmount;
         
         // Change the direction of the tile with our function
         // This has to happen wheter the tile is walkable or not
         changeMovingObjectSprite(objectId, movementDirection);
         
-        // Check if our wanted destination is actually walkable. If it isn't, revert.
-        if(isTileWalkable(userPosition.map,animatedObjects[userPosition.uid]['moveToX'], animatedObjects[userPosition.uid]['moveToY']) == false){
-            animatedObjects[userPosition.uid]['moveToX'] = animatedObjects[userPosition.uid]['fromX'];
+        // If the next tile we're going to enter (floor of current tile +1 or -1)
+        // is not walkable, then put that tile as the final one
+        if(isTileWalkable(userPosition.map, nextTile, animatedObjects[objectId]['moveToY']) == false){
+            
+            // Set the destination to the current tile
+            animatedObjects[objectId]['moveToX'] = Math.floor(animatedObjects[objectId]['x']);  
+            
         } else { // If it is walkable, actually move
             // Our progress in this move (between 0 and 1)
             var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
@@ -615,17 +687,29 @@ function slideMovingObject(objectId){
         if((animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY'])>0){
             // Move down
             var movementDirection = 'downtile';
+            var directionAmmount = +1;
         } else {
             var movementDirection = 'uptile';
+            var directionAmmount = -1;
         }
+
+        // What is the next tile in this direction?
+        var nextTile = Math.floor(animatedObjects[objectId]['y'])+directionAmmount;
         
+        // If the next tile is past our destination, we don't need to take it into account
+        if((nextTile*directionAmmount) > (animatedObjects[objectId]['moveToY'] * directionAmmount)) nextTile -= directionAmmount;
+
         // Change the direction of the tile with our function
         // Has to happen even if the tile isn't walkable
         changeMovingObjectSprite(objectId, movementDirection);
 
-        // Check if our wanted destination is actually walkable. If it isn't, revert.
-        if(isTileWalkable(userPosition.map,animatedObjects[userPosition.uid]['moveToX'], animatedObjects[userPosition.uid]['moveToY']) == false){
-            animatedObjects[userPosition.uid]['moveToY'] = animatedObjects[userPosition.uid]['fromY'];
+        // If the next tile we're going to enter (floor of current tile +1 or -1)
+        // is not walkable, then put that tile as the final one
+        if(isTileWalkable(userPosition.map,animatedObjects[objectId]['x'], nextTile) == false){
+            
+            // Set the destination to the current tile
+            animatedObjects[objectId]['moveToY'] = Math.floor(animatedObjects[objectId]['y']);
+            
         } else { // If it is walkable, actually move
             // Our progress in this move (between 0 and 1)
             var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));

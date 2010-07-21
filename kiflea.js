@@ -400,7 +400,6 @@ function getWalkableTiles(sourcename){
 function isTileWalkable(mapName, x, y){
     wantedTile = y * maps[mapName]['width'] + x;
     if(maps[mapName]['walkableTiles'][wantedTile] !== undefined){
-        debugMove('We\'ve hit an unwalkable tile');
 	return false;
     }else {
 	return true;
