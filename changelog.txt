@@ -9,6 +9,15 @@
 * Changed slideMovingObjects a bit to handle unwalkable tiles better.
   An object (or the user himself) will now gracefully stop before an unwalkable
   tile.
+* Removed some old animation code, that was the basis for the drawAnimatedTile.
+* Since renderLoop() became way too big, a lot of its code have gotten their own
+  functions. This makes everything much nicer to code.
+* Had to fix the drawAnimated, as it was still handling everything as a
+  world-animated tile (because I forgot to pass over the objectid, doh!)
+* Started work on effects (like flying fireballs and whatnot)
+  Thanks to drawAnimated() not a lot of work has to go into making them animated,
+  I only need to predetermine what side they have to face. Since effects can go
+  diagonally, that's gonna be a bit more tricky.
 
 --- Tuesday 2010/07/20 ---
 

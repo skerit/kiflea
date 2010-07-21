@@ -28,6 +28,10 @@ function findPath(sx, sy, dx, dy){
 
     // Start the counter, calculate how long it took
     var timer = now();
+    
+    // Floor the source coördinates
+    sx = Math.floor(sx);
+    sy = Math.floor(sy);
 
     debugPath('We\'re going to look for <b>(' +dx + ',' + dy + ')</b> strting from <b>(' + sx + ',' + sy + ')</b>');
     

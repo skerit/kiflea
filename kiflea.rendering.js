@@ -38,6 +38,13 @@ function renderLoop(){
         debugEcho('The engine has started');
         loaded++;
         
+        // Just for debugging the effects!
+        for (var objectId in animatedObjects){
+            for(var effectNr = 0; effectNr < animatedObjects[objectId]['effects'].length; effectNr++){   
+                animatedObjects[objectId]['effects'][effectNr]['started'] = now();
+            }
+        }
+        
     }
 
     // Start the fake ms counter
@@ -47,136 +54,27 @@ function renderLoop(){
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     
-    // Every object has to be moved gradually. We have to do this now already,
-    // because otherwise we'd get jittering. Especially true for our own user.
-    // Unfortunately, other moving objects have a very slight jitter if you're
-    // also moving.
-    for (var objectId in animatedObjects){
-        
-        // See if the destination of the object has to be adjusted, if there is
-        // a path declared for it.
-        walkPath(objectId);
-        
-        // If the object needs to be moved, do it smoothly
-        slideMovingObject(objectId);
-    }
-    
-    // Calculate the "mapOffset" of the user if we're moving when the map is drawn
-    // This has to be floored, because pixels can't have a decimal value
-    // And this would create 1 pixel spacing between the tiles while moving.
-    var mappOffsetX = Math.floor((32 * decimal(animatedObjects[userPosition.uid]['x'])));
-    var mappOffsetY = Math.floor((32 * decimal(animatedObjects[userPosition.uid]['y'])));
-    
-    if(mappOffsetX > 0 || mappOffsetY > 0){
-        debugMove('mapOffsetX: ' + mappOffsetX + ' - mapOffsetY: ' + mappOffsetY);
-    }
+    prerenderMoveObjects(); // Calculate every objects next xy coordinates
+
+    prerenderMapOffset(); // Calculate the map offset
 
     // Loop through the layers and render them
     for(var layerName in maps[userPosition.map]['layers']) {
 
-        // For every visible row (+ the drawExtras row, needed for tiles that are bigger than the default map tile)
-        for (var tileY = 0; tileY <= visibleTilesY+drawExtras; tileY++) {
-            
-            // And for every tile in that row (+ the drawExtras)
-            for (var tileX = (0-drawExtras); tileX <= visibleTilesX; tileX++) {
-                
-                // Calculate the coördinates of the tile we need, based on our current position
-                // (Example: The tile in row 10, column 5)
-                var rowTile = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2))+1) - visibleTilesX;
-                var colTile = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2))+1) - visibleTilesY;
-                
-                // Now that we know what piece of the map we need
-                // we need to get the corresponding tileset image
-                var tileNumber = getLayerTile(userPosition.map, layerName, Math.floor(rowTile), Math.floor(colTile));
-                
-                // When we get to an empty tile we can skip towards the next loop
-                if(tileNumber == 0 || tileNumber === undefined) continue;
-
-                // Now calculate where to draw this tile, based on the size of the tiles of the map, not the tileset
-                var destinationX = (tileX * maps[userPosition.map]['tileWidth']) - mappOffsetX;
-                var destinationY = (tileY * maps[userPosition.map]['tileHeight']) - mappOffsetY;
-                
-                // And now draw that tile!
-                try {
-                    drawTile(tileNumber, destinationX, destinationY);
-                } catch(error) {
-                    debugEchoLfps('[renderLoop] Error drawing tilenumber <b>"' + tileNumber +
-                                  '"</b> from layer "<b>' + layerName + '</b>" - coordinates (<b>' + rowTile +
-                                  '</b>,<b>' + colTile + '</b>) to (<b>' +
-                                  destinationX + '</b>,<b>' + destinationY +
-                                  '</b>)'
-                    );
-                }
-            }
-        }
+        renderLayer(layerName); // Render this layer
 
         // If this layer has the "drawUsers" property set to "1"
         // We draw all the objects on top of it.
         if(maps[userPosition.map]['layers'][layerName]['properties']['drawUsers']==1){
-            //drawTile(userPosition.currentSprite, (canvasWidth - defaultTileWidth) / 2, (canvasHeight - 48) / 2);
             
-            // Loop through every object
-            for (var objectId in animatedObjects){
-                
-                debugEchoLfps('Found object ' + objectId);
-                
-                // If this is our own user, set the coordinates at the center of the screen.
-                if(objectId == userPosition.uid) {
-                    debugEchoLfps('This object is our own user ' + objectId);
-                    var objX = (canvasWidth - defaultTileWidth) / 2;
-                    var objY = (canvasHeight - defaultTileWidth) / 2;
-                } else {
-                    var objX = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * 32)) + (animatedObjects[objectId]['x'] * 32) - mappOffsetX;
-                    var objY = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * 32)) + (animatedObjects[objectId]['y'] * 32) - mappOffsetY;
-                }
-                // Loop through all the layers of this object
-                for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['spritesToDraw'].length; spriteNr++){
-                    
-                    debugEchoLfps('Drawing object ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
-                    
-                    drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr], objX, objY, null, objectId);
-                }
-                
-                
-            }
+            highlightSelectedObject(); // Draw a circle underneath our selection
+            
+            // If we've enabled pathfinding debug, draw the testpath array
+            if(debugPathOn == true) drawTestPath();
+            
+            renderObjects(layerName); // Render every object
         }
     };
-    
-    debugEchoLfps('Finished the layers');
-    
-    // Render animations:
-    for (var i = 0; i < animation.length; i++){
-
-        // Draw the current frame
-        drawTileSpecific(
-                         animation[i]["name"],      // The name of the tileset
-                         animation[i]["played"]+1,  // The number of the tile
-                         animation[i]["x"],         // The destination x position
-                         animation[i]["y"]          // The destination y position
-                         )
-        
-        // The entire world has shown a frame
-        animation[i]["framessince"]++
-        
-        // Count the ammount of frames that need to pass before showing the next one
-        frameWait = (fpsr / animation[i]["fps"])
-        
-        if(animation[i]["framessince"] >= frameWait){
-            // This animation is ready for the next frame!
-            animation[i]["played"]++;
-            animation[i]["framessince"] = 0;
-        }
-        
-        // If the animation is done we have to reset or remove it
-        if(animation[i]["played"] == animation[i]["frames"]) {
-            if(animation[i]["replay"] != 1) {
-                animation[i]["played"] = 0;
-                if(animation[i]["replay"]>0) animation[i]["replay"]--
-            } else {
-                animation.splice(i, 1)
-            }
-        }
-    }
 
     // Calculate fake ms & fps (time it took to draw this loop)
     msf = (now() - msfTimer);
@@ -187,48 +85,20 @@ function renderLoop(){
     fpsr = (1000/msr);
     
     // Draw a grid over the screen.
-    if(debugGrid == true) {
-        
-        ctx.strokeStyle = "rgba(20, 20, 20, 0.7)";  
-        
-        // Draw horizontal lines
-        for(var row = 0; row < (canvasWidth/debugGridX); row++ ){
-            ctx.beginPath();
-            ctx.moveTo(0, row*debugGridX);  
-            ctx.lineTo(canvasWidth, row*debugGridX);
-            ctx.stroke();
-        }
-        
-        // Draw vertical lines
-        for(var col = 0; col < (canvasWidth/debugGridY); col++ ){
-            ctx.beginPath();
-            ctx.moveTo(col*debugGridY, 0);  
-            ctx.lineTo(col*debugGridY, canvasHeight);
-            ctx.stroke();
-        }
-    }
+    if(debugGrid == true) drawDebugGrid();
 
     // Clear the sameFrame variable, used by animated tiles
     sameFrame = {};
 
     // Start the real fps counter
     msrTimer = now();
-
-    // If we've enabled pathfinding debug, draw the testpath array
-    if(debugPathOn == true) drawTestPath();
     
     // Draw the HUD
     drawHud();
     
     // If we've enabled debugging, we actually want the fps (bad name, I know)
     // Draw it on the canvas for better framerates
-    if(debugOn==true){
-        ctx.fillStyle = "rgba(20, 20, 20, 0.7)";  
-        ctx.fillRect (2, canvasHeight-33, canvasWidth-4, 20);
-        ctx.strokeStyle = "white";  
-        ctx.font = "12px monospace";
-        ctx.strokeText('Fake ms: ' + msf.toPrecision(4) + ' - Real ms: ' + msr.toPrecision(4)  + ' - Fake fps: ' + Math.round(fpsf).toPrecision(3) + ' - Real fps: ' + Math.round(fpsr).toPrecision(3), 5, canvasHeight-20);
-    };
+    if(debugOn==true) drawDebugFps();
     
     // Now start showing text objects
     for(message in textObjects){
@@ -270,6 +140,237 @@ function renderLoop(){
         break;
 
     }
+    
+}
+
+/**
+ *Draw a circle under our selection
+ */
+function highlightSelectedObject(){
+    
+    // Draw a little square under our selection if we have one
+    if(animatedObjects[userPosition.uid]['selection'].length  > 0){
+        
+        var selectionC = getRealCoordinates(animatedObjects[userPosition.uid]['selection']);
+        
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(0,0,255,0.3)";
+        ctx.strokeStyle = "rgba(0,0,0,0.8)";
+        ctx.arc(selectionC['x']+(maps[userPosition.map]['tileWidth']/2),selectionC['y']-(maps[userPosition.map]['tileHeight']/2),maps[userPosition.map]['tileWidth']/2,0,Math.PI*2,true);
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+/**
+ *Render the effects of an object
+ *@param    objectId    {string}    The object of which to render the effects
+ */
+function renderEffects(objectId){
+    
+    // Loop through every effect
+    for(var effectNr = 0; effectNr < animatedObjects[objectId]['effects'].length; effectNr++){
+        
+        animatedObjects[objectId]['effects'][effectNr]['msMoved'] = now() - animatedObjects[objectId]['effects'][effectNr]['started'];
+        
+        // How much do we need to move?
+        var moveAmmountX = (animatedObjects[objectId]['effects'][effectNr]['dx'] - animatedObjects[objectId]['effects'][effectNr]['sx']);
+        var moveAmmountY = (animatedObjects[objectId]['effects'][effectNr]['dy'] - animatedObjects[objectId]['effects'][effectNr]['sy']);
+        
+        // How much should we have moved already?
+        var objectMoveProgressX = animatedObjects[objectId]['effects'][effectNr]['msMoved']/(animatedObjects[objectId]['effects'][effectNr]['speed']*Math.abs(moveAmmountX));
+        var objectMoveProgressY = animatedObjects[objectId]['effects'][effectNr]['msMoved']/(animatedObjects[objectId]['effects'][effectNr]['speed']*Math.abs(moveAmmountY));
+
+        // Only calculate the new x-y coordinates if we haven't reached our goal yet
+        if(objectMoveProgressX < 1) animatedObjects[objectId]['effects'][effectNr]['x'] = animatedObjects[objectId]['effects'][effectNr]['sx'] + ((animatedObjects[objectId]['effects'][effectNr]['dx'] - animatedObjects[objectId]['effects'][effectNr]['sx'])*objectMoveProgressX);
+        if(objectMoveProgressY < 1) animatedObjects[objectId]['effects'][effectNr]['y'] = animatedObjects[objectId]['effects'][effectNr]['sy'] + ((animatedObjects[objectId]['effects'][effectNr]['dy'] - animatedObjects[objectId]['effects'][effectNr]['sy'])*objectMoveProgressY);
+        
+        var coordinates = getRealCoordinates(null,animatedObjects[objectId]['effects'][effectNr]['x'], animatedObjects[objectId]['effects'][effectNr]['y']);
+        
+        drawTile(animatedObjects[objectId]['effects'][effectNr]['sprite'], coordinates['x'], coordinates['y'], null, objectId);
+    }
+}
+
+/**
+ *Render every object
+ */
+function renderObjects(){
+    
+    // Loop through every object
+    for (var objectId in animatedObjects){
+        
+        debugEchoLfps('Found object ' + objectId);
+        
+        // If this is our own user, set the coordinates at the center of the screen.
+        if(objectId == userPosition.uid) {
+            debugEchoLfps('This object is our own user ' + objectId);
+            var objX = (canvasWidth - maps[userPosition.map]['tileWidth']) / 2;
+            var objY = (canvasHeight - maps[userPosition.map]['tileHeight']) / 2;
+        } else {
+            
+            // Get the real coördinates of the object (pixels on the canvas in relation to our user)
+            var objC = getRealCoordinates(objectId);
+            
+            var objX = objC['x'];
+            var objY = objC['y'];
+        }
+        // Loop through all the layers of this object
+        for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['spritesToDraw'].length; spriteNr++){
+            
+            debugEchoLfps('Drawing object ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
+            
+            drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr], objX, objY, null, objectId);
+        }
+        
+        // Draw the effects of this user
+        renderEffects(objectId);
+        
+        
+    }
+}
+
+/**
+ *Render a specific layer
+ *@param    layerName   {string}    The name of the layer to draw of the current map
+ */
+function renderLayer(layerName){
+    
+    // For every visible row (+ the drawExtras row, needed for tiles that are bigger than the default map tile)
+    for (var tileY = 0; tileY <= visibleTilesY+drawExtras; tileY++) {
+        
+        // And for every tile in that row (+ the drawExtras)
+        for (var tileX = (0-drawExtras); tileX <= visibleTilesX; tileX++) {
+            
+            // Calculate the coördinates of the tile we need, based on our current position
+            // (Example: The tile in row 10, column 5)
+            var rowTile = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2))+1) - visibleTilesX;
+            var colTile = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2))+1) - visibleTilesY;
+            
+            // Now that we know what piece of the map we need
+            // we need to get the corresponding tileset image
+            var tileNumber = getLayerTile(userPosition.map, layerName, Math.floor(rowTile), Math.floor(colTile));
+            
+            // When we get to an empty tile we can skip towards the next loop
+            if(tileNumber == 0 || tileNumber === undefined) continue;
+
+            // Now calculate where to draw this tile, based on the size of the tiles of the map, not the tileset
+            var destinationX = (tileX * maps[userPosition.map]['tileWidth']) - mappOffsetX;
+            var destinationY = (tileY * maps[userPosition.map]['tileHeight']) - mappOffsetY;
+            
+            // And now draw that tile!
+            try {
+                drawTile(tileNumber, destinationX, destinationY);
+            } catch(error) {
+                debugEchoLfps('[renderLoop] Error drawing tilenumber <b>"' + tileNumber +
+                              '"</b> from layer "<b>' + layerName + '</b>" - coordinates (<b>' + rowTile +
+                              '</b>,<b>' + colTile + '</b>) to (<b>' +
+                              destinationX + '</b>,<b>' + destinationY +
+                              '</b>)'
+                );
+            }
+        }
+    }
+}
+
+/**
+ *Draw FPS information on the canvas
+ */
+function drawDebugFps(){
+    
+    ctx.fillStyle = "rgba(20, 20, 20, 0.7)";  
+    ctx.fillRect (2, canvasHeight-33, canvasWidth-4, 20);
+    ctx.strokeStyle = "white";  
+    ctx.font = "12px monospace";
+    ctx.strokeText('Fake ms: ' + msf.toPrecision(4) + ' - Real ms: ' + msr.toPrecision(4)  + ' - Fake fps: ' + Math.round(fpsf).toPrecision(3) + ' - Real fps: ' + Math.round(fpsr).toPrecision(3), 5, canvasHeight-20);
+
+}
+
+/**
+ *Draw a grid on the canvas
+ */
+function drawDebugGrid(){
+    
+        ctx.strokeStyle = "rgba(20, 20, 20, 0.7)";  
+        
+        // Draw horizontal lines
+        for(var row = 0; row < (canvasWidth/debugGridX); row++ ){
+            ctx.beginPath();
+            ctx.moveTo(0, row*debugGridX);  
+            ctx.lineTo(canvasWidth, row*debugGridX);
+            ctx.stroke();
+        }
+        
+        // Draw vertical lines
+        for(var col = 0; col < (canvasWidth/debugGridY); col++ ){
+            ctx.beginPath();
+            ctx.moveTo(col*debugGridY, 0);  
+            ctx.lineTo(col*debugGridY, canvasHeight);
+            ctx.stroke();
+        }
+        
+}
+/**
+ *Calculate the "mapOffset" of the user if we're moving when the map is drawn
+ */
+function prerenderMapOffset(){
+    
+    //Only do this if we're actually moving. This saves us a tiny ammount of speed.
+    //It was a nice idea, but it only worked when moving left or up. Ugh
+    //if(animatedObjects[userPosition.uid]['x'] != animatedObjects[userPosition.uid]['moveToX'] ||
+    //   animatedObjects[userPosition.uid]['y'] != animatedObjects[userPosition.uid]['moveToY']){
+
+        //This has to be floored, because pixels can't have a decimal value
+        //And this would create 1 pixel spacing between the tiles while moving.
+        mappOffsetX = Math.floor((maps[userPosition.map]['tileWidth'] * decimal(animatedObjects[userPosition.uid]['x'])));
+        mappOffsetY = Math.floor((maps[userPosition.map]['tileHeight'] * decimal(animatedObjects[userPosition.uid]['y'])));
+    //}
+    
+}
+
+/**
+ *Every object has to be moved gradually. This function makes sure the coordinates
+ *of the object are in the correct place before drawing them later on.
+ */
+function prerenderMoveObjects(){
+
+    for (var objectId in animatedObjects){
+        
+        // See if the destination of the object has to be adjusted, if there is
+        // a path declared for it.
+        walkPath(objectId);
+        
+        // If the object needs to be moved, do it smoothly!
+        // (This will actually set the xy coordinates for moving later on,
+        // it doesn't render anything itself)
+        slideMovingObject(objectId);
+    }
+}
+
+/**
+ *Get the REAL (on canvas) coördinates of something.
+ *If the objectId is used x and y are fetched themselves, otherwise you
+ *have to give them (logically)
+ *@param    objectId    {string}    The ID of the object to draw
+ *@param    x           {integer}   Optional x
+ *@param    y           {integer}   Optional y
+ *@param    tileWidth   {integer}   Optional tileWidth (Default is current map's tileWidth)
+ *@param    tileHeight  {integer}   Optional tileHeight
+ */
+function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
+    
+    // Get the x and y coördinates if they haven't been given
+    if(x === undefined) x = animatedObjects[objectId]['x'];
+    if(y === undefined) y = animatedObjects[objectId]['y'];
+    
+    // Store the current map's tileWidth and Height, if it hasn't been given already
+    if(tileWidth === undefined) tileWidth = maps[userPosition.map]['tileWidth'];
+    if(tileHeight === undefined) tileHeight = maps[userPosition.map]['tileHeight'];
+    
+    var objX = (((canvasWidth - tileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * tileWidth)) + (x * tileWidth) - mappOffsetX;
+    var objY = (((canvasWidth - tileHeight) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * tileHeight)) + (y * tileHeight) - mappOffsetY;
+    
+    return({'x': objX, 'y': objY});
+    
 }
 
 /**
@@ -294,24 +395,26 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
     // Now let's decide which one it is
     if(objectId === undefined) {
         animationId = tileNumberOnMap;
+        var isObject = false;
     } else {
-        animationId = objectId;
-        debugEcho('is object!');
+        animationId = objectId + '-' + tileNumberOnMap;
+        var isObject = true;
     }
     
     // Check if this tile already exists in the array
     if(animatedTiles[tileSetName][animationId] === undefined){
-        
+
         debugEchoLfps('Initiate new animated tile: ' + animationId);
         
         animatedTiles[tileSetName][animationId] = {
             "played": 0,
             "framessince": 0,
-            "fps": tileProperties[tileSetName][animationId]['fps'],
-            "replay": tileProperties[tileSetName][animationId]['replay'],
+            "fps": tileProperties[tileSetName][tileNumberOnMap]['fps'],
+            "replay": tileProperties[tileSetName][tileNumberOnMap]['replay'],
             "currentframe": tileNumberOnMap,
-            "nextframe": tileProperties[tileSetName][animationId]['nextframe']
+            "nextframe": tileProperties[tileSetName][tileNumberOnMap]['nextframe']
         };
+        
         
     } else { // This isn't a new animation. We're continuing...
         // If the currentframe is zero it means this animation is over!
@@ -347,16 +450,15 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
             debugEchoLfps('[drawAnimated] Error drawing <b>animated</b> tile "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
             );
         }
-        
+
         // If this is a world-animated tile we're going to check if this is a new frame being drawn
-        // We need to make sure this object exists before we assign a value in it
-        // This array is emptied at the end of every frame
-        if(sameFrame[tileSetName] === undefined && objectId === undefined) {
+        // We need to make sure this object exists before we actually look for something in it. Even if it is an object we're drawing
+        if(sameFrame[tileSetName] === undefined) {
             // Initiate this tileset in the sameFrame array   
             sameFrame[tileSetName] = {};
         }
-        
-        if(sameFrame[tileSetName][tileNumberOnMap] === undefined && objectId === undefined) {
+
+        if(sameFrame[tileSetName][tileNumberOnMap] === undefined) {
             
             // Make sure we've already created this tileSetName in the array before doing the next write
             if(sameFrame[tileSetName] === undefined) sameFrame[tileSetName] = {};
@@ -365,16 +467,17 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
             // This will prevent the framessince counter from being increased
             // if this same tile is on the map multiple times.
             // Without this the framerate would double if there were 2 of these.
-            sameFrame[tileSetName][tileNumberOnMap] = true;
+            sameFrame[tileSetName][animationId] = true;
             
             // Add a frame to the counter
             animatedTiles[tileSetName][animationId]["framessince"]++;
+            
         }
         
         // Count the ammount of frames that need to pass before showing the next one
         frameWait = (fpsr / animatedTiles[tileSetName][animationId]["fps"]);
         
-        // If there have been more frames then we should wait ...
+        // If there have been more frames than we should wait ...
         if(animatedTiles[tileSetName][animationId]["framessince"] >= frameWait){
             
             debugEchoLfps('Nextframe! From "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>" to "<b>' + animatedTiles[tileSetName][animationId]["nextframe"] + '</b>"');
@@ -420,6 +523,7 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
             
         }
         
+        debugEchoLfps('Finished drawing animated frame');
 }
 
 /**
@@ -473,7 +577,7 @@ function drawTile(tileNumber, dx, dy, opacity, objectId) {
     if(tileProperties[tileSetName][tileNumberOnMap] != undefined &&
        (tileProperties[tileSetName][tileNumberOnMap]['beginanimation'] != undefined || movingObject == true)){
         try {
-            drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap);
+            drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, objectId);
         } catch(error) {
             debugEchoLfps('[drawTile] Error drawing <b>animated</b> tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
             );
@@ -655,8 +759,7 @@ function slideMovingObject(objectId){
             
             debugMove('Object <b>' + objectId + '</b> has to move <b>' + moveAmmount + ' tiles, moving progress (X): ' + objectMoveProgress, false);
             
-            // If we've spent too much time on this move
-            // or we're within ms of reaching our goal: finish it.
+            // If we've spent too much time on this move: finish it
             if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
                 animatedObjects[objectId]['x'] = animatedObjects[objectId]['moveToX'];
                 animatedObjects[objectId]['fromX'] = animatedObjects[objectId]['x'];
@@ -813,8 +916,8 @@ function drawTestPath(){
     for(var node = 0; node < testPath.length; node++){
 
         // Calculate coordinates
-        var objX = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * 32)) + (testPath[node]['x'] * 32);
-        var objY = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * 32)) + (testPath[node]['y'] * 32);
+        var objX = (((canvasWidth - maps[userPosition.map]['tileWidth']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * maps[userPosition.map]['tileWidth'])) + (testPath[node]['x'] * maps[userPosition.map]['tileWidth']) - mappOffsetX;
+        var objY = (((canvasWidth - maps[userPosition.map]['tileHeight']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * maps[userPosition.map]['tileHeight'])) + (testPath[node]['y'] * maps[userPosition.map]['tileHeight']) - mappOffsetY;
 
 
         // Draw tile 309 (hardcoded, I know. It's in the grassland tileset

@@ -35,7 +35,7 @@
 	<script type="text/javascript" src="kiflea.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
-			fps = 200;
+			fps = 500;
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
 			defaultTilesPerRow = 30;
@@ -56,36 +56,38 @@
 			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites
 			animatedObjects = {	// Test data for objects
 				"U00001": {
-					"x": 10,
-					"y": 10,
-					"moveToX": 10,
-					"moveToY": 10,
-					"fromX": 10,
-					"fromY": 10,
+					"x": 30,
+					"y": 31,
+					"moveToX": 30,
+					"moveToY": 31,
+					"fromX": 30,
+					"fromY": 31,
 					"msMoved": 100,
 					"lastMoved": 1000,
 					"map": "grassland.tmx.xml",
 					"sprites": [1,21],
 					"spritesToDraw": [1,21], 
 					"currentSprite": 1,
+					"effects": [{'sprite': 43, 'dx': 35, 'dy': 35, 'sx': 30, 'sy': 31, 'x': 30, 'y': 31, 'speed': 100, 'msMoved': 100, 'started': 1000}],
 					"selection": 0,
 					"currenthealth": 55,
 					"fullhealth": 100,
 					"path": []
 				},
 				"U00002":{
-					"x": 15,
-					"y": 15,
-					"moveToX": 15,
-					"moveToY": 15,
-					"fromX": 15,
-					"fromY": 15,
+					"x": 35,
+					"y": 35,
+					"moveToX": 35,
+					"moveToY": 35,
+					"fromX": 35,
+					"fromY": 35,
 					"msMoved": 100,
 					"lastMoved": 1000,
 					"map": "grassland.tmx.xml",
 					"sprites": [1],
 					"spritesToDraw": [1], 
 					"currentSprite": 1,
+					"effects": [{'sprite': 43, 'dx': 29, 'dy': 29, 'sx': 35, 'sy': 35, 'x': 35, 'y': 35, 'speed': 100, 'msMoved': 100, 'started': 1000}],
 					"selection": 0,
 					"currenthealth": 10,
 					"fullhealth": 100,
@@ -104,6 +106,7 @@
 					"sprites": [1],
 					"spritesToDraw": [1,21], 
 					"currentSprite": 1,
+					"effects": [{'sprite': 43, 'dx': 10, 'dy': 10, 'sx': 25, 'sy': 25, 'x': 25, 'y': 25, 'speed': 100, 'msMoved': 100, 'started': 1000}],
 					"selection": 0,
 					"currenthealth": 78,
 					"fullhealth": 100,
