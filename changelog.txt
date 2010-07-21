@@ -1,4 +1,21 @@
 
+--- Tuesday 2010/07/20 ---
+
+* Created a pathfinding function. It's quite easy to do, especially since we're
+  tile-based. It's not the most efficient written function, but it gets the job
+  done. Clicking from the center of the screen to anywhere on the visible screen
+  takes only 1-2 ms on chrome. (Firefox 3.6.6 on Ubuntu takes about 10ms)
+  If we're 100 tiles further we're talking about 89 ms on Chrome.
+  That's quite a lot, but at least in the game I've planned such far
+  distances won't need to be calculated. Much. (And then, once it's calculated
+  it's there to use.)
+  While I learned mostly from A* pathfinding tutorials, this is actually called
+  "Dijkstra" pathfinding. This means it searches by expanding out into every
+  direction equally. So basically, for every path in the right direction it also
+  searches for one in the wrong direction. Maybe I'll add a few lines of code
+  later on to adjust this. At least this way I know a path will be found.
+
+
 --- Monday 2010/07/19 ---
 
 * Moved the HUD functions into a new file.

@@ -26,6 +26,7 @@
 	</style>
 	<!--[if IE]><script type="text/javascript" src="excanvas.compiled.js"></script><![endif]-->
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+	<script type="text/javascript" src="kiflea.pathfinding.js"></script>
 	<script type="text/javascript" src="kiflea.rendering.js"></script>
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
 	<script type="text/javascript" src="kiflea.keyboard.js"></script>
@@ -49,6 +50,7 @@
 			debugGrid = false;
 			debugHudOn = false;
 			debugMovement = false;
+                        debugPathOn = true;
 			backgroundColor = "rgb(255,255,255)";
 			defaultSprites = 'default.tmx.xml';
 			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites

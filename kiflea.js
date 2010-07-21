@@ -85,6 +85,8 @@ var debugCounter;                   // Every echoDebug() called will also print 
 var debugMovement = false;	    // output debug to the echo div on movement
 var debugHudOn = false;		    // output debug to the echo div on HUD
 var debugGrid = false;              // Do you want to draw a grid on the canvas?
+var debugPathOn = false;            // Debug the pathfinding code?
+var testPath = [];                  // An array with test pathfinding data
 var debugGridX = 32;
 var debugGridY = 32;
 

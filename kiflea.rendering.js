@@ -208,6 +208,9 @@ function renderLoop(){
 
     // Start the real fps counter
     msrTimer = now();
+
+    // If we've enabled pathfinding debug, draw the testpath array
+    if(debugPathOn == true) drawTestPath();
     
     // Draw the HUD
     drawHud();
@@ -715,4 +718,24 @@ function changeMovingObjectSprite(objectId, movementDirection){
                 animatedObjects[objectId]['spritesToDraw'][spriteNr] = parseInt(tileProperties[tileSetName][animatedObjects[objectId]['sprites'][spriteNr]][movementDirection])+tileSetCorrectGid;
             }
         };
+}
+
+/**
+ * Draw the testpath variable
+ */
+function drawTestPath(){
+
+    // Loop through the testPath array
+    for(var node = 0; node < testPath.length; node++){
+
+        // Calculate coordinates
+        var objX = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * 32)) + (testPath[node]['x'] * 32);
+        var objY = (((canvasWidth - defaultTileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * 32)) + (testPath[node]['y'] * 32);
+
+
+        // Draw tile 309 (hardcoded, I know. It's in the grassland tileset
+        drawTile(279, objX, objY);
+
+    }
+
 }

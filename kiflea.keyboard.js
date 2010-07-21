@@ -300,6 +300,8 @@ function getClickedTile(x, y){
     x = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2)) + 1) - visibleTilesX;
     y = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2))+2) - visibleTilesY;
     
+    testPath = findPath(animatedObjects[userPosition.uid]['x'], animatedObjects[userPosition.uid]['y'], x, y);
+
     return {'x': x, 'y': y};
 }
 
