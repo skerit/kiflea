@@ -1,4 +1,15 @@
 
+
+--- thursday 2010/07/22 ---
+
+* Created a few functions that will determine where an object is (leftup, leftdown, ...)
+  first get the angle with getAngle() and then get the text with getAngleDirection();
+* Implemented these functions in drawing effects.
+* Lost A LOT of time because the server was down for several hours.
+* Tried implementing an "aftereffects" effect. when one effect is done, another
+  can be specified. However, there's a small problem with the playcounter.
+  I'll try to debug that tomorrow.
+
 --- Wednesday 2010/07/21 ---
 
 * Implemented pathwalking.

@@ -17,6 +17,115 @@
 	Last Modified: Trunk
 */
 
+
+/**
+ *Get the angle between 2 points
+ *@param    sx  {integer}   The x point of origin, probably the users
+ *@param    sy  {integer}   The y point of origin, probably the users
+ *@param    dx  {integer}   The x point of destination, probably the selection
+ *@param    dy  {integer}   The y point of destination, probably the selection
+ *@returns  {float}         The degrees
+ */
+function getAngle(sx,sy,dx,dy){
+
+    var x = (dx - sx);
+    var y = (dy - sy);
+    
+    var theta = Math.atan2(-y, x);
+    
+    if (theta < 0){
+       theta += 2 * Math.PI;
+    }
+    
+    return theta*180/Math.PI;
+}
+
+/**
+ *Give us a random number between 1 and the given number
+ */
+function rand(end){
+  return ( Math.floor ( Math.random ( ) * end + 1 ) );
+}
+
+
+/**
+ *Return the direction of an angle
+ *@param    degrees     {float}     The degrees
+ *@param    text        {bool}      If we want the direction in text
+ *@returns  {double or string}      If text is on we get the name of the direction
+ */
+function getAngleDirection(degrees, text){
+    
+    // Get the "quadrant", or at least thats what I'm calling it
+    var qwhere = halfRound(degrees/90);
+    
+    if(text === undefined || text == true){
+        
+        switch(qwhere){
+
+            case 0:
+                qwhere = 'right';
+                break;
+            
+            case 0.5:
+                qwhere = 'rightup';
+                break;
+            
+            case 1:
+                qwhere = 'up';
+                break;
+            
+            case 1.5:
+                qwhere = 'leftup';
+                break;
+            
+            case 2:
+                qwhere = 'left';
+                break;
+            
+            case 2.5:
+                qwhere = 'leftdown';
+                break;
+            
+            case 3:
+                qwhere = 'down';
+                break;
+            
+            case 3.5:
+                qwhere = 'rightdown';
+                break;
+            
+            case 4:
+                qwhere = 'right';
+                break;
+        }
+        
+    }
+    
+    return qwhere;
+}
+
+/**
+ *Return the half-rounded number (.0 or .5)
+ *@param    number      {float}
+ */
+function halfRound(number) {
+    
+    // Store the decimal in here
+    var decimalNr = decimal(number) * 10;
+    
+    // Store the floor
+    var floor = Math.floor(number);
+    
+    if (decimalNr == 5) return floor += 0.5;
+    
+    if ( (decimalNr < 3) || (decimalNr > 7) ) {
+        return Math.round(number);
+    } else {
+        return floor += 0.5;
+    }
+}
+
 /**
  *Return the decimal part of a number (10.5 becomes 0.5)
  *@param number {float}    The number you want the decimals of
@@ -25,7 +134,9 @@
  *If no decimals are given, the "userMoveSmoothness" value is used!
  */
 function decimal(number, decimals){
+    
     if(!decimals) decimals = 5;
+    
     
     result = number - Math.floor(number);
     return result.toFixed(decimals);

@@ -32,6 +32,9 @@ function findPath(sx, sy, dx, dy){
     // Floor the source coördinates
     sx = Math.floor(sx);
     sy = Math.floor(sy);
+    
+    dx = Math.floor(dx);
+    dy = Math.floor(dy);
 
     debugPath('We\'re going to look for <b>(' +dx + ',' + dy + ')</b> strting from <b>(' + sx + ',' + sy + ')</b>');
     

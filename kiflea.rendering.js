@@ -28,7 +28,7 @@ function renderLoop(){
     // If msf isn't defined this is the actual beginning and everything has loaded
     // We still need those walkable tiles, though.
     if(msf === undefined) {
-    
+
         debugEcho('Fetching walkable tiles');
         toLoad++;
         //Loop through every map and fetch the walkable tiles
@@ -71,7 +71,7 @@ function renderLoop(){
             
             // If we've enabled pathfinding debug, draw the testpath array
             if(debugPathOn == true) drawTestPath();
-            
+
             renderObjects(layerName); // Render every object
         }
     };
@@ -162,32 +162,129 @@ function highlightSelectedObject(){
     }
 }
 
+
 /**
  *Render the effects of an object
  *@param    objectId    {string}    The object of which to render the effects
  */
 function renderEffects(objectId){
-    
+
     // Loop through every effect
     for(var effectNr = 0; effectNr < animatedObjects[objectId]['effects'].length; effectNr++){
+        
+        var sx = animatedObjects[objectId]['effects'][effectNr]['sx'];
+        var sy = animatedObjects[objectId]['effects'][effectNr]['sy'];
+        var dx = animatedObjects[objectId]['effects'][effectNr]['dx'];
+        var dy = animatedObjects[objectId]['effects'][effectNr]['dy'];
+        var x = animatedObjects[objectId]['effects'][effectNr]['x'];
+        var y = animatedObjects[objectId]['effects'][effectNr]['y'];
+        var baseSprite = animatedObjects[objectId]['effects'][effectNr]['sprite'];
+        var baseTilesetInfo = getTileSetInfo(defaultSprites, baseSprite);
         
         animatedObjects[objectId]['effects'][effectNr]['msMoved'] = now() - animatedObjects[objectId]['effects'][effectNr]['started'];
         
         // How much do we need to move?
-        var moveAmmountX = (animatedObjects[objectId]['effects'][effectNr]['dx'] - animatedObjects[objectId]['effects'][effectNr]['sx']);
-        var moveAmmountY = (animatedObjects[objectId]['effects'][effectNr]['dy'] - animatedObjects[objectId]['effects'][effectNr]['sy']);
+        var moveAmmountX = (dx - sx);
+        var moveAmmountY = (dy - sy);
         
         // How much should we have moved already?
-        var objectMoveProgressX = animatedObjects[objectId]['effects'][effectNr]['msMoved']/(animatedObjects[objectId]['effects'][effectNr]['speed']*Math.abs(moveAmmountX));
-        var objectMoveProgressY = animatedObjects[objectId]['effects'][effectNr]['msMoved']/(animatedObjects[objectId]['effects'][effectNr]['speed']*Math.abs(moveAmmountY));
+        var objectMoveProgressX = animatedObjects[objectId]['effects'][effectNr]['msMoved']/(animatedObjects[objectId]['effects'][effectNr]['msPerTile']*Math.abs(moveAmmountX));
+        var objectMoveProgressY = animatedObjects[objectId]['effects'][effectNr]['msMoved']/(animatedObjects[objectId]['effects'][effectNr]['msPerTile']*Math.abs(moveAmmountY));
 
         // Only calculate the new x-y coordinates if we haven't reached our goal yet
-        if(objectMoveProgressX < 1) animatedObjects[objectId]['effects'][effectNr]['x'] = animatedObjects[objectId]['effects'][effectNr]['sx'] + ((animatedObjects[objectId]['effects'][effectNr]['dx'] - animatedObjects[objectId]['effects'][effectNr]['sx'])*objectMoveProgressX);
-        if(objectMoveProgressY < 1) animatedObjects[objectId]['effects'][effectNr]['y'] = animatedObjects[objectId]['effects'][effectNr]['sy'] + ((animatedObjects[objectId]['effects'][effectNr]['dy'] - animatedObjects[objectId]['effects'][effectNr]['sy'])*objectMoveProgressY);
+        if(objectMoveProgressX < 1) animatedObjects[objectId]['effects'][effectNr]['x'] = sx + ((dx - sx)*objectMoveProgressX);
+        if(objectMoveProgressY < 1) animatedObjects[objectId]['effects'][effectNr]['y'] = sy + ((dy - sy)*objectMoveProgressY);
         
-        var coordinates = getRealCoordinates(null,animatedObjects[objectId]['effects'][effectNr]['x'], animatedObjects[objectId]['effects'][effectNr]['y']);
+        var coordinates = getRealCoordinates(null,x, y);
+
+        // Now get the currentsprite data based on the direction of the effect
+        var direction = getAngle(x, y, dx, dy);
+        var dText = getAngleDirection(direction);
+
+        // If this effect has directional tiles...
+        if(tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['directional'] == 1){
+
+            switch(dText){
+    
+                case 'right':
+                    animatedObjects[objectId]['effects'][effectNr]['currentsprite'] = tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['righttile'];
+                    break;
+    
+                case 'rightup':
+                    animatedObjects[objectId]['effects'][effectNr]['currentsprite'] = tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['rightuptile'];
+                    break;
+    
+                case 'up':
+                    animatedObjects[objectId]['effects'][effectNr]['currentsprite'] = tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['uptile'];
+                    break;
+    
+                case 'leftup':
+                    animatedObjects[objectId]['effects'][effectNr]['currentsprite'] = tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['leftuptile'];
+                    break;
+    
+                case 'left':
+                    animatedObjects[objectId]['effects'][effectNr]['currentsprite'] = tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['lefttile'];
+                    break;
+    
+                case 'leftdown':
+                    animatedObjects[objectId]['effects'][effectNr]['currentsprite'] = tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['leftdowntile'];
+                    break;
+    
+                case 'down':
+                    animatedObjects[objectId]['effects'][effectNr]['currentsprite'] = tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['downtile'];
+                    break;
+    
+                case 'rightdown':
+                    animatedObjects[objectId]['effects'][effectNr]['currentsprite'] = parseInt(tileProperties[baseTilesetInfo['tileSetName']][baseSprite]['rightdowntile']);
+                    break;
+            }
+    
+            // Correct the currentsprite if we've changed it using directions (as these sprites have the wrong gid)
+            var currentSprite = parseInt(animatedObjects[objectId]['effects'][effectNr]['currentsprite']) + (parseInt(baseTilesetInfo['firstgid'])-1);
+        } else {
+            // If we don't modify the direction, just use the basesprite.
+            var currentSprite = parseInt(animatedObjects[objectId]['effects'][effectNr]['currentsprite'])
+        }
+debugEcho('Handing id over to draw: ' + animatedObjects[objectId]['effects'][effectNr]['id']);
+        try{
+            drawTile(currentSprite, coordinates['x'], coordinates['y'], null, objectId, animatedObjects[objectId]['effects'][effectNr]['id']); // The given id contains the ID, but not yet the tilenumberonmap
+        } catch (error){
+            debugEcho('Error drawing ' + dText + ' of baseSprite ' + baseSprite + ' namely: ' + currentSprite + ' -- ' + error);
+        }
         
-        drawTile(animatedObjects[objectId]['effects'][effectNr]['sprite'], coordinates['x'], coordinates['y'], null, objectId);
+        var animationId = objectId + animatedObjects[objectId]['effects'][effectNr]['id'] + '-' + currentSprite;
+        debugEcho('Effects:' + animationId);
+        
+        debugArray(animatedTiles[baseTilesetInfo['tileSetName']]);
+        
+        try {
+            // If we have reached our goal AND we've played the effect one full time see if an "aftereffect" is due, and remove this effect
+            if(objectMoveProgressX > 1 && objectMoveProgressY > 1 && animatedTiles[baseTilesetInfo['tileSetName']][animationId]['played'] > 0){
+                
+                if(animatedObjects[objectId]['effects'][effectNr]['aftereffect'] !== undefined){
+                    animatedObjects[objectId]['effects'].push({'sprite': animatedObjects[objectId]['effects'][effectNr]['aftereffect'],
+                                                              'currentsprite': animatedObjects[objectId]['effects'][effectNr]['aftereffect'],
+                                                              'dx': animatedObjects[objectId]['effects'][effectNr]['x'],
+                                                              'dy': animatedObjects[objectId]['effects'][effectNr]['y'],
+                                                              'sx': animatedObjects[objectId]['effects'][effectNr]['x'],
+                                                              'sy': animatedObjects[objectId]['effects'][effectNr]['y'],
+                                                              'x': animatedObjects[objectId]['effects'][effectNr]['x'],
+                                                              'y': animatedObjects[objectId]['effects'][effectNr]['y'],
+                                                              'msPerTile': 100,
+                                                              'msMoved': 100,
+                                                              'started': now(),
+                                                              'id': rand(100)});
+                }
+                
+                
+                
+                // And finally, remove this effect
+                animatedObjects[objectId]['effects'].splice(effectNr,1);
+            }
+        } catch(error){
+            debugEcho('Error finishing effect of baseSprite ' + baseSprite + ' -- ' + error);
+        }
+        
     }
 }
 
@@ -383,8 +480,9 @@ function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
  *                             support adjusting the opacity of images.
  *@param integer   tileNumberOnMap
  *@param string    objectId    If it's an object, give its ID.
+ *@param    extraId     {integer}   If we need more of an ID
  */
-function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, objectId){
+function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, objectId, extraId){
     
     // World-animated tiles are identified by their tilenumber (so every instance
     // of one of these tiles has the same ID in the animation. That's what we want)
@@ -397,7 +495,11 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
         animationId = tileNumberOnMap;
         var isObject = false;
     } else {
-        animationId = objectId + '-' + tileNumberOnMap;
+        if(extraId !== undefined){
+            animationId = objectId + extraId + '-' + tileNumberOnMap;
+        } else {
+            animationId = objectId + '-' + tileNumberOnMap;
+        }
         var isObject = true;
     }
     
@@ -492,6 +594,7 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
             if(animatedTiles[tileSetName][animationId]["nextframe"] === undefined){
                 
                 animatedTiles[tileSetName][animationId]["played"]++;        // Add a play to the counter
+                debugEcho('Upped playcount');
                 
                 // If the animation is done we have to reset or remove it
                 if(animatedTiles[tileSetName][animationId]["replay"] != 1){
@@ -536,8 +639,9 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, 
  *                             support adjusting the opacity of images.
  *@param integer   object      If we want to draw an object we have to give
  *                             its id
+ *@param    extraId      {integer}      An extra id, mainly for animations
  */
-function drawTile(tileNumber, dx, dy, opacity, objectId) {
+function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
     
     // The name of the tileset we will pass on
     var tileSetName;
@@ -563,7 +667,7 @@ function drawTile(tileNumber, dx, dy, opacity, objectId) {
     tileSetInfo = new getTileSetInfo(sourceMap, tileNumber);
     tileSetName = tileSetInfo['tileSetName'];
     tileSetTpr = tileSetInfo['tpr'];
-    
+
     // We're going to fix the tileNumber next (to get the right tilenumber of the
     // map, not the tileset) But in the tileProperties object they are still stored
     // by their map tilenumber, which is logical.
@@ -577,7 +681,7 @@ function drawTile(tileNumber, dx, dy, opacity, objectId) {
     if(tileProperties[tileSetName][tileNumberOnMap] != undefined &&
        (tileProperties[tileSetName][tileNumberOnMap]['beginanimation'] != undefined || movingObject == true)){
         try {
-            drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, objectId);
+            drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileNumberOnMap, objectId, extraId);
         } catch(error) {
             debugEchoLfps('[drawTile] Error drawing <b>animated</b> tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
             );
@@ -857,28 +961,32 @@ function getLayerTile(mapname, layername, x, y) {
  */
 function getTileSetInfo(sourceMap, tileNumber){
     
-    // Loop through all the tilesets in this map to determine which one we need
-    for (var name in maps[sourceMap]['tilesets']){
-        
-        // Save the starting tile
-        var tileStart = tileSet[name]['firstgid'] - 1;
-        
-        // Calculate untill what tile we can find in here
-        var tileLimit = tileSet[name]['total'] + tileStart;
-        
-        if(tileNumber > tileStart && tileNumber < tileLimit) {
-            //Return everything but the image
-            return {
-                'tileSetName': name,
-                'tileWidth': tileSet[name]['tileWidth'],
-                'tileHeight': tileSet[name]['tileHeight'],
-                'tpr': tileSet[name]['tpr'],
-                'tpc': tileSet[name]['tpc'],
-                'total': tileSet[name]['total'],
-                'firstgid': tileSet[name]['firstgid']
-            };
-        }
-    };
+    try{
+        // Loop through all the tilesets in this map to determine which one we need
+        for (var name in maps[sourceMap]['tilesets']){
+            
+            // Save the starting tile
+            var tileStart = tileSet[name]['firstgid'] - 1;
+            
+            // Calculate untill what tile we can find in here
+            var tileLimit = tileSet[name]['total'] + tileStart;
+            
+            if(tileNumber > tileStart && tileNumber < tileLimit) {
+                //Return everything but the image
+                return {
+                    'tileSetName': name,
+                    'tileWidth': tileSet[name]['tileWidth'],
+                    'tileHeight': tileSet[name]['tileHeight'],
+                    'tpr': tileSet[name]['tpr'],
+                    'tpc': tileSet[name]['tpc'],
+                    'total': tileSet[name]['total'],
+                    'firstgid': tileSet[name]['firstgid']
+                };
+            }
+        };
+    } catch(error){
+        debugEcho('[getTileSetInfo] Had an error fetching "' + sourceMap + ', tileNumber: ' + tileNumber + ' -- ' + error);
+    }
 }
 
 /**
