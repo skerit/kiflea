@@ -87,7 +87,7 @@
 					"sprites": [1],
 					"spritesToDraw": [1], 
 					"currentSprite": 1,
-					"effects": [{'sprite': 43, 'currentsprite': 43, 'dx': 29, 'dy': 29, 'sx': 35, 'sy': 35, 'x': 35, 'y': 35, 'msPerTile': 100, 'msMoved': 100, 'started': 1000, 'aftereffect': 107, 'id': 5}],
+					"effects": [{'sprite': 43, 'currentsprite': 43, 'dx': 29, 'dy': 29, 'sx': 35, 'sy': 35, 'x': 35, 'y': 35, 'msPerTile': 90, 'msMoved': 100, 'started': 1000, 'aftereffect': 107, 'id': 5}],
 					"selection": 0,
 					"currenthealth": 10,
 					"fullhealth": 100,

@@ -1,6 +1,19 @@
 
+--- Friday 2010/07/23 ---
+* Fixing the drawAnimated function and splitting it up a bit.
+* We're currently using tileNumber and tileGid at the same time. That's confusing.
+  tileNumber is the order of a tile on a tileset (so it always starts with 1),
+  tileGid is the TOTAL order of the tile in the map (the .tmx.xml file).
+  Maybe we should create a function that gets OR the tileSetName OR the mapname and
+  always the tileGid, or something. Just thinking out loud.
+* Success! An effect can now have an aftereffect, which will play once.
+  You can also give any tile an "adjustx" and "adjusty" attribute, but it will
+  only be used for effects (for now, objects will follow later)
+  This is useful for tiles that are too big. They aren't places at the canter
+  of a tile, but on top of it. With this adjustment you can have a big explosion
+  at the center of your destination, as can be seen in the example.
 
---- thursday 2010/07/22 ---
+--- Thursday 2010/07/22 ---
 
 * Created a few functions that will determine where an object is (leftup, leftdown, ...)
   first get the angle with getAngle() and then get the text with getAngleDirection();

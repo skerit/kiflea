@@ -415,6 +415,8 @@
   <image source="images/explosion.png"/>
   <tile id="0">
    <properties>
+    <property name="adjustx" value="-100"/>
+    <property name="adjusty" value="39"/>
     <property name="beginanimation" value="1"/>
     <property name="fps" value="7"/>
     <property name="nextframe" value="2"/>
