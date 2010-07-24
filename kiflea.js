@@ -154,11 +154,20 @@ function startEngine() {
     // Load the HUD
     getHud();
     
-    // Bind key functions
-    window.onkeydown = onKeyDown;
-    //window.onkeyup = onKeyUp;
-    //window.onblur = OnBlur;
-    //window.onfocus = OnFocus;
+    // If we're using the webkit engine, capture the keydowns
+    if(navigator.userAgent.indexOf("WebKit") != -1){
+	debugEcho('Webkit detected in userAgent at char ' + navigator.userAgent.indexOf("WebKit"));
+	window.onkeydown = onKeyPress;
+    } else{
+	// If we're using gecko, capture the keypress
+	if(navigator.userAgent.indexOf("Gecko") != -1){
+	    debugEcho('Gecko detected in userAgent at char ' + navigator.userAgent.indexOf("Gecko"));
+	    window.onkeypress = onKeyPress;
+	} else {
+	    debugEcho('No Webkit or Gecko? This doesn\'t really run on anything else.');
+	}
+    }
+
     jQuery(document).ready(function(){
        $('#'+canvasId).click(function(e){
 	  //alert(e.pageX +', '+ e.pageY);

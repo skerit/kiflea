@@ -111,8 +111,8 @@ var key = {
  *This function is called whenever a key is pressed on the keyboard
  *@param    key     {int}   The key
  */
-function onKeyDown(keypress) {
-    
+function onKeyPress(keypress) {
+
     // If the debugCounter is bigger than 1000 this means nothing has happened
     // In a long time. It's best to reset it.
     if(debugCounter > 1000) debugCounterReset();
@@ -268,7 +268,7 @@ function onMouseclick(x, y){
     // If we've clicked a HUD layer, do something
     if(typeof(clickedLayer) == 'object') {
         
-        if(clickedLayer['action'] !== undefined) executeAction(clickedLayer['action']);
+        if(clickedLayer['action'] !== undefined) executeAction(clickedLayer['action']['what'], getSelectedObject(), clickedLayer['action']['value']);
         
     } else { // Alse change our selection
         // Store the tile coordinates in a variable, as it's an object

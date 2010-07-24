@@ -1,4 +1,9 @@
 
+--- Saturday 2010/07/24 ---
+* Effects now function properly, allthough moving effest sometimes leave an object
+  in the animatedTiles array. This is because when an effect changes direction, it
+  kind of "orphans" the previous tile and nobody's left to delete it.
+
 --- Friday 2010/07/23 ---
 * Fixing the drawAnimated function and splitting it up a bit.
 * We're currently using tileNumber and tileGid at the same time. That's confusing.

@@ -41,6 +41,20 @@ function getAngle(sx,sy,dx,dy){
 }
 
 /**
+ *Give us a random text
+ */
+function randString(length) {
+	var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+	var randomstring = '';
+	for (var i=0; i<length; i++) {
+		var rnum = Math.floor(Math.random() * chars.length);
+		randomstring += chars.substring(rnum,rnum+1);
+	}
+	return randomstring;
+}
+
+
+/**
  *Give us a random number between 1 and the given number
  */
 function rand(end){

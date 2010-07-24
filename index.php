@@ -72,7 +72,8 @@
 					"selection": 0,
 					"currenthealth": 55,
 					"fullhealth": 100,
-					"path": []
+					"path": [],
+					"actionsreceived": []
 				},
 				"U00002":{
 					"x": 35,
@@ -84,14 +85,15 @@
 					"msMoved": 100,
 					"lastMoved": 1000,
 					"map": "grassland.tmx.xml",
-					"sprites": [1],
-					"spritesToDraw": [1], 
+					"sprites": [1, 21],
+					"spritesToDraw": [1,21], 
 					"currentSprite": 1,
 					"effects": [{'sprite': 43, 'currentsprite': 43, 'dx': 29, 'dy': 29, 'sx': 35, 'sy': 35, 'x': 35, 'y': 35, 'msPerTile': 90, 'msMoved': 100, 'started': 1000, 'aftereffect': 107, 'id': 5}],
 					"selection": 0,
-					"currenthealth": 10,
+					"currenthealth": 100,
 					"fullhealth": 100,
-					"path": []
+					"path": [],
+					"actionsreceived": []
 				},
 				"U00003":{
 					"x": 25,
@@ -103,14 +105,15 @@
 					"msMoved": 100,
 					"lastMoved": 1000,
 					"map": "grassland.tmx.xml",
-					"sprites": [1],
+					"sprites": [1, 21],
 					"spritesToDraw": [1,21], 
 					"currentSprite": 1,
 					"effects": [],
 					"selection": 0,
 					"currenthealth": 78,
 					"fullhealth": 100,
-					"path": [{'x': 10, 'y': 10},{'x':10, 'y':10}]
+					"path": [{'x': 10, 'y': 10},{'x':10, 'y':10}],
+					"actionsreceived": []
 				}
 			}
 			startEngine();
@@ -167,6 +170,7 @@
 					<td>
 						<ul class="cc"><li><a href="http://opengameart.org/content/anime-style-male-base-sprite">Anime-style male base sprite</a> by Tayoko
 						<li><a href="http://opengameart.org/content/pixel-art-contest-entry-brigand-armor">Pixel Art Contest entry: Brigand Armor</a> by Blarumyrran
+						<li><a href="http://opengameart.org/content/fireball-spell">Fireball Spell</a> by pfunked
 						</ul>
 					</td></tr>
 				</table>

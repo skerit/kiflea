@@ -144,6 +144,19 @@ function renderLoop(){
 }
 
 /**
+ *Get the objectID of the current selection
+ *@returns  {string}    The objectId of the current selection
+ */
+function getSelectedObject(){
+    
+    if(animatedObjects[userPosition.uid]['selection'] !== undefined) {
+        return animatedObjects[userPosition.uid]['selection'];
+    } else {
+        return;
+    }
+}
+
+/**
  *Draw a circle under our selection
  */
 function highlightSelectedObject(){
@@ -263,32 +276,40 @@ function renderEffects(objectId){
             debugEcho('Error drawing ' + dText + ' of baseSprite ' + baseSprite + ' namely: ' + currentSprite + ' -- ' + error);
         }
         
-        var animationId = objectId + animatedObjects[objectId]['effects'][effectNr]['id'] + '-' + currentSprite;
+        var animationId = objectId + '-' + animatedObjects[objectId]['effects'][effectNr]['id'] + '-' + currentSprite;
         
         try {
-            // If we have reached our goal AND we've played the effect one full time see if an "aftereffect" is due, and remove this effect
-            if(objectMoveProgressX > 1 && objectMoveProgressY > 1 && animatedTiles[baseTilesetInfo['tileSetName']][animationId]['played'] > 0){
+
+            // If we have reached our destination
+            if(objectMoveProgressX > 1 && objectMoveProgressY > 1){
                 
-                if(animatedObjects[objectId]['effects'][effectNr]['aftereffect'] !== undefined){
-                    animatedObjects[objectId]['effects'].push({'sprite': animatedObjects[objectId]['effects'][effectNr]['aftereffect'],
-                                                              'currentsprite': animatedObjects[objectId]['effects'][effectNr]['aftereffect'],
-                                                              'dx': animatedObjects[objectId]['effects'][effectNr]['x'],
-                                                              'dy': animatedObjects[objectId]['effects'][effectNr]['y'],
-                                                              'sx': animatedObjects[objectId]['effects'][effectNr]['x'],
-                                                              'sy': animatedObjects[objectId]['effects'][effectNr]['y'],
-                                                              'x': animatedObjects[objectId]['effects'][effectNr]['x'],
-                                                              'y': animatedObjects[objectId]['effects'][effectNr]['y'],
-                                                              'msPerTile': 100,
-                                                              'msMoved': 100,
-                                                              'started': now(),
-                                                              'id': rand(100)});
+                // And if we've played the effect one full time OR (it was a moving object OR it has an aftereffect)
+                if(animatedTiles[baseTilesetInfo['tileSetName']][animationId]['played'] > 0 || ((dx != sx || dy != sy) || animatedObjects[objectId]['effects'][effectNr]['aftereffect'] !== undefined)){
+                    
+                    if(animatedObjects[objectId]['effects'][effectNr]['aftereffect'] !== undefined){
+                        animatedObjects[objectId]['effects'].push({'sprite': animatedObjects[objectId]['effects'][effectNr]['aftereffect'],
+                                                                  'currentsprite': animatedObjects[objectId]['effects'][effectNr]['aftereffect'],
+                                                                  'dx': animatedObjects[objectId]['effects'][effectNr]['x'],
+                                                                  'dy': animatedObjects[objectId]['effects'][effectNr]['y'],
+                                                                  'sx': animatedObjects[objectId]['effects'][effectNr]['x'],
+                                                                  'sy': animatedObjects[objectId]['effects'][effectNr]['y'],
+                                                                  'x': animatedObjects[objectId]['effects'][effectNr]['x'],
+                                                                  'y': animatedObjects[objectId]['effects'][effectNr]['y'],
+                                                                  'msPerTile': 100,
+                                                                  'msMoved': 100,
+                                                                  'started': now(),
+                                                                  'id': rand(1000)});
+                    }
+                    
+                    // And finally, remove this effect from the user
+                    animatedObjects[objectId]['effects'].splice(effectNr,1);
+                    
+                    // And from the animatedTiles array (However: this won't delete the tiles from before we changed direction)
+                    delete animatedTiles[baseTilesetInfo['tileSetName']][animationId];
                 }
-                
-                // And finally, remove this effect
-                animatedObjects[objectId]['effects'].splice(effectNr,1);
             }
         } catch(error){
-            debugEcho('Error finishing effect of baseSprite ' + baseSprite + ' -- ' + error);
+            debugEcho('Error finishing effect of baseSprite ' + baseSprite + ' - animationid ' + animationId + '  - dtext: ' + dText + ' - ' + error);
         }
         
     }
@@ -517,7 +538,7 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileGidOnMap, obj
     if(objectId === undefined) {
         animationId = tileGidOnMap;
     } else {
-        animationId = objectId + extraId + '-' + tileGidOnMap;
+        animationId = objectId + '-' + extraId + '-' + tileGidOnMap;
     }
     
     // Check if this tile already exists in the array

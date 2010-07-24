@@ -38,16 +38,25 @@ function getHud(){
 
 /**
  *Execute actions
- *@param	actionName	{string}}	The name of the action to do
+ *@param	actionName	{string}	The name of the action to do
+ *@param	target		{string}	The target of the action
+ *@param	value		{string}	The value of the action
  */
-function executeAction(actionName){
-    
+function executeAction(actionName, target, value){
+
     switch(actionName){
 	
 	// Testing action that will up your HP
 	case 'hpup':
-	    if(animatedObjects[userPosition.uid]['currenthealth'] < animatedObjects[userPosition.uid]['fullhealth']){
-		animatedObjects[userPosition.uid]['currenthealth']++;
+	    if(animatedObjects[target]['currenthealth'] < animatedObjects[target]['fullhealth']){
+		animatedObjects[target]['currenthealth']++;
+	    }
+	    break;
+
+	case 'fireball':
+	    if(animatedObjects[target]['currenthealth'] > 0){
+		animatedObjects[target]['currenthealth'] -= value;
+		animatedObjects[target]['effects'].push({'sprite': 43, 'currentsprite': 43, 'sx': animatedObjects[userPosition.uid]['x'], 'sy': animatedObjects[userPosition.uid]['y'], 'dx': animatedObjects[target]['x'], 'dy': animatedObjects[target]['y'], 'x': animatedObjects[userPosition.uid]['x'], 'y': animatedObjects[userPosition.uid]['y'], 'msPerTile': 90, 'msMoved': 100, 'started': now(), 'aftereffect': 107, 'id': rand(100)});
 	    }
 	    break;
     }
@@ -71,8 +80,8 @@ function drawHud(){
 	
 	// Loop through the object and alculate the hudvariable for each
 	for(name in tempValues){
-	    // Only get the Hudvariable if it contains an object, else just use the value in it.
-	    tempValues[name] = (typeof(tempValues[name]) == 'object') ? getHudVariable(tempValues[name]['dependon'], tempValues[name]['field'], tempValues[name]['value'], tempValues[name]) : tempValues[name];
+	    // Only get the Hudvariable if it contains an object AND isn't an action, else just use the value in it.
+	    tempValues[name] = (typeof(tempValues[name]) == 'object' && name != "action") ? getHudVariable(tempValues[name]['dependon'], tempValues[name]['field'], tempValues[name]['value'], tempValues[name]) : tempValues[name];
 	}
 	
 	// Go to the next layer if the "show" field is 0

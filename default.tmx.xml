@@ -318,6 +318,82 @@
     <property name="nextframe" value="16"/>
    </properties>
   </tile>
+  <tile id="16">
+   <properties>
+    <property name="beginanimation" value="1"/>
+    <property name="fps" value="5"/>
+    <property name="nextframe" value="18"/>
+    <property name="replay" value="-1"/>
+   </properties>
+  </tile>
+  <tile id="17">
+   <properties>
+    <property name="nextframe" value="19"/>
+   </properties>
+  </tile>
+  <tile id="18">
+   <properties>
+    <property name="nextframe" value="20"/>
+   </properties>
+  </tile>
+  <tile id="19">
+   <properties>
+    <property name="nextframe" value="21"/>
+   </properties>
+  </tile>
+  <tile id="20">
+   <properties>
+    <property name="nextframe" value="22"/>
+   </properties>
+  </tile>
+  <tile id="21">
+   <properties>
+    <property name="nextframe" value="23"/>
+   </properties>
+  </tile>
+  <tile id="22">
+   <properties>
+    <property name="nextframe" value="24"/>
+   </properties>
+  </tile>
+  <tile id="24">
+   <properties>
+    <property name="beginanimation" value="1"/>
+    <property name="fps" value="5"/>
+    <property name="nextframe" value="26"/>
+    <property name="replay" value="-1"/>
+   </properties>
+  </tile>
+  <tile id="25">
+   <properties>
+    <property name="nextframe" value="27"/>
+   </properties>
+  </tile>
+  <tile id="26">
+   <properties>
+    <property name="nextframe" value="28"/>
+   </properties>
+  </tile>
+  <tile id="27">
+   <properties>
+    <property name="nextframe" value="29"/>
+   </properties>
+  </tile>
+  <tile id="28">
+   <properties>
+    <property name="nextframe" value="30"/>
+   </properties>
+  </tile>
+  <tile id="29">
+   <properties>
+    <property name="nextframe" value="31"/>
+   </properties>
+  </tile>
+  <tile id="30">
+   <properties>
+    <property name="nextframe" value="32"/>
+   </properties>
+  </tile>
   <tile id="32">
    <properties>
     <property name="beginanimation" value="1"/>
@@ -391,6 +467,44 @@
   <tile id="46">
    <properties>
     <property name="nextframe" value="48"/>
+   </properties>
+  </tile>
+  <tile id="48">
+   <properties>
+    <property name="beginanimation" value="1"/>
+    <property name="fps" value="5"/>
+    <property name="nextframe" value="50"/>
+    <property name="replay" value="-1"/>
+   </properties>
+  </tile>
+  <tile id="49">
+   <properties>
+    <property name="nextframe" value="51"/>
+   </properties>
+  </tile>
+  <tile id="50">
+   <properties>
+    <property name="nextframe" value="52"/>
+   </properties>
+  </tile>
+  <tile id="51">
+   <properties>
+    <property name="nextframe" value="53"/>
+   </properties>
+  </tile>
+  <tile id="52">
+   <properties>
+    <property name="nextframe" value="54"/>
+   </properties>
+  </tile>
+  <tile id="53">
+   <properties>
+    <property name="nextframe" value="55"/>
+   </properties>
+  </tile>
+  <tile id="54">
+   <properties>
+    <property name="nextframe" value="56"/>
    </properties>
   </tile>
   <tile id="56">
@@ -472,6 +586,9 @@
     <property name="nextframe" value="12"/>
    </properties>
   </tile>
+ </tileset>
+ <tileset firstgid="119" name="redbutton" tilewidth="50" tileheight="50">
+  <image source="images/redbutton.png"/>
  </tileset>
  <layer name="Emptylayer" width="1" height="1">
   <data encoding="base64">
