@@ -172,6 +172,7 @@ function highlightSelectedObject(){
         ctx.arc(selectionC['x']+(maps[userPosition.map]['tileWidth']/2),selectionC['y']-(maps[userPosition.map]['tileHeight']/2),maps[userPosition.map]['tileWidth']/2,0,Math.PI*2,true);
         ctx.fill();
         ctx.stroke();
+        ctx.closePath();
     }
 }
 

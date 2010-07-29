@@ -13,14 +13,42 @@
 	},
 	{
 		"orientation": "topleft",
+		"name": "laurelscircle",
+		"tileset": "ctx-circle",
+		"sx": 0,
+		"sy": 0,
+		"width": 30,
+		"height": 30,
+		"dx": 41,
+		"dy": 37,
+		"action": 1,
+		"fillstyle": "rgba(255,255,255,0.6)",
+		"strokestyle": "rgba(0,0,0,0.4)",
+		"show": 1
+	},
+	{
+		"orientation": "topleft",
+		"name": "laurels",
+		"tileset": "laurels",
+		"sx": 0,
+		"sy": 0,
+		"width": 72,
+		"height": 72,
+		"dx": 5,
+		"dy": 2,
+		"action": 1,
+		"show": 1
+	},
+	{
+		"orientation": "topleft",
 		"name": "healthbase",
 		"tileset": "hp",
 		"sx": 6,
 		"sy": 28,
 		"width": 177,
 		"height": 20,
-		"dx": 10,
-		"dy": 5,
+		"dx": 85,
+		"dy": 10,
 		"action": 1,
 		"show": 1
 	},
@@ -32,8 +60,8 @@
 		"sy": 4,
 		"width": {"dependon":"own", "field":"health", "value":177},
 		"height": 20,
-		"dx": 10,
-		"dy": 5,
+		"dx": 85,
+		"dy": 10,
 		"action": {"what":"hpup", "target":"selection", "value":10},
 		"show": 1
 	},
@@ -45,8 +73,8 @@
 		"sy": 28,
 		"width": 177,
 		"height": 20,
-		"dx": 10,
-		"dy": 30,
+		"dx": 85,
+		"dy": 35,
 		"show": {"dependon":"selection", "field":"health", "value":1}
 	},
 	{
@@ -57,8 +85,8 @@
 		"sy": 4,
 		"width": {"dependon":"selection", "field":"health", "value":177},
 		"height": 20,
-		"dx": 10,
-		"dy": 30,
+		"dx": 85,
+		"dy": 35,
 		"show": {"dependon":"selection", "field":"health", "value":1}
 	},
 	{

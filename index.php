@@ -25,11 +25,13 @@
 		#container {height: 95%};
 	</style>
 	<!--[if IE]><script type="text/javascript" src="excanvas.compiled.js"></script><![endif]-->
+	<script type="text/javascript" src="json.js"></script>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 	<script type="text/javascript" src="kiflea.pathfinding.js"></script>
 	<script type="text/javascript" src="kiflea.rendering.js"></script>
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
 	<script type="text/javascript" src="kiflea.keyboard.js"></script>
+	<script type="text/javascript" src="kiflea.sercon.js"></script>
 	<script type="text/javascript" src="kiflea.misc.js"></script>
 	<script type="text/javascript" src="kiflea.hud.js"></script>
 	<script type="text/javascript" src="kiflea.js"></script>
@@ -54,28 +56,12 @@
 			backgroundColor = "rgb(255,255,255)";
 			defaultSprites = 'default.tmx.xml';
 			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites
+			connectToServer = true;
+			conAddress = "ws://kipdola.be";
+			conPort = 1234;
 			animatedObjects = {	// Test data for objects
-				"U00001": {
-					"x": 30,
-					"y": 31,
-					"moveToX": 30,
-					"moveToY": 31,
-					"fromX": 30,
-					"fromY": 31,
-					"msMoved": 100,
-					"lastMoved": 1000,
-					"map": "grassland.tmx.xml",
-					"sprites": [1,21],
-					"spritesToDraw": [1,21], 
-					"currentSprite": 1,
-					"effects": [],
-					"selection": 0,
-					"currenthealth": 55,
-					"fullhealth": 100,
-					"path": [],
-					"actionsreceived": []
-				},
 				"U00002":{
+					"uid": "U00002",
 					"x": 35,
 					"y": 35,
 					"moveToX": 35,
@@ -96,6 +82,7 @@
 					"actionsreceived": []
 				},
 				"U00003":{
+					"uid": "U00003",
 					"x": 25,
 					"y": 25,
 					"moveToX": 25,
@@ -116,9 +103,33 @@
 					"actionsreceived": []
 				}
 			}
+
+			animatedObjects[userPosition.uid] = {
+				"uid": userPosition.uid,
+				"x": 30,
+				"y": 31,
+				"moveToX": 30,
+				"moveToY": 31,
+				"fromX": 30,
+				"fromY": 31,
+				"msMoved": 100,
+				"lastMoved": 1000,
+				"map": "grassland.tmx.xml",
+				"sprites": [1,21],
+				"spritesToDraw": [1,21], 
+				"currentSprite": 1,
+				"effects": [],
+				"selection": 0,
+				"currenthealth": 55,
+				"fullhealth": 100,
+				"path": [],
+				"actionsreceived": []
+			};
+
 			startEngine();
 		});
 	</script>
+	
 	<script type="text/javascript">
 	
 	  var _gaq = _gaq || [];
@@ -147,6 +158,7 @@
 			<button id="togglegrid" onclick="debugGrid=!debugGrid;">Toggle grid</button>
 			<button id="togglefps" onclick="debugOn=!debugOn;">Toggle debug</button><br/>
 			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['currenthealth']--;">Detract life</button>
+			<button id="testjson" onclick="sendTestJson()">Send JSON Test</button>
 			<br/><br/>
 			<input id="dummyinput" style="margin-bottom:150px;">
 		</div>

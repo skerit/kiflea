@@ -1,4 +1,31 @@
 
+--- Thursday 2010/07/29 ---
+* Cleaning up the server-code a bit for the client commit.
+
+Performance offline:
+    - Firefox 4.0b1 Windows: 30ms = 31 fps (2.6 ghz dualcore 2 Gib mem)
+
+--- Tuesday 2010/07/27 ---
+* Most of my time is now going into the server (written in Python)
+  I'll once again wait a while until its code is "good enough" for a first commit.
+  I'll still commit changes to the client, but they'll be mostly for enabling
+  on-line communications with the server.
+* A new file has been created: kiflea.sercon.js, which deals with the connection
+  to the server via websockets.
+* There is a posibility to not use websockets, but it involves a hidden flash file.
+  That would kind of defeat the purpose of this project.
+  Anyway: the more code added to the engine, the slower it becomes on older browsers,
+  which don't support websockets. So adding the flash option would enable people to
+  play the game very slowly on older browsers.
+* A basic server was set up. It sent an update to every user 25 times a second.
+  A user sent an update as high as its framerate (so in chrome: 100 times a second)
+  When ten "users" were online, the program took 53% of the CPU time , on my VPS.
+  Bandwith speed was quite high, too.
+* When it was scaled back to 5 updates per second sent from the server, and only
+  an update sent to the server on every keypress, it dropped to 7-8% (1.3% memory out of 512 megs)
+  When we doubled the ammount of users to 20, it jumped to 27%. These were all in view.
+  When I moved them all out of view, so no screen had more than 2 characters, it dropped to 1-3% again.
+
 --- Saturday 2010/07/24 ---
 * Effects now function properly, allthough moving effest sometimes leave an object
   in the animatedTiles array. This is because when an effect changes direction, it

@@ -106,21 +106,36 @@ function drawHud(){
                 tempValues['dy'] = canvasHeight - tempValues['dy'] - tempValues['height'];
                 break;
         }
-     
-        debugHud('Drawhud ' + tempValues['name'] + ' (' + tempValues['sx'] + ',' + tempValues['sy'] + ',' + tempValues['width'] + ',' + tempValues['height'] + ') to (' + tempValues['dx'] + ',' + tempValues['dy'] + ',' + tempValues['width'] + ',' + tempValues['height'] + ')');
-        
-        // Draw the actual image
-        ctx.drawImage(
-		      tileSet[tempValues['tileset']]['image'],
-		      tempValues['sx'],
-		      tempValues['sy'],
-		      tempValues['width'],
-		      tempValues['height'],
-		      tempValues['dx'],
-		      tempValues['dy'],
-		      tempValues['width'],
-		      tempValues['height']
-	);
+	
+	switch(tempValues['tileset']){
+	    
+	    case "ctx-circle":
+		ctx.beginPath();
+		ctx.fillStyle = tempValues['fillstyle'];
+		ctx.strokeStyle = tempValues['strokestyle'];
+		ctx.arc(tempValues['dx'],tempValues['dy'],tempValues['width'],0,Math.PI*2,true);
+		ctx.fill();
+		ctx.stroke();
+		ctx.closePath();
+		break;
+	    
+	    default:
+		debugHud('Drawhud ' + tempValues['name'] + ' (' + tempValues['sx'] + ',' + tempValues['sy'] + ',' + tempValues['width'] + ',' + tempValues['height'] + ') to (' + tempValues['dx'] + ',' + tempValues['dy'] + ',' + tempValues['width'] + ',' + tempValues['height'] + ')');
+	   
+		// Draw the actual image
+		ctx.drawImage(
+			 tileSet[tempValues['tileset']]['image'],
+			 tempValues['sx'],
+			 tempValues['sy'],
+			 tempValues['width'],
+			 tempValues['height'],
+			 tempValues['dx'],
+			 tempValues['dy'],
+			 tempValues['width'],
+			 tempValues['height']
+		);
+		break;
+	}
 	
 	// Put this layer in the previousHudLayers array.
 	// After this function, every layer that has been drawn will be there.

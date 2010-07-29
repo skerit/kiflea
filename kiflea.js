@@ -17,6 +17,9 @@
 	Last Modified: Trunk
 */
 
+var connectToServer = false;	// Do we want to connect to a server?
+var conPort = 2000;		// The port to connect to the server
+var conAddress = "ws://host.tld";// The domain to connect to
 var fps = 30;                   // The default desired Frames Per Second
 var defaultTileWidth = 32;      // The default tileWidth. Deprecated
 var defaultTileHeight = 32;     // The default tileHeight. Deprecated
@@ -50,7 +53,7 @@ var maps = {};          // An array that stores the data of all the maps
 var visibleTilesX;      // The ammount of tiles visible per row (should be deprecated)
 var visibleTilesY;      // The ammount of tiles visible per col (should be deprecated)
 var loopInterval = 0;
-
+var ws;
 // Normally you only want to draw what you can see (that's logic)
 // But since this engine supports multiple tile sizes in one world it's sometimes
 // necesarry to draw outside those bounds.
@@ -58,7 +61,7 @@ var drawExtras = 5;
 
 // Data on the whereabouts of our user (This variable will be scaled down, as most of its data will be put in the objects variable)
 var userPosition = {
-    "uid": "U00001",	// The userid (and object id)
+    "uid": "U"+ rand(100000),	// The userid (and object id)
     "x": 0, 		// Where is the user currently
     "y": 0,
     "moveToX": 0, 	// Where is the user going?
@@ -177,6 +180,9 @@ function startEngine() {
     
     // Set focus to the dummyInput!
     $("#dummyinput").focus();
+    
+    // Get a connection to the server, if we want
+    getConnection();
     
     // Start the renderloop!
     loopInterval = window.setInterval("renderLoop()", 1000 / fps);

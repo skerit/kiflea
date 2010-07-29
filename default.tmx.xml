@@ -590,6 +590,9 @@
  <tileset firstgid="119" name="redbutton" tilewidth="50" tileheight="50">
   <image source="images/redbutton.png"/>
  </tileset>
+ <tileset firstgid="120" name="laurels" tilewidth="72" tileheight="72">
+  <image source="images/laurels.png"/>
+ </tileset>
  <layer name="Emptylayer" width="1" height="1">
   <data encoding="base64">
    AAAAAA==

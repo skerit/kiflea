@@ -61,6 +61,16 @@ function rand(end){
   return ( Math.floor ( Math.random ( ) * end + 1 ) );
 }
 
+/**
+ *A function to send test messages with to the server
+ */
+function sendTestJson(){
+ //var sendme = $.toJSON(animatedObjects);
+ //ws.send(sendme);
+ debugEcho('Testing: ');
+ ws.send(JSON.stringify(animatedObjects[userPosition.uid]));
+ debugEcho('Sent: ' + JSON.stringify(animatedObjects[userPosition.uid]));
+}
 
 /**
  *Return the direction of an angle
