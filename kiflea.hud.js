@@ -218,3 +218,23 @@ function getHudVariable(dependon, field, value, purpose){
     return result;
     
 }
+
+/**
+ *Draw the cursor at the position of the mouse
+ */
+function drawCursor(){
+    //drawTileSpecific("fireball", 1, mouseX, mouseY);
+
+    ctx.drawImage(
+	     tileSet['pointer']['image'],
+	     0,
+	     0,
+	     19,
+	     19,
+	     mouseX,
+	     mouseY,
+	     19,
+	     19
+    );
+
+}

@@ -58,6 +58,13 @@ var ws;
 // But since this engine supports multiple tile sizes in one world it's sometimes
 // necesarry to draw outside those bounds.
 var drawExtras = 5;
+var keyFake = {         // Keypresses are handled in an annoying way.
+    "ms": 0,
+    "up": false,
+    "down": false,
+    "right": false,
+    "left": false    
+};
 
 // Data on the whereabouts of our user (This variable will be scaled down, as most of its data will be put in the objects variable)
 var userPosition = {
@@ -98,7 +105,9 @@ var debugGridY = 32;
 var loadHud = 'hud.json'	    // The URL of the HUD file we'll be loading
 var hudLayers = {};		    // We'll store the HUD in here.
 var previousHudLayers = {};	    // To determine wheter we've clicked on the HUD we need to know where they WERE.
-
+var mouseX = 0;
+var mouseY = 0;
+    
 /**
  *Enables or disables the engine
  */
@@ -148,6 +157,11 @@ function startEngine() {
         // Canvas not available!
         echo('Canvas is not available in this browser!');
     }
+
+    // Disable "selecting" the canvas when clicked.
+    var element = document.getElementById(canvasId);
+    element.onselectstart = function () { return false; }
+    element.onmousedown = function () { return false; }
     
     debugEcho('Canvas has been initialized');
     
@@ -157,19 +171,8 @@ function startEngine() {
     // Load the HUD
     getHud();
     
-    // If we're using the webkit engine, capture the keydowns
-    if(navigator.userAgent.indexOf("WebKit") != -1){
-	debugEcho('Webkit detected in userAgent at char ' + navigator.userAgent.indexOf("WebKit"));
-	window.onkeydown = onKeyPress;
-    } else{
-	// If we're using gecko, capture the keypress
-	if(navigator.userAgent.indexOf("Gecko") != -1){
-	    debugEcho('Gecko detected in userAgent at char ' + navigator.userAgent.indexOf("Gecko"));
-	    window.onkeypress = onKeyPress;
-	} else {
-	    debugEcho('No Webkit or Gecko? This doesn\'t really run on anything else.');
-	}
-    }
+    window.onkeydown = onKeyDown;
+    window.onkeyup = onKeyUp;
 
     jQuery(document).ready(function(){
        $('#'+canvasId).click(function(e){
@@ -177,6 +180,12 @@ function startEngine() {
 	  onMouseclick(e.pageX-this.offsetLeft, e.pageY-this.offsetTop);
        }); 
     })
+
+    // Store the mouse position at all times
+    $('#'+canvasId).mousemove( function(e) {
+       mouseX = e.pageX-this.offsetLeft; 
+       mouseY = e.pageY-this.offsetTop;
+     });
     
     // Set focus to the dummyInput!
     $("#dummyinput").focus();

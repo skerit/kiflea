@@ -109,7 +109,7 @@
   </tile>
   <tile id="19">
    <properties>
-    <property name="nextframe" value="18"/>
+    <property name="nextframe" value="17"/>
    </properties>
   </tile>
  </tileset>
@@ -592,6 +592,9 @@
  </tileset>
  <tileset firstgid="120" name="laurels" tilewidth="72" tileheight="72">
   <image source="images/laurels.png"/>
+ </tileset>
+ <tileset firstgid="121" name="pointer" tilewidth="38" tileheight="19">
+  <image source="images/pointer.png"/>
  </tileset>
  <layer name="Emptylayer" width="1" height="1">
   <data encoding="base64">

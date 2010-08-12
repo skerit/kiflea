@@ -108,85 +108,113 @@ var key = {
 }
 
 /**
- *This function is called whenever a key is pressed on the keyboard
- *@param    key     {int}   The key
+ *This function simulates a keypress.
+ *It checks if an arrow key has been pressed down and repeats it.
+ *This function is called in the renderloop()
  */
-function onKeyPress(keypress) {
+function fakePress() {
+    
+    // Only do these keypresses every other loop
+    if(keyFake.ms > 1){
+        keyFake.ms = 0; // Reset the ms timer
+        
+        if(keyFake.up == true) keyFinish({'keyCode': key.Uparrow});
+        if(keyFake.down == true) keyFinish({'keyCode': key.Downarrow});
+        if(keyFake.right == true) keyFinish({'keyCode': key.Rightarrow});
+        if(keyFake.left == true) keyFinish({'keyCode': key.Leftarrow});
+    }
+    
+    keyFake.ms++;
+}
 
-    // If the debugCounter is bigger than 1000 this means nothing has happened
-    // In a long time. It's best to reset it.
-    if(debugCounter > 1000) debugCounterReset();
-
-    // Calculate how many tiles Y has to move
-    var moveAmmountY = Math.abs((animatedObjects[userPosition.uid]['moveToY'] - animatedObjects[userPosition.uid]['fromY']));
-
-    // Calculate how many tiles X has to move
-    var moveAmmountX = Math.abs((animatedObjects[userPosition.uid]['moveToX'] - animatedObjects[userPosition.uid]['fromX']));
+/**
+ *Handle keypresses
+ */
+function onKeyDown(keypress) {
 
     // Select the correct key and execute its functions
     switch (keypress.keyCode) {
 
         case key.Uparrow: // Arrow up
-            // Only store up to 2 movements, otherwise the user could be moving for a long time
-            if(moveAmmountY<userMoveQueue && moveAmmountX == 0) {
-                
-                // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
-                if(moveAmmountY == 0){
-                    animatedObjects[userPosition.uid]['lastMoved'] = now();
-                    animatedObjects[userPosition.uid]['direction'] = 'up';
-                }
-                
-                // Actually change our direction
-                animatedObjects[userPosition.uid]['moveToY']--;
-            }
+            keyFake.up = true;
             break
 
         case key.Rightarrow: // Arrow right
-            // Only store up to 2 movements, otherwise the user could be moving for a long time
-            if(moveAmmountX<userMoveQueue && moveAmmountY == 0) {
-                
-                // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
-                if(moveAmmountX == 0){
-                    animatedObjects[userPosition.uid]['lastMoved'] = now();
-                    animatedObjects[userPosition.uid]['direction'] = 'right';
-                }
-                
-                // Actually change our direction
-                animatedObjects[userPosition.uid]['moveToX']++;
-            }
+            keyFake.right = true;
             break
 
         case key.Downarrow: // Arrow down
-            // Only store up to 2 movements, otherwise the user could be moving for a long time
-            if(moveAmmountY<userMoveQueue && moveAmmountX == 0) {
-                
-                // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
-                if(moveAmmountY == 0){
-                    animatedObjects[userPosition.uid]['lastMoved'] = now();
-                    animatedObjects[userPosition.uid]['direction'] = 'down';
-                }
-                
-                // Actually change our direction
-                animatedObjects[userPosition.uid]['moveToY']++;
-            }
+            keyFake.down = true;
             break
         
         case key.Leftarrow: // Arrow left
-            // Only store up to 2 movements, otherwise the user could be moving for a long time
-            if(moveAmmountX<userMoveQueue && moveAmmountY == 0) {
-                
-                // Only set the lastMoved variable if we're starting a new move (not adding more moves to an existing one)
-                if(moveAmmountX == 0){
-                    animatedObjects[userPosition.uid]['lastMoved'] = now();
-                    animatedObjects[userPosition.uid]['direction'] = 'left';
-                }
-                
-                // Actually change our direction
-                animatedObjects[userPosition.uid]['moveToX']--;
-            }
+            keyFake.left = true;
+            break
+        
+        default:
+            keyFinish(keypress);
+            break;
+    }
+};
+
+/**
+ *Handle the releasing of a key
+ */
+function onKeyUp(keypress) {
+
+    // Select the correct key and release it
+    switch (keypress.keyCode) {
+
+        case key.Uparrow: // Arrow up
+            keyFake.up = false;
+            break
+
+        case key.Rightarrow: // Arrow right
+            keyFake.right = false;
+            break
+
+        case key.Downarrow: // Arrow down
+            keyFake.down = false;
+            break
+        
+        case key.Leftarrow: // Arrow left
+            keyFake.left = false;
+            break
+    }
+    
+};
+
+/**
+ *This function is called after we sorted the keydown
+ *@param    key     {int}   The key
+ */
+function keyFinish(keypress) {
+
+    // If the debugCounter is bigger than 1000 this means nothing has happened
+    // In a long time. It's best to reset it.
+    if(debugCounter > 1000) debugCounterReset();
+
+    // Select the correct key and execute its functions
+    switch (keypress.keyCode) {
+
+        case key.Uparrow: // Arrow up
+            addPath(0,-1);
+            break
+
+        case key.Rightarrow: // Arrow right
+            addPath(1,0);
+            break
+
+        case key.Downarrow: // Arrow down
+            addPath(0,1);
+            break
+        
+        case key.Leftarrow: // Arrow left
+            addPath(-1,0);
             break
         
         case key.Enter:
+            transport(userPosition.uid, 5, 5);
             getEventFacing(userPosition.map, animatedObjects[userPosition.uid]['x'], animatedObjects[userPosition.uid]['y'],animatedObjects[userPosition.uid]['direction']);
             break;
     }

@@ -50,9 +50,12 @@ function renderLoop(){
     // Start the fake ms counter
     msfTimer = (new Date()).getTime();
     
+    
     // Clear the canvas
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    fakePress(); // Simulate autorepeating keypresses
     
     prerenderMoveObjects(); // Calculate every objects next xy coordinates
 
@@ -140,7 +143,7 @@ function renderLoop(){
         break;
 
     }
-    
+
 }
 
 /**
@@ -314,6 +317,7 @@ function renderEffects(objectId){
         }
         
     }
+    
 }
 
 /**
@@ -324,11 +328,8 @@ function renderObjects(){
     // Loop through every object
     for (var objectId in animatedObjects){
         
-        debugEchoLfps('Found object ' + objectId);
-        
         // If this is our own user, set the coordinates at the center of the screen.
         if(objectId == userPosition.uid) {
-            debugEchoLfps('This object is our own user ' + objectId);
             var objX = (canvasWidth - maps[userPosition.map]['tileWidth']) / 2;
             var objY = (canvasHeight - maps[userPosition.map]['tileHeight']) / 2;
         } else {
@@ -342,7 +343,7 @@ function renderObjects(){
         // Loop through all the layers of this object
         for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['spritesToDraw'].length; spriteNr++){
             
-            debugEchoLfps('Drawing object ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
+            if(objectId == userPosition.uid) debugEchoLfps('Drawing own user ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
             
             drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr], objX, objY, null, objectId);
         }
@@ -462,12 +463,14 @@ function prerenderMoveObjects(){
         
         // See if the destination of the object has to be adjusted, if there is
         // a path declared for it.
-        walkPath(objectId);
+        //walkPath(objectId);
         
         // If the object needs to be moved, do it smoothly!
         // (This will actually set the xy coordinates for moving later on,
         // it doesn't render anything itself)
-        slideMovingObject(objectId);
+        //slideMovingObject(objectId);
+        
+        walkNewPath(objectId);
     }
 }
 
@@ -619,8 +622,6 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileGidOnMap, obj
             } else{
                 // Setting the currentframe to zero will stop the animation the next time
                 animatedTiles[tileSetName][animationId]["currentframe"] = 0;
-                
-                debugEcho('Set currentframe to zero');
             }
             
             animatedTiles[tileSetName][animationId]["framessince"] = 0; // Reset the framessince
@@ -707,12 +708,14 @@ function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
         sourceMap = defaultSprites;
         
         // We also have to determine if the object is moving.
-        if(animatedObjects[objectId]['moveToX'] != animatedObjects[objectId]['x'] || animatedObjects[objectId]['moveToY'] != animatedObjects[objectId]['y']){
+        if(animatedObjects[objectId]['moveToX'] != animatedObjects[objectId]['x']
+           || animatedObjects[objectId]['moveToY'] != animatedObjects[objectId]['y']
+           || animatedObjects[objectId]['path'].length > 0
+           || (now() - animatedObjects[objectId]['lastMoved']) < 300){
             var movingObject = true; // Is this object moving?
-            //debugEcho('Moving object!');
         }
     }
-    
+    //if(objectId == userPosition.uid) debugEcho(now() - animatedObjects[objectId]['lastMoved']);
     // We know the map and the tilenumber, but not the tilesetname.
     // Look that up using our getTileSetInfo function.
     tileSetInfo = new getTileSetInfo(sourceMap, tileNumber);
@@ -807,6 +810,7 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
                       ' - tileHeight: ' + tileHeight);
     }
 }
+
 
 /**
  * If an object has a certain path it needs to walk, make sure that path gets

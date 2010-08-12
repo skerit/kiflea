@@ -1,4 +1,17 @@
 
+--- Thursday 2010/08/12 ---
+* Instead of relying on the keypress event for the autorepeating arrows, we
+  now simulate them using an onKeyDown and onKeyUp event.
+* When continuously moving a "standing still" frame or 2 would still be drawn of
+  the user. It wasn't noticeable at 200 fps, but it is at 20 fps. This has now
+  been fixed.
+* Drawing a cursor in the canvas. Yes: it does work. Drop drawCursor() at the end
+  of renderloop and you'll see it, but it lags behind a bit. And it's probably
+  better to just use a cur file and css.
+
+--- Tuesday 2010/08/10 ---
+* Started work on changes to the pathfinding/walking
+
 --- Thursday 2010/07/29 ---
 * Cleaning up the server-code a bit for the client commit.
 

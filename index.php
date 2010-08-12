@@ -37,7 +37,7 @@
 	<script type="text/javascript" src="kiflea.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
-			fps = 500;
+			fps = 50;
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
 			defaultTilesPerRow = 30;
@@ -56,7 +56,7 @@
 			backgroundColor = "rgb(255,255,255)";
 			defaultSprites = 'default.tmx.xml';
 			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites
-			connectToServer = true;
+			connectToServer = false;
 			conAddress = "ws://kipdola.be";
 			conPort = 1234;
 			animatedObjects = {	// Test data for objects
@@ -99,7 +99,7 @@
 					"selection": 0,
 					"currenthealth": 78,
 					"fullhealth": 100,
-					"path": [{'x': 10, 'y': 10},{'x':10, 'y':10}],
+					"path": [],
 					"actionsreceived": []
 				}
 			}
@@ -115,8 +115,8 @@
 				"msMoved": 100,
 				"lastMoved": 1000,
 				"map": "grassland.tmx.xml",
-				"sprites": [1,21],
-				"spritesToDraw": [1,21], 
+				"sprites": [1],
+				"spritesToDraw": [1], 
 				"currentSprite": 1,
 				"effects": [],
 				"selection": 0,
@@ -183,6 +183,7 @@
 						<ul class="cc"><li><a href="http://opengameart.org/content/anime-style-male-base-sprite">Anime-style male base sprite</a> by Tayoko
 						<li><a href="http://opengameart.org/content/pixel-art-contest-entry-brigand-armor">Pixel Art Contest entry: Brigand Armor</a> by Blarumyrran
 						<li><a href="http://opengameart.org/content/fireball-spell">Fireball Spell</a> by pfunked
+						<li><a href="http://opengameart.org/content/bw-ornamental-cursor-19x19">B&W Ornamental Cursor</a> by qubodup 
 						</ul>
 					</td></tr>
 				</table>
