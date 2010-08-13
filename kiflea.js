@@ -250,6 +250,46 @@ function processMap(xml, sourcename) {
         oneMap['tileHeight'] = $(this).attr('tileheight');
         
         debugEcho('Create an array for all the layers', false);
+	
+	// Create an array to store all the events in
+	oneMap['events'] = {};
+	
+        // Iterate through every objectgroup
+        $(this).find('objectgroup').each(function(){
+	    
+	    // Now iterate through all the objects.
+	    $(this).find('object').each(function(){
+		
+		var beginX = Math.floor($(this).attr('x') / oneMap['tileWidth']);
+		var beginY = Math.floor($(this).attr('y') / oneMap['tileHeight']);
+		var endX = beginX + Math.floor($(this).attr('width') / oneMap['tileWidth']);
+		var endY = beginY + Math.floor($(this).attr('height') / oneMap['tileHeight']);
+		var eventName = $(this).attr('name');
+		var eventType = $(this).attr('type');
+		var eventProperties = {};
+		
+		// Now iterate through all the properties.
+		$(this).find('properties').find('property').each(function(){
+		    eventProperties[$(this).attr('name')] = $(this).attr('value');
+		});
+		
+		for(var countY = beginY; countY < endY; countY++){
+		    for(var countX = beginX; countX < endX; countX++){
+			var currentTile = ((countY+1) * oneMap['width']) + countX+1;
+			
+			if(oneMap['events'][currentTile] === undefined){
+			    oneMap['events'][currentTile] = [];
+			};
+			
+			// Store the event in the array
+			oneMap['events'][currentTile].push(eventProperties);
+
+		    }
+		}
+		
+	    });
+	    
+	});
         
         // Create an array to store all this world's layers in
         oneMap['layers'] = {};

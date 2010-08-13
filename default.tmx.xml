@@ -5,7 +5,7 @@
   <tile id="0">
    <properties>
     <property name="downtile" value="1"/>
-    <property name="fps" value="5"/>
+    <property name="fps" value="10"/>
     <property name="lefttile" value="16"/>
     <property name="movingobject" value="1"/>
     <property name="nextframe" value="2"/>
@@ -35,7 +35,7 @@
   </tile>
   <tile id="5">
    <properties>
-    <property name="fps" value="5"/>
+    <property name="fps" value="10"/>
     <property name="movingobject" value="1"/>
     <property name="nextframe" value="7"/>
    </properties>
@@ -62,7 +62,7 @@
   </tile>
   <tile id="10">
    <properties>
-    <property name="fps" value="5"/>
+    <property name="fps" value="10"/>
     <property name="nextframe" value="12"/>
    </properties>
   </tile>
@@ -88,7 +88,7 @@
   </tile>
   <tile id="15">
    <properties>
-    <property name="fps" value="5"/>
+    <property name="fps" value="10"/>
     <property name="nextframe" value="17"/>
    </properties>
   </tile>
@@ -118,7 +118,7 @@
   <tile id="0">
    <properties>
     <property name="downtile" value="1"/>
-    <property name="fps" value="5"/>
+    <property name="fps" value="10"/>
     <property name="lefttile" value="16"/>
     <property name="movingobject" value="1"/>
     <property name="nextframe" value="2"/>
@@ -148,7 +148,7 @@
   </tile>
   <tile id="5">
    <properties>
-    <property name="fps" value="5"/>
+    <property name="fps" value="10"/>
     <property name="movingobject" value="1"/>
     <property name="nextframe" value="7"/>
    </properties>
@@ -175,7 +175,7 @@
   </tile>
   <tile id="10">
    <properties>
-    <property name="fps" value="5"/>
+    <property name="fps" value="10"/>
     <property name="nextframe" value="12"/>
    </properties>
   </tile>
@@ -201,7 +201,7 @@
   </tile>
   <tile id="15">
    <properties>
-    <property name="fps" value="5"/>
+    <property name="fps" value="10"/>
     <property name="nextframe" value="17"/>
    </properties>
   </tile>
@@ -222,7 +222,7 @@
   </tile>
   <tile id="19">
    <properties>
-    <property name="nextframe" value="18"/>
+    <property name="nextframe" value="17"/>
    </properties>
   </tile>
  </tileset>
@@ -532,7 +532,7 @@
     <property name="adjustx" value="-100"/>
     <property name="adjusty" value="39"/>
     <property name="beginanimation" value="1"/>
-    <property name="fps" value="7"/>
+    <property name="fps" value="14"/>
     <property name="nextframe" value="2"/>
    </properties>
   </tile>

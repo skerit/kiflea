@@ -220,6 +220,27 @@ function getHudVariable(dependon, field, value, purpose){
 }
 
 /**
+ *Get the event of a tile on a map
+ */
+function getMapEvent(mapname, x, y){
+      
+    var currentTile = (y * maps[mapname]['width']) + x;
+    
+    if(maps[mapname]['events'][currentTile] !== undefined){
+	debugEcho('Event!');
+	
+	// Loop through every event
+	for(var eventNr = 0; eventNr < maps[mapname]['events'][currentTile].length; eventNr++){
+	    
+	    // And add it to the actionsreceived of this user
+	    animatedObjects[userPosition.uid]['actionsreceived'].push(maps[mapname]['events'][currentTile][eventNr]);
+	}
+	
+    }
+    
+}
+
+/**
  *Draw the cursor at the position of the mouse
  */
 function drawCursor(){

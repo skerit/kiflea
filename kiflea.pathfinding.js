@@ -249,11 +249,14 @@ function addPath(x, y, objectid, checkfull){
  */
 function transport(objectid, x, y, map){
     
+    // Create a symlink to this object
     var object = animatedObjects[objectid];
     
+    // If the object exists...
     if(object !== undefined) {
         
-        object['path'].clear;
+	// Prepare the move
+        object['path'] = [];
         object['x'] = x;
         object['y'] = y;
         object['moveToX'] = x;
@@ -261,9 +264,13 @@ function transport(objectid, x, y, map){
         object['fromX'] = x;
         object['fromY'] = y;
         
+	// Change the map if we've given one
         if(map !== undefined){
             object['map'] = map;
         }
+	
+	debugArray(object);
+	debugEcho('New: ' + x + ' - ' + y);
         
     }
 }
@@ -288,6 +295,9 @@ function walkNewPath(objectId){
 	if(step['lastMoved'] === undefined) {
 	    step['lastMoved'] = now();
 	    animatedObjects[objectId]['lastMoved'] = now();
+            
+            // Get the event for this tile in the map and add it to the action list
+            getMapEvent(userPosition.map, step['x'], step['y']);
 	}
 	
         // How much time has past since we started this move?
@@ -316,7 +326,7 @@ function walkNewPath(objectId){
         // Change the direction of the tile with our function
         // This has to happen wheter the tile is walkable or not
         changeMovingObjectSprite(objectId, movementDirection);
-        
+	
         // If the next tile we're going to enter (floor of current tile +1 or -1)
         // is not walkable, then empty the array
         if(isTileWalkable(userPosition.map, nextTile, step['y']) == false){
@@ -357,9 +367,14 @@ function walkNewPath(objectId){
     if(animatedObjects[objectId]['y'] != step['y']){    
         
 	// Has the lastMoved been set?
+        // If it hasn't, we also have to check for an event here
 	if(step['lastMoved'] === undefined) {
 	    step['lastMoved'] = now();
 	    animatedObjects[objectId]['lastMoved'] = now();
+            
+            // Get the event for this tile in the map and add it to the action list
+            getMapEvent(userPosition.map, step['x'], step['y']);
+            
 	}
 	
         // How much time has past since we started this move?
@@ -388,7 +403,7 @@ function walkNewPath(objectId){
         // Change the direction of the tile with our function
         // This has to happen wheter the tile is walkable or not
         changeMovingObjectSprite(objectId, movementDirection);
-        
+
         // If the next tile we're going to enter (floor of current tile +1 or -1)
         // is not walkable, then empty the array
         if(isTileWalkable(userPosition.map, step['x'], nextTile) == false){

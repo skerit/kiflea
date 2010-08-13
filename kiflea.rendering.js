@@ -343,7 +343,9 @@ function renderObjects(){
         // Loop through all the layers of this object
         for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['spritesToDraw'].length; spriteNr++){
             
-            if(objectId == userPosition.uid) debugEchoLfps('Drawing own user ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
+            if(objectId == userPosition.uid){
+                debugEchoLfps('Drawing own user ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
+            }
             
             drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr], objX, objY, null, objectId);
         }
@@ -736,6 +738,7 @@ function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
        (tileProperties[tileSetName][tileGidOnMap]['beginanimation'] != undefined || movingObject == true)){
         try {
             drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileGidOnMap, objectId, extraId);
+            
         } catch(error) {
             debugEchoLfps('[drawTile] Error drawing <b>animated</b> tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
             );
