@@ -1,8 +1,23 @@
 
+--- Saturday 2010/08/14 ---
+* Started making another map, for the redditgamejam. This has already solved
+  a few bugs.
+* "Negative" maps aren't drawn anymore. The engine used to draw the map when there
+  was a negative x,y coördinate (or one higher than the current mapwidth/height)
+* Added map properties, now only used for the backgroundcolor of the map.
+* Removed pieces of the old walkPath/slideMovingObject code
+* Renamed transport to teleport.
+* Created a basic function that does events. Teleports now actually work in game.
+* Every object was drawn on every map, no matter where they were. Added a tiny
+  if that takes care of that.
+
 --- Friday 2010/08/13 ---
 * Discovered the real reason for the strange walking behaviour, as it still wasn't
   fixed: 2 layers on the map had the "drawusers" property set. That's a big no-no
 * Events on the map now get added to the "actionsreceived" array of the user
+* Started work on dialog windows. This way dynamic sized dialog windows can be
+  created.
+* Using the redditgamejam as encouragement to work on the engine!
 
 --- Thursday 2010/08/12 ---
 * Instead of relying on the keypress event for the autorepeating arrows, we

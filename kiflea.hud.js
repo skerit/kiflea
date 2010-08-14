@@ -28,7 +28,7 @@ function getHud(){
     debugHud('Loading hud ...', false);
     
     // Use a jquery function to fetch the json
-    $.getJSON('hud.json', function(data) {
+    $.getJSON(loadHud, function(data) {
 	hudLayers = data;	// Store the data
         
         debugHud('Hud has been loaded succesfully', false);
@@ -143,6 +143,9 @@ function drawHud(){
     
    } // Loop to the next layer
    
+   //drawDialog("bordersmall", 50, 100, 200,150);
+   //drawDialog("bordersmall", 200, 350, 68,150);
+
 }
 
 /**
@@ -238,6 +241,143 @@ function getMapEvent(mapname, x, y){
 	
     }
     
+}
+
+/**
+ *Drawing a dialog window
+ */
+function drawDialog(dialogset, x, y, width, height){
+
+    // Get the wanted dialog information
+    var tempValues = hudLayers['dialog'][dialogset];
+    
+    // Get necesary info
+    var vMidHeight = tempValues['left']['height'];	// Get the height of the vertical middle pieces (they repeat)
+    var hMidWidth = tempValues['topmiddle']['width'];	// Get the width of the horizontal middle pieces (they also repeat)
+    var cornerWidth = tempValues['topleft']['width'];
+    var cornerHeight = tempValues['topleft']['height'];
+    
+    // Calculate what we actually need to draw
+    var hMidPieces = Math.floor((width - (2*cornerWidth))/hMidWidth);		// How many vertical middle pieces will we have to draw?
+    var vMidPieces = Math.floor((height - (2*cornerHeight))/vMidHeight);	// How many vertical middle pieces will we have to draw?
+    
+    previousHudLayers['layers'].push({"name": "dialog", "width" : width, "height": height, "dx": x, "dy": y});
+    
+    // Draw the top (the "title bar" as you wish)
+    // Start with the left corner
+    ctx.drawImage(
+	     tileSet[tempValues['tileset']]['image'],
+	     tempValues['topleft']['sx'],
+	     tempValues['topleft']['sy'],
+	     cornerWidth,
+	     cornerHeight,
+	     x,
+	     y,
+	     cornerWidth,
+	     cornerHeight
+    );
+    
+    // Now loop through every middle piece
+    for(var piece = 1; piece < hMidPieces; piece++){
+	ctx.drawImage(
+		 tileSet[tempValues['tileset']]['image'],
+		 tempValues['topmiddle']['sx'],
+		 tempValues['topmiddle']['sy'],
+		 hMidWidth,
+		 tempValues['topmiddle']['height'],
+		 x + (piece * hMidWidth),
+		 y,
+		 hMidWidth,
+		 tempValues['topmiddle']['height']
+	);
+    }
+    
+    // Now draw the right corner
+    ctx.drawImage(
+	     tileSet[tempValues['tileset']]['image'],
+	     tempValues['topright']['sx'],
+	     tempValues['topright']['sy'],
+	     cornerWidth,
+	     cornerHeight,
+	     x  + (hMidPieces * hMidWidth),
+	     y,
+	     cornerWidth,
+	     cornerHeight
+    );
+
+    // Draw the vertical pieces
+    // Starting with the left ones
+    for(var piece = 1; piece < vMidPieces; piece++){
+	ctx.drawImage(
+		 tileSet[tempValues['tileset']]['image'],
+		 tempValues['left']['sx'],
+		 tempValues['left']['sy'],
+		 tempValues['left']['width'],
+		 vMidHeight,
+		 x,
+		 y + (piece * vMidHeight),
+		 tempValues['left']['width'],
+		 vMidHeight
+	);
+    };
+
+    // Now the right ones
+    for(var piece = 1; piece < vMidPieces; piece++){
+	ctx.drawImage(
+		 tileSet[tempValues['tileset']]['image'],
+		 tempValues['right']['sx'],
+		 tempValues['right']['sy'],
+		 tempValues['right']['width'],
+		 vMidHeight,
+		 x + (hMidPieces * hMidWidth),
+		 y + (piece * vMidHeight),
+		 tempValues['right']['width'],
+		 vMidHeight
+	);
+    };
+
+    // Draw the bottom
+    // Start with the left corner
+    ctx.drawImage(
+	     tileSet[tempValues['tileset']]['image'],
+	     tempValues['bottomleft']['sx'],
+	     tempValues['bottomleft']['sy'],
+	     cornerWidth,
+	     cornerHeight,
+	     x,
+	     y + (vMidPieces * vMidHeight),
+	     cornerWidth,
+	     cornerHeight
+    );
+    
+    // Now loop through every middle piece
+    for(var piece = 1; piece < hMidPieces; piece++){
+	ctx.drawImage(
+		 tileSet[tempValues['tileset']]['image'],
+		 tempValues['bottommiddle']['sx'],
+		 tempValues['bottommiddle']['sy'],
+		 hMidWidth,
+		 tempValues['bottommiddle']['height'],
+		 x + (piece * hMidWidth),
+		 y + (vMidPieces * vMidHeight),
+		 hMidWidth,
+		 tempValues['bottommiddle']['height']
+	);
+    }
+    
+    // Now draw the right corner
+    ctx.drawImage(
+	     tileSet[tempValues['tileset']]['image'],
+	     tempValues['bottomright']['sx'],
+	     tempValues['bottomright']['sy'],
+	     cornerWidth,
+	     cornerHeight,
+	     x  + (hMidPieces * hMidWidth),
+	     y + (vMidPieces * vMidHeight),
+	     cornerWidth,
+	     cornerHeight
+    );
+
 }
 
 /**

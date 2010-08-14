@@ -101,6 +101,19 @@
 		"dy": 10,
 		"action": {"what":"fireball", "target":"selection", "value":1},
 		"show": {"dependon":"selection", "field":"health", "value":1}
-	}]
+	}],
+
+"dialog": { "bordersmall": {
+		"tileset": "bordersmall",
+		"topleft": {"sx": 2, "sy": 2, "width": 21, "height": 21},
+		"topmiddle": {"sx": 37, "sy": 2, "width": 20, "height": 11},
+		"topright": {"sx": 71, "sy": 2, "width": 21, "height": 21},
+		"left": {"sx": 2, "sy": 41, "width": 11, "height": 20},
+		"right": {"sx": 71, "sy": 41, "width": 21, "height": 20},
+		"bottomleft": {"sx": 2, "sy": 73, "width": 21, "height": 21},
+		"bottommiddle": {"sx": 40, "sy": 73, "width": 20, "height": 20},
+		"bottomright": {"sx": 71, "sy": 73, "width": 21, "height": 20}
+		}
+	}
 
 }

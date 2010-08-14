@@ -253,6 +253,12 @@ function processMap(xml, sourcename) {
 	
 	// Create an array to store all the events in
 	oneMap['events'] = {};
+	oneMap['properties'] = {};
+
+	// Itterate through all the properties of this MAP
+	$(this).find('properties').find('property').each(function(){
+	    oneMap['properties'][$(this).attr('name')] = $(this).attr('value');
+	});
 	
         // Iterate through every objectgroup
         $(this).find('objectgroup').each(function(){
@@ -305,7 +311,7 @@ function processMap(xml, sourcename) {
 	    // to store them in.
 	    var properties = {};
 	    
-	    // Now iterate through all the properties.
+	    // Now iterate through all the properties of this layer.
 	    $(this).find('properties').find('property').each(function(){
 		properties[$(this).attr('name')] = $(this).attr('value');
 	    });

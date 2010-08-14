@@ -140,7 +140,7 @@ function findPath(sx, sy, dx, dy){
         for(var subTile in thisTile){
 
             // If it's walkable ...
-            if(isTileWalkable(userPosition.map, thisTile[subTile]['x'],thisTile[subTile]['y'])){
+            if(isTileWalkable(animatedObjects[userPosition.uid]['map'], thisTile[subTile]['x'],thisTile[subTile]['y'])){
 
                 // Make sure the x already exists in the done array before adding the Y
                 if(done[thisTile[subTile]['x']] === undefined){
@@ -201,6 +201,28 @@ function getNeighbour(x,y){
 }
 
 /**
+ *Do actions every object has received
+ */
+function doActionsReceived(){
+    
+    for (var objectId in animatedObjects){
+        
+        for(var actionNr = 0; actionNr < animatedObjects[objectId]['actionsreceived'].length; actionNr++){
+	    
+	    switch (animatedObjects[objectId]['actionsreceived'][actionNr]['action']){
+		
+		case "teleport":
+		    debugEcho('Do teleport!');
+		    teleport(objectId, animatedObjects[objectId]['actionsreceived'][actionNr]['x'], animatedObjects[objectId]['actionsreceived'][actionNr]['y'], animatedObjects[objectId]['actionsreceived'][actionNr]['map'])
+		    animatedObjects[objectId]['actionsreceived'].splice(0,1);
+		    break;
+	    }
+	}
+    }
+    
+}
+
+/**
  *Add a path, meant for keyboard
  *@param 	x	{integer}	Move X? (Should be 1, -1 or 0)
  *@param	y	{integer}	Move Y? (Should be 1, -1 or 0)
@@ -241,13 +263,13 @@ function addPath(x, y, objectid, checkfull){
 }
 
 /**
- *Transport an object to a specific location
+ *Teleport an object to a specific location
  *@param    objectid    {string}    The object to transport
  *@param    x           {integer}   The x-tile to move it to
  *@param    y           {integer}   The y-tile to move it to
  *@param    map         {string}    The map to move it to
  */
-function transport(objectid, x, y, map){
+function teleport(objectid, x, y, map){
     
     // Create a symlink to this object
     var object = animatedObjects[objectid];
@@ -257,20 +279,19 @@ function transport(objectid, x, y, map){
         
 	// Prepare the move
         object['path'] = [];
-        object['x'] = x;
-        object['y'] = y;
-        object['moveToX'] = x;
-        object['moveToY'] = y;
-        object['fromX'] = x;
-        object['fromY'] = y;
+        object['x'] = parseInt(x);
+        object['y'] = parseInt(y);
+        object['moveToX'] = parseInt(x);
+        object['moveToY'] = parseInt(y);
+        object['fromX'] = parseInt(x);
+        object['fromY'] = parseInt(y);
+	
+	object['lastMoved'] = now();
         
 	// Change the map if we've given one
         if(map !== undefined){
             object['map'] = map;
         }
-	
-	debugArray(object);
-	debugEcho('New: ' + x + ' - ' + y);
         
     }
 }
@@ -280,7 +301,7 @@ function transport(objectid, x, y, map){
  * executed properly.
  * @param   objectId    {string}    The ID of the object
  */
-function walkNewPath(objectId){
+function walkPath(objectId){
     
     // Does this object have a path? Otherwise we can end this function already
     if(animatedObjects[objectId]['path'].length == 0) return;
@@ -297,7 +318,7 @@ function walkNewPath(objectId){
 	    animatedObjects[objectId]['lastMoved'] = now();
             
             // Get the event for this tile in the map and add it to the action list
-            getMapEvent(userPosition.map, step['x'], step['y']);
+            getMapEvent(animatedObjects[userPosition.uid]['map'], step['x'], step['y']);
 	}
 	
         // How much time has past since we started this move?
@@ -329,7 +350,7 @@ function walkNewPath(objectId){
 	
         // If the next tile we're going to enter (floor of current tile +1 or -1)
         // is not walkable, then empty the array
-        if(isTileWalkable(userPosition.map, nextTile, step['y']) == false){
+        if(isTileWalkable(animatedObjects[userPosition.uid]['map'], nextTile, step['y']) == false){
             
             animatedObjects[objectId]['path'].splice(0,animatedObjects[objectId]['path'].length);
             
@@ -373,7 +394,7 @@ function walkNewPath(objectId){
 	    animatedObjects[objectId]['lastMoved'] = now();
             
             // Get the event for this tile in the map and add it to the action list
-            getMapEvent(userPosition.map, step['x'], step['y']);
+            getMapEvent(animatedObjects[userPosition.uid]['map'], step['x'], step['y']);
             
 	}
 	
@@ -406,7 +427,7 @@ function walkNewPath(objectId){
 
         // If the next tile we're going to enter (floor of current tile +1 or -1)
         // is not walkable, then empty the array
-        if(isTileWalkable(userPosition.map, step['x'], nextTile) == false){
+        if(isTileWalkable(animatedObjects[userPosition.uid]['map'], step['x'], nextTile) == false){
             
             animatedObjects[objectId]['path'].splice(0,animatedObjects[objectId]['path'].length);
             

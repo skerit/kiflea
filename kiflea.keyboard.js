@@ -215,7 +215,7 @@ function keyFinish(keypress) {
         
         case key.Enter:
             transport(userPosition.uid, 5, 5);
-            getEventFacing(userPosition.map, animatedObjects[userPosition.uid]['x'], animatedObjects[userPosition.uid]['y'],animatedObjects[userPosition.uid]['direction']);
+            getEventFacing(animatedObjects[userPosition.uid]['map'], animatedObjects[userPosition.uid]['x'], animatedObjects[userPosition.uid]['y'],animatedObjects[userPosition.uid]['direction']);
             break;
     }
     
@@ -305,7 +305,7 @@ function onMouseclick(x, y){
         // Store the tile coordinates in a variable, as it's an object
         var clickCoordinates = getClickedTile(x, y);
         
-        var events = getEvents(userPosition.map, clickCoordinates.x, clickCoordinates.y);
+        var events = getEvents(animatedObjects[userPosition.uid]['map'], clickCoordinates.x, clickCoordinates.y);
         
         // If we have an event in the array, we'll only take the first one for now.
         if(events.length > 0) {
@@ -326,8 +326,8 @@ function onMouseclick(x, y){
  */
 function getClickedTile(x, y){
     
-    tileX = Math.floor(x / maps[userPosition.map]['tileWidth']);
-    tileY = Math.floor(y / maps[userPosition.map]['tileHeight']);
+    tileX = Math.floor(x / maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    tileY = Math.floor(y / maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
     
     x = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2)) + 1) - visibleTilesX;
     y = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2))+2) - visibleTilesY;

@@ -52,7 +52,7 @@
 			debugGrid = false;
 			debugHudOn = false;
 			debugMovement = false;
-                        debugPathOn = true;
+                        debugPathOn = false;
 			backgroundColor = "rgb(255,255,255)";
 			defaultSprites = 'default.tmx.xml';
 			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites

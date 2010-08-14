@@ -50,6 +50,10 @@ function renderLoop(){
     // Start the fake ms counter
     msfTimer = (new Date()).getTime();
     
+    // If this map has a backgroundcolor set, use it.
+    if(maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'] !== undefined){
+        backgroundColor = maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'];
+    }
     
     // Clear the canvas
     ctx.fillStyle = backgroundColor;
@@ -57,18 +61,22 @@ function renderLoop(){
     
     fakePress(); // Simulate autorepeating keypresses
     
+    doActionsReceived(); // Do the actions every object has received
+    
     prerenderMoveObjects(); // Calculate every objects next xy coordinates
 
     prerenderMapOffset(); // Calculate the map offset
+    
+
 
     // Loop through the layers and render them
-    for(var layerName in maps[userPosition.map]['layers']) {
+    for(var layerName in maps[animatedObjects[userPosition.uid]['map']]['layers']) {
 
         renderLayer(layerName); // Render this layer
 
         // If this layer has the "drawUsers" property set to "1"
         // We draw all the objects on top of it.
-        if(maps[userPosition.map]['layers'][layerName]['properties']['drawUsers']==1){
+        if(maps[animatedObjects[userPosition.uid]['map']]['layers'][layerName]['properties']['drawUsers']==1){
             
             highlightSelectedObject(); // Draw a circle underneath our selection
             
@@ -95,10 +103,10 @@ function renderLoop(){
 
     // Start the real fps counter
     msrTimer = now();
-    
+
     // Draw the HUD
     drawHud();
-    
+
     // If we've enabled debugging, we actually want the fps (bad name, I know)
     // Draw it on the canvas for better framerates
     if(debugOn==true) drawDebugFps();
@@ -172,7 +180,7 @@ function highlightSelectedObject(){
         ctx.beginPath();
         ctx.fillStyle = "rgba(0,0,255,0.3)";
         ctx.strokeStyle = "rgba(0,0,0,0.8)";
-        ctx.arc(selectionC['x']+(maps[userPosition.map]['tileWidth']/2),selectionC['y']-(maps[userPosition.map]['tileHeight']/2),maps[userPosition.map]['tileWidth']/2,0,Math.PI*2,true);
+        ctx.arc(selectionC['x']+(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2),selectionC['y']-(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']/2),maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2,0,Math.PI*2,true);
         ctx.fill();
         ctx.stroke();
         ctx.closePath();
@@ -328,10 +336,23 @@ function renderObjects(){
     // Loop through every object
     for (var objectId in animatedObjects){
         
+        // If this object isn't on the same map as our user, continue to the next object
+        if(animatedObjects[objectId]['map'] != animatedObjects[userPosition.uid]['map']) continue;
+        
         // If this is our own user, set the coordinates at the center of the screen.
         if(objectId == userPosition.uid) {
-            var objX = (canvasWidth - maps[userPosition.map]['tileWidth']) / 2;
-            var objY = (canvasHeight - maps[userPosition.map]['tileHeight']) / 2;
+            var objX = (canvasWidth - maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2;
+            var objY = (canvasHeight - maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2;
+            
+            // When the screen is the correct multiple of the tilewidth, but half of it isn't an integer
+            // we need to take that into account.
+            if(objX % maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] != 0){
+                objX = objX - (objX % maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+            }
+            if(objY % maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] != 0){
+                objY = objY - (objY % maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+            }
+            
         } else {
             
             // Get the real coördinates of the object (pixels on the canvas in relation to our user)
@@ -372,18 +393,25 @@ function renderLayer(layerName){
             // Calculate the coördinates of the tile we need, based on our current position
             // (Example: The tile in row 10, column 5)
             var rowTile = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2))+1) - visibleTilesX;
+            
+            // Do not continue if rowTile is negative or bigger than the width of the map
+            if(rowTile < 0 || rowTile >= maps[animatedObjects[userPosition.uid]['map']]['width']) continue;
+            
             var colTile = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2))+1) - visibleTilesY;
+
+            // Do not continue if colTile is negative or bigger than the height of the map
+            if(colTile < 0 || colTile >= maps[animatedObjects[userPosition.uid]['map']]['height']) continue;
             
             // Now that we know what piece of the map we need
             // we need to get the corresponding tileset image
-            var tileNumber = getLayerTile(userPosition.map, layerName, Math.floor(rowTile), Math.floor(colTile));
+            var tileNumber = getLayerTile(animatedObjects[userPosition.uid]['map'], layerName, Math.floor(rowTile), Math.floor(colTile));
             
             // When we get to an empty tile we can skip towards the next loop
             if(tileNumber == 0 || tileNumber === undefined) continue;
 
             // Now calculate where to draw this tile, based on the size of the tiles of the map, not the tileset
-            var destinationX = (tileX * maps[userPosition.map]['tileWidth']) - mappOffsetX;
-            var destinationY = (tileY * maps[userPosition.map]['tileHeight']) - mappOffsetY;
+            var destinationX = (tileX * maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - mappOffsetX;
+            var destinationY = (tileY * maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - mappOffsetY;
             
             // And now draw that tile!
             try {
@@ -447,12 +475,13 @@ function prerenderMapOffset(){
     //if(animatedObjects[userPosition.uid]['x'] != animatedObjects[userPosition.uid]['moveToX'] ||
     //   animatedObjects[userPosition.uid]['y'] != animatedObjects[userPosition.uid]['moveToY']){
 
+
         //This has to be floored, because pixels can't have a decimal value
         //And this would create 1 pixel spacing between the tiles while moving.
-        mappOffsetX = Math.floor((maps[userPosition.map]['tileWidth'] * decimal(animatedObjects[userPosition.uid]['x'])));
-        mappOffsetY = Math.floor((maps[userPosition.map]['tileHeight'] * decimal(animatedObjects[userPosition.uid]['y'])));
+        mappOffsetX = Math.floor((maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] * decimal(animatedObjects[userPosition.uid]['x'])));
+        mappOffsetY = Math.floor((maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] * decimal(animatedObjects[userPosition.uid]['y'])));
     //}
-    
+
 }
 
 /**
@@ -463,16 +492,8 @@ function prerenderMoveObjects(){
 
     for (var objectId in animatedObjects){
         
-        // See if the destination of the object has to be adjusted, if there is
-        // a path declared for it.
-        //walkPath(objectId);
-        
-        // If the object needs to be moved, do it smoothly!
-        // (This will actually set the xy coordinates for moving later on,
-        // it doesn't render anything itself)
-        //slideMovingObject(objectId);
-        
-        walkNewPath(objectId);
+        // Apply the path to walk and move the object
+        walkPath(objectId);
     }
 }
 
@@ -493,12 +514,24 @@ function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
     if(y === undefined) y = animatedObjects[objectId]['y'];
     
     // Store the current map's tileWidth and Height, if it hasn't been given already
-    if(tileWidth === undefined) tileWidth = maps[userPosition.map]['tileWidth'];
-    if(tileHeight === undefined) tileHeight = maps[userPosition.map]['tileHeight'];
-    
-    var objX = (((canvasWidth - tileWidth) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * tileWidth)) + (x * tileWidth) - mappOffsetX;
-    var objY = (((canvasWidth - tileHeight) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * tileHeight)) + (y * tileHeight) - mappOffsetY;
-    
+    if(tileWidth === undefined) tileWidth = maps[animatedObjects[userPosition.uid]['map']]['tileWidth'];
+    if(tileHeight === undefined) tileHeight = maps[animatedObjects[userPosition.uid]['map']]['tileHeight'];
+
+    tempWidth = ((canvasWidth - tileWidth) / 2);
+    tempHeight = ((canvasWidth - tileHeight) / 2);
+
+    // When the screen is the correct multiple of the tilewidth, but half of it isn't an integer
+    // we need to take that into account.
+    if(tempWidth % maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] != 0){
+        tempWidth = tempWidth - (tempWidth % maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    }
+    if(tempHeight % maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] != 0){
+        tempHeight = tempHeight - (tempHeight % maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    }
+
+    var objX = (tempWidth - (Math.floor(animatedObjects[userPosition.uid]['x']) * tileWidth)) + (x * tileWidth) - mappOffsetX;
+    var objY = (tempHeight - (Math.floor(animatedObjects[userPosition.uid]['y']) * tileHeight)) + (y * tileHeight) - mappOffsetY;
+
     return({'x': objX, 'y': objY});
     
 }
@@ -704,7 +737,7 @@ function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
     
     // If this isn't an object the sourcemap is the current map we're on
     if(objectId === undefined) {
-        sourceMap = userPosition.map;
+        sourceMap = animatedObjects[userPosition.uid]['map'];
     }else {
         // If it is an object we have to get the tilesets from the default "map". Hackish, but it works
         sourceMap = defaultSprites;
@@ -814,192 +847,6 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
     }
 }
 
-
-/**
- * If an object has a certain path it needs to walk, make sure that path gets
- * executed properly. Since the actual moving will be up to slideMovingObject
- * we can increment the x or y value multiple times. But always one or the other
- * never both of them at the same time.
- * @param   objectId    {string}    The ID of the object
- */
-function walkPath(objectId){
-    
-    // Does this object have a path? Otherwise we can end this function already
-    if(animatedObjects[objectId]['path'].length == 0) return;
-    
-    // Now store the first step in the path
-    var step = animatedObjects[objectId]['path'][0];
-    
-    // Check the X and the Y of this step.
-    if(animatedObjects[objectId]['moveToX'] != step['x']){
-        
-        // Now see if the moveToY of the object isn't different.
-        // We must NEVER modify both the moveToX AND the moveToY variable, as this
-        // would cause our object to move diagonally. And we don't want that
-        if(animatedObjects[objectId]['y'] == animatedObjects[objectId]['moveToY']){
-            
-            // Set the "lastMoved" variable if we're starting a path
-            if(animatedObjects[objectId]['x'] == animatedObjects[objectId]['moveToX']){
-                animatedObjects[objectId]['lastMoved'] = now();
-            }
-            
-            // Set the new X
-            animatedObjects[objectId]['moveToX'] = step['x'];
-            
-            // And we can remove this step from the path
-            animatedObjects[objectId]['path'].splice(0,1);
-        }
-        
-    } else { // If the X is the same, the Y must be different
-        
-        if(animatedObjects[objectId]['x'] == animatedObjects[objectId]['moveToX']){
-            
-            // Set the "lastMoved" variable if we're starting a path
-            if(animatedObjects[objectId]['y'] == animatedObjects[objectId]['moveToY']){
-                animatedObjects[objectId]['lastMoved'] = now();
-            }
-            
-            // Set the new Y
-            animatedObjects[objectId]['moveToY'] = step['y'];
-            
-            // And we can remove this step from the path
-            animatedObjects[objectId]['path'].splice(0,1);
-        }
-        
-    }
-    
-}
-
-/**
- * When an object is moved, it happens gradually. Smoothly.
- * This function checks if the object needs to be moved and
- * makes sure that happens smoothly.
- * This now also changes the sprite to draw on movement
- * @param   objectId    {string}    The ID of the object
- */
-function slideMovingObject(objectId){
-    
-    // Adjust the object's x position if the current position does not equal its destination.
-    if(animatedObjects[objectId]['x'] != animatedObjects[objectId]['moveToX']){
-        
-        // How much time has past since we started this move?
-        animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
-        
-        // Calculate how many tiles we have to move
-        var moveAmmount = (animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX']);
-
-        // Detect the direction of the move (left or right and numerical)
-        if(moveAmmount>0){
-            // Move to the right
-            var movementDirection = 'righttile';
-            var directionAmmount = +1;
-        } else {
-            var movementDirection = 'lefttile';
-            var directionAmmount = -1;
-        }
-
-        // What is the next tile in this direction?
-        var nextTile = Math.floor(animatedObjects[objectId]['x'])+directionAmmount;
-        
-        // If the next tile is past our destination, we don't need to take it into account
-        if((nextTile*directionAmmount) > (animatedObjects[objectId]['moveToX'] * directionAmmount)) nextTile -= directionAmmount;
-        
-        // Change the direction of the tile with our function
-        // This has to happen wheter the tile is walkable or not
-        changeMovingObjectSprite(objectId, movementDirection);
-        
-        // If the next tile we're going to enter (floor of current tile +1 or -1)
-        // is not walkable, then put that tile as the final one
-        if(isTileWalkable(userPosition.map, nextTile, animatedObjects[objectId]['moveToY']) == false){
-            
-            // Set the destination to the current tile
-            animatedObjects[objectId]['moveToX'] = Math.floor(animatedObjects[objectId]['x']);  
-            
-        } else { // If it is walkable, actually move
-            // Our progress in this move (between 0 and 1)
-            var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
-            
-            debugMove('Object <b>' + objectId + '</b> has to move <b>' + moveAmmount + ' tiles, moving progress (X): ' + objectMoveProgress, false);
-            
-            // If we've spent too much time on this move: finish it
-            if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
-                animatedObjects[objectId]['x'] = animatedObjects[objectId]['moveToX'];
-                animatedObjects[objectId]['fromX'] = animatedObjects[objectId]['x'];
-            } else { // Else calculate our current position
-                
-                debugMove('<b>From ' + animatedObjects[objectId]['fromX'] + ' to ' + animatedObjects[objectId]['moveToX']);
-                debugMove('Moving X: ' + animatedObjects[objectId]['x'] + ' to ... ');
-                
-                animatedObjects[objectId]['x'] = animatedObjects[objectId]['fromX'] + ((animatedObjects[objectId]['moveToX'] - animatedObjects[objectId]['fromX'])*objectMoveProgress);
-            }
-            
-            debugMove('Object ' + objectId + '\'s new X: ' + animatedObjects[objectId]['x']);
-        }
-        
-    }
-    
-    // Adjust the user's y position if the current position
-    // does not equal our destination.
-    if(animatedObjects[objectId]['y'] != animatedObjects[objectId]['moveToY']){
-        
-        // How much time has past since we started this move?
-        animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
-
-        // Calculate how many tiles we have to move
-        var moveAmmount = (animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY']);
-
-        // Detect the direction of the move (left or right)
-        if((animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY'])>0){
-            // Move down
-            var movementDirection = 'downtile';
-            var directionAmmount = +1;
-        } else {
-            var movementDirection = 'uptile';
-            var directionAmmount = -1;
-        }
-
-        // What is the next tile in this direction?
-        var nextTile = Math.floor(animatedObjects[objectId]['y'])+directionAmmount;
-        
-        // If the next tile is past our destination, we don't need to take it into account
-        if((nextTile*directionAmmount) > (animatedObjects[objectId]['moveToY'] * directionAmmount)) nextTile -= directionAmmount;
-
-        // Change the direction of the tile with our function
-        // Has to happen even if the tile isn't walkable
-        changeMovingObjectSprite(objectId, movementDirection);
-
-        // If the next tile we're going to enter (floor of current tile +1 or -1)
-        // is not walkable, then put that tile as the final one
-        if(isTileWalkable(userPosition.map,animatedObjects[objectId]['x'], nextTile) == false){
-            
-            // Set the destination to the current tile
-            animatedObjects[objectId]['moveToY'] = Math.floor(animatedObjects[objectId]['y']);
-            
-        } else { // If it is walkable, actually move
-            // Our progress in this move (between 0 and 1)
-            var objectMoveProgress = animatedObjects[objectId]['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
-            
-            debugMove('Object <b>' + objectId + '</b> moving progress (Y): ' + objectMoveProgress, false);
-            
-            // If we've spent too much time on this move
-            // or we're within ms of reaching our goal: finish it.
-            if(animatedObjects[objectId]['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
-                animatedObjects[objectId]['y'] = animatedObjects[objectId]['moveToY'];
-                animatedObjects[objectId]['fromY'] = animatedObjects[objectId]['y'];
-            } else { // Else calculate our current position
-                
-                debugMove('<b>From ' + animatedObjects[objectId]['fromY'] + ' to ' + animatedObjects[objectId]['moveToY']);
-                debugMove('Moving Y: ' + animatedObjects[objectId]['y'] + ' to ... ');
-                
-                animatedObjects[objectId]['y'] = animatedObjects[objectId]['fromY'] + ((animatedObjects[objectId]['moveToY'] - animatedObjects[objectId]['fromY'])*objectMoveProgress);
-            }
-            
-            debugMove('Object ' + objectId + '\'s new Y: ' + animatedObjects[objectId]['y']);
-        }
-        
-    } 
-}
-
 /**
  *Get the corresponding tile for a piece of a layer
  *@param mapname    {string}   The name of the map
@@ -1029,7 +876,7 @@ function getTileSetInfo(sourceMap, tileNumber){
             // Calculate untill what tile we can find in here
             var tileLimit = tileSet[name]['total'] + tileStart;
             
-            if(tileNumber > tileStart && tileNumber < tileLimit) {
+            if(tileNumber >= tileStart && tileNumber <= tileLimit) {
                 //Return everything but the image
                 return {
                     'tileSetName': name,
@@ -1082,8 +929,8 @@ function drawTestPath(){
     for(var node = 0; node < testPath.length; node++){
 
         // Calculate coordinates
-        var objX = (((canvasWidth - maps[userPosition.map]['tileWidth']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * maps[userPosition.map]['tileWidth'])) + (testPath[node]['x'] * maps[userPosition.map]['tileWidth']) - mappOffsetX;
-        var objY = (((canvasWidth - maps[userPosition.map]['tileHeight']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * maps[userPosition.map]['tileHeight'])) + (testPath[node]['y'] * maps[userPosition.map]['tileHeight']) - mappOffsetY;
+        var objX = (((canvasWidth - maps[userPosition.map]['tileWidth']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * maps[animatedObjects[userPosition.uid]['map']]['tileWidth'])) + (testPath[node]['x'] * maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - mappOffsetX;
+        var objY = (((canvasWidth - maps[userPosition.map]['tileHeight']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * maps[animatedObjects[userPosition.uid]['map']]['tileHeight'])) + (testPath[node]['y'] * maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - mappOffsetY;
 
 
         // Draw tile 309 (hardcoded, I know. It's in the grassland tileset

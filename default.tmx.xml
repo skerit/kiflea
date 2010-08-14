@@ -596,6 +596,9 @@
  <tileset firstgid="121" name="pointer" tilewidth="38" tileheight="19">
   <image source="images/pointer.png"/>
  </tileset>
+ <tileset firstgid="122" name="bordersmall" tilewidth="95" tileheight="95">
+  <image source="images/bordersmall.png"/>
+ </tileset>
  <layer name="Emptylayer" width="1" height="1">
   <data encoding="base64">
    AAAAAA==
