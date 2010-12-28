@@ -37,29 +37,88 @@ function getHud(){
 }
 
 /**
- *Execute actions
+ *Queue actions
  *@param	actionName	{string}	The name of the action to do
- *@param	target		{string}	The target of the action
+ *@param	objectId	{string}	The target of the action
  *@param	value		{string}	The value of the action
+ *@param	from		{string}	The source object
  */
-function executeAction(actionName, target, value){
+function queueAction(actionName, objectId, value, from){
+
+    // If we're given an object as actionName, push that out instead and return
+    if(typeof actionName == "object"){
+	animatedObjects[objectId]['actionsreceived'].push(actionName);
+	return true;
+    };
 
     switch(actionName){
 	
 	// Testing action that will up your HP
 	case 'hpup':
-	    if(animatedObjects[target]['currenthealth'] < animatedObjects[target]['fullhealth']){
-		animatedObjects[target]['currenthealth']++;
+	    if(animatedObjects[objectId]['currenthealth'] < animatedObjects[target]['fullhealth']){
+		animatedObjects[objectId]['currenthealth']++;
 	    }
 	    break;
 
 	case 'fireball':
-	    if(animatedObjects[target]['currenthealth'] > 0){
-		animatedObjects[target]['currenthealth'] -= value;
-		animatedObjects[target]['effects'].push({'sprite': 43, 'currentsprite': 43, 'sx': animatedObjects[userPosition.uid]['x'], 'sy': animatedObjects[userPosition.uid]['y'], 'dx': animatedObjects[target]['x'], 'dy': animatedObjects[target]['y'], 'x': animatedObjects[userPosition.uid]['x'], 'y': animatedObjects[userPosition.uid]['y'], 'msPerTile': 90, 'msMoved': 100, 'started': now(), 'aftereffect': 107, 'id': rand(100)});
+	    if(animatedObjects[objectId]['currenthealth'] > 0){
+		animatedObjects[objectId]['currenthealth'] -= value;
+		animatedObjects[objectId]['effects'].push({'sprite': 43, 'currentsprite': 43, 'sx': animatedObjects[userPosition.uid]['x'], 'sy': animatedObjects[userPosition.uid]['y'], 'dx': animatedObjects[objectId]['x'], 'dy': animatedObjects[objectId]['y'], 'x': animatedObjects[userPosition.uid]['x'], 'y': animatedObjects[userPosition.uid]['y'], 'msPerTile': 90, 'msMoved': 100, 'started': now(), 'aftereffect': 107, 'id': rand(100)});
 	    }
 	    break;
+
+	case 'attack':
+	    // Attack objectId coming from from
+	    animatedObjects[objectId]['actionsreceived'].push({
+		"name": "attack",
+		"action": "attack",
+		"type": "attack",
+		"from": from,
+		"value": value
+		});
+	    break;
+	
+    case 'attackmode':
+	debugEcho('set attackmode for ' + objectId + ' from ' + from);
+	    animatedObjects[objectId]['actionsreceived'].push({
+		"name": "attackmode",
+		"action": "attackmode",
+		"type": "attackmode",
+		"target": objectId,
+		"from": from,
+		"value": value
+		});
+	    break;
     }
+    
+}
+
+/**
+ *Calculate coördinates with the given orientation
+ */
+function orientationCoordinates(orientation, x, y, width, height){
+    
+    switch(orientation){
+
+	case 'topright':
+	    x = canvasWidth - x - width; // Y doesn't need to be set
+	    break;
+
+	case 'topleft': // nothing needs to be changed for topleft, as it's canvas default
+	    break;
+
+	case 'bottomright':
+	    x = canvasWidth - x - width;
+	    y = canvasHeight - y - height;
+	    break;
+
+	case 'bottomleft': // X doesn't need to change
+	    y = canvasHeight - y - height;
+	    break;
+    }
+    
+    // Return the new data
+    return {"orientation": orientation, "x": x, "y": y, "width": width, "height": height};
     
 }
 
@@ -81,31 +140,16 @@ function drawHud(){
 	// Loop through the object and alculate the hudvariable for each
 	for(name in tempValues){
 	    // Only get the Hudvariable if it contains an object AND isn't an action, else just use the value in it.
-	    tempValues[name] = (typeof(tempValues[name]) == 'object' && name != "action") ? getHudVariable(tempValues[name]['dependon'], tempValues[name]['field'], tempValues[name]['value'], tempValues[name]) : tempValues[name];
+	    tempValues[name] = (typeof(tempValues[name]) == 'object' && name != "action") ? dependCondition(tempValues[name]['dependon'], tempValues[name]['field'], tempValues[name]['value'], tempValues[name]) : tempValues[name];
 	}
 	
 	// Go to the next layer if the "show" field is 0
 	if(tempValues['show'] == 0) continue;
-        
-        // The only thing left to do is to adjust the destination according to our orientation
-        switch(tempValues['orientation']){
-
-            case 'topright':
-                tempValues['dx'] = canvasWidth - tempValues['dx'] - tempValues['width']; // Y doesn't need to be set
-                break;
-
-            case 'topleft': // nothing needs to be changed for topleft, as it's canvas default
-                break;
-
-            case 'bottomright':
-                tempValues['dx'] = canvasWidth - tempValues['dx']- tempValues['width'];
-                tempValues['dy'] = canvasHeight - tempValues['dy'] - tempValues['height'];
-                break;
-
-            case 'bottomleft': // X doesn't need to change
-                tempValues['dy'] = canvasHeight - tempValues['dy'] - tempValues['height'];
-                break;
-        }
+	
+	// The only thing left to do is to adjust the destination according to our orientation
+	var oriCor = orientationCoordinates(tempValues['orientation'], tempValues['dx'], tempValues['dy'], tempValues['width'], tempValues['height']);
+	tempValues['dx'] = oriCor['x'];
+	tempValues['dy'] = oriCor['y'];
 	
 	switch(tempValues['tileset']){
 	    
@@ -182,20 +226,23 @@ function getHudClicked(x, y){
 }
 
 /**
- *Return a HUD variable
+ *Resolve a condition
  *@param    dependon    {string}    On what our calculation should depend (currently "own" or "selection")
  *@param    field       {string}    What field we should get from our depending object.
  *                                  Certain special 'functions' can also be called.
  *@param    value       {int}       The value we need to modify, if there is one
- *@param    field	{string}    For which field we're going to use it. (sx, dx, width, ...)
+ *@param    purpose	{string}    For which field we're going to use it. (sx, dx, width, ...)
+ *@param    parameter	{string}    Another parameter for the field
+ *@param    condition	{string}    A condition the parameter needs to fulfill
+ *@param    conditionOperator
  *@returns  {whatever}              Returns whatever it needs.
  */
-function getHudVariable(dependon, field, value, purpose){
-    
-    //debugHud('Getting hud variable field <b>' + field + '</b> from <b>' + dependon + '</b> value <b>' + value + '</b>');
+function dependCondition(dependon, field, value, purpose, parameter, condition, conditionOperator){
     
     var targetObject;   // We'll store our target in here, once we know what it is
-    var result;         // The result goes here
+    var result = false;         // The result goes here. Standard is false.
+    
+    if(conditionOperator === undefined) conditionOperator = "=="; // If there is no conditionOperator, the default is "equal to"
     
     // We'll decide which object we want to get the info out of first
     switch(dependon){
@@ -216,6 +263,19 @@ function getHudVariable(dependon, field, value, purpose){
             debugHud('Object <b>' + targetObject + '</b>\'s current health: <b>' + animatedObjects[targetObject]['currenthealth'] + '</b>');
             result = (animatedObjects[targetObject]['currenthealth'] / animatedObjects[targetObject]['fullhealth']) * value;
             if(result<0) result = 0;
+	    break;
+	
+	case 'event':
+	    
+	    // Make sure the parameter exists! If it doesn't, it's 0
+	    if(animatedObjects[targetObject]['finishedEvents'][parameter] === undefined){
+		checkedParameter = 0;
+	    } else {
+		checkedParameter = animatedObjects[targetObject]['finishedEvents'][parameter];
+	    }
+	    
+	    if(getCondition(checkedParameter, conditionOperator, condition) == true) result = true;
+	    break;
     }
     
     return result;
@@ -223,20 +283,49 @@ function getHudVariable(dependon, field, value, purpose){
 }
 
 /**
+ *Get the condition
+ */
+function getCondition(parameter, operator, condition){
+    
+    // Switch between the operators (==, <, >)
+    switch(operator){
+	
+	case "==":
+	    if(parameter == condition) return true;
+	    break;
+	
+	case ">":
+	    if(parameter > condition) return true;
+	    break;
+	
+	case "<":
+	    if(parameter < condition) return true;
+	    break;
+	
+    }
+    
+    // If nothing passed, return false:
+    return false;
+    
+}
+
+/**
  *Get the event of a tile on a map
  */
-function getMapEvent(mapname, x, y){
+function getMapEvent(objectId, x, y){
       
+    var mapname = animatedObjects[objectId]['map'];
+    
     var currentTile = (y * maps[mapname]['width']) + x;
     
     if(maps[mapname]['events'][currentTile] !== undefined){
-	debugEcho('Event!');
 	
 	// Loop through every event
 	for(var eventNr = 0; eventNr < maps[mapname]['events'][currentTile].length; eventNr++){
 	    
 	    // And add it to the actionsreceived of this user
-	    animatedObjects[userPosition.uid]['actionsreceived'].push(maps[mapname]['events'][currentTile][eventNr]);
+	    queueAction(maps[mapname]['events'][currentTile][eventNr], objectId);
+
 	}
 	
     }

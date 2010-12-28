@@ -155,6 +155,7 @@ function onKeyDown(keypress) {
             keyFinish(keypress);
             break;
     }
+    return false;
 };
 
 /**
@@ -214,14 +215,18 @@ function keyFinish(keypress) {
             break
         
         case key.Enter:
-            transport(userPosition.uid, 5, 5);
+            teleport(userPosition.uid, 5, 5);
             getEventFacing(animatedObjects[userPosition.uid]['map'], animatedObjects[userPosition.uid]['x'], animatedObjects[userPosition.uid]['y'],animatedObjects[userPosition.uid]['direction']);
+            break;
+        
+        case key.z:
+            queueAction('attack', animatedObjects[userPosition.uid]['selection'], 1, userPosition.uid);
             break;
     }
     
     // Send the data to the server
-    if(connectToServer == true) ws.send(JSON.stringify(animatedObjects[userPosition.uid]));
-    
+    //if(connectToServer == true) wsend(JSON.stringify(animatedObjects[userPosition.uid]));
+
 }
 
 /**
@@ -259,7 +264,7 @@ function getEventFacing(mapName, x, y, direction){
     // This is just testing code. Will be replaced with something much more coherent soon
     for(objects in animatedObjects){
         if(animatedObjects[objects]['x'] == x && animatedObjects[objects]['y'] == y){
-            showText('This is a huge chunk of text that will hopefully get wrapped in some way. Yes, I am an object. Very good of you to see!');
+            queueText('This is a huge chunk of text that will hopefully get wrapped in some way. Yes, I am an object. Very good of you to see!');
         }
     }
     
@@ -274,7 +279,7 @@ function getEventFacing(mapName, x, y, direction){
  *@returns              {array}     An array filled with objects
  */
 function getEvents(mapName, x, y){
-    
+
     var tempArray = [];
     
     // Loop through every object in the animatedObjects object (3 times object, oy!)
@@ -299,14 +304,14 @@ function onMouseclick(x, y){
     // If we've clicked a HUD layer, do something
     if(typeof(clickedLayer) == 'object') {
         
-        if(clickedLayer['action'] !== undefined) executeAction(clickedLayer['action']['what'], getSelectedObject(), clickedLayer['action']['value']);
+        if(clickedLayer['action'] !== undefined) queueAction(clickedLayer['action']['what'], getSelectedObject(), clickedLayer['action']['value']);
         
     } else { // Alse change our selection
         // Store the tile coordinates in a variable, as it's an object
         var clickCoordinates = getClickedTile(x, y);
         
         var events = getEvents(animatedObjects[userPosition.uid]['map'], clickCoordinates.x, clickCoordinates.y);
-        
+        debugArray(events);
         // If we have an event in the array, we'll only take the first one for now.
         if(events.length > 0) {
             animatedObjects[userPosition.uid]['selection'] = events[0];
@@ -315,7 +320,7 @@ function onMouseclick(x, y){
         }
     }
     // Send the data to the server
-    if(connectToServer == true) ws.send(JSON.stringify(animatedObjects[userPosition.uid]));
+    if(connectToServer == true) wsend(JSON.stringify(animatedObjects[userPosition.uid]));
 }
 
 /**
@@ -334,18 +339,46 @@ function getClickedTile(x, y){
     
     //testPath = findPath(animatedObjects['U00002']['x'], animatedObjects['U00002']['y'], x, y);
     //animatedObjects['U00002']['path'] = deepCopy(testPath);
-
+    debugEcho('x' + x +  ' - y' + y);
     return {'x': x, 'y': y};
 }
 
 /**
  *Very basic function that adds text to an array to be shown later
+ *@param    text    {string}    The text to output on screen
+ *@param    style   {string}    The style to use, as defined in the hud.json file
  */
-function showText(text){
+function queueText(text, style){
     
-    // The text needs to be broken down.
+    // We need to break down, wrap the text. These variables will help
     var tempText = [];
     var tempLength = text.length;
+    
+    // If no style is given, style should be default
+    if(style === undefined) style = "default";
+    
+    // Now copy the style over
+    if(hudLayers['font'][style] === undefined) { // If the given style does not exist, copy the fallback one
+        style = deepCopy(font);
+    } else {
+        style = deepCopy(hudLayers['font'][style]);     // Copy over the style if it does exist
+    }
+    
+    // How high and wide is the background of the text going to be?
+    var width = canvasWidth - style['dx'] - 16;        // The width of the canvas - the x offset - 4 (for spacing)
+    var height = ((style['height']*2) * style['size']) + (style['vBorder']*2);
+
+    // How many chars per line can we show?
+    var realCharwidth = style['width'] * style['size'];        // The real size of a single character
+    var charsPerLine = Math.floor(((width - (style['hBorder']*2))/realCharwidth));
+    
+    // Where are we going to show it?
+    var oriCor = orientationCoordinates(style['orientation'], style['dx'], style['dy'], width, height);
+    style['dx'] = oriCor['x'];
+    style['dy'] = oriCor['y'];
+    style['dwidth'] = oriCor['width'];
+    style['dheight'] = oriCor['height'];
+
     
     // If there are more characters than we can show per line...
     for(var cursor = 0; text.length > (cursor * charsPerLine); cursor++){
@@ -365,12 +398,17 @@ function showText(text){
         tempText.push(trim(text.slice((cursor)*charsPerLine, (spliceLength + (charsPerLine*cursor)))));
     }
     
+    // Clear the textobjects array
+    textObjects = [];
+    
     textObjects.push({
         'text': tempText,               // An array with every line
         'dismissed': 0,
         'fpsshown': 0,
         'pieces': tempText.length,      // The ammount of lines
-        'cursor': 0                     // Where we're currently
+        'cursor': 0,                     // Where we're currently
+        'style': style,
+        'charsPerLine': charsPerLine
     });
     
 }

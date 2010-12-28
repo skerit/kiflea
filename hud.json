@@ -112,8 +112,25 @@
 		"right": {"sx": 71, "sy": 41, "width": 21, "height": 20},
 		"bottomleft": {"sx": 2, "sy": 73, "width": 21, "height": 21},
 		"bottommiddle": {"sx": 40, "sy": 73, "width": 20, "height": 20},
-		"bottomright": {"sx": 71, "sy": 73, "width": 21, "height": 20}
+		"bottomright": {"sx": 71, "sy": 73, "width": 21, "height": 20},
+		"fillstyle": "rgba(20, 20, 20, 0.7)"
 		}
-	}
+	},
+
+"font": { "default": {
+		"color": "rgba(255, 255, 0, 1)",
+		"background": "rgba(20, 20, 20, 0.7)",
+		"size": 15,
+		"font": "monospace",
+		"hBorder": 20,
+		"vBorder": 12,
+		"width": 0.6,
+		"height": 1.1,
+		"orientation": "bottomleft",
+		"dialog": "bordersmall",
+		"dx": 10,
+		"dy": 50
+		}
+}
 
 }

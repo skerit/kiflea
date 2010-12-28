@@ -107,7 +107,7 @@ function findPath(sx, sy, dx, dy){
                                 mx =  thisTile[subTile]['x'];
                                 my =  thisTile[subTile]['y'];
 
-                                result.push({'x': mx, 'y': my});
+                                result.push({'added': now(), 'x': mx, 'y': my});
 
                                 // This step is done, on to the next
                                 qstep--;
@@ -141,6 +141,7 @@ function findPath(sx, sy, dx, dy){
 
             // If it's walkable ...
             if(isTileWalkable(animatedObjects[userPosition.uid]['map'], thisTile[subTile]['x'],thisTile[subTile]['y'])){
+		
 
                 // Make sure the x already exists in the done array before adding the Y
                 if(done[thisTile[subTile]['x']] === undefined){
@@ -209,15 +210,107 @@ function doActionsReceived(){
         
         for(var actionNr = 0; actionNr < animatedObjects[objectId]['actionsreceived'].length; actionNr++){
 	    
-	    switch (animatedObjects[objectId]['actionsreceived'][actionNr]['action']){
+	    var thisAction = animatedObjects[objectId]['actionsreceived'][actionNr];
+	    var spliced = 0; // Keep a track of all the spliced arrays
+	    
+	    // Check if this action depends on something
+	    if(thisAction['dependon'] !== undefined) {
+		
+		// Pass all the depending-parameters to the dependCondition function. That'll tell us to continue to the next event or not.
+		if(dependCondition(thisAction['dependon'], thisAction['field'], 0, 0, thisAction['parameter'], thisAction['condition'], thisAction['conditionoperator']) == false){
+		    animatedObjects[objectId]['actionsreceived'].splice(actionNr-spliced,1);
+		    spliced++;
+		    continue;
+		}
+		
+	    }
+	    
+	    switch (thisAction['action']){
 		
 		case "teleport":
-		    debugEcho('Do teleport!');
-		    teleport(objectId, animatedObjects[objectId]['actionsreceived'][actionNr]['x'], animatedObjects[objectId]['actionsreceived'][actionNr]['y'], animatedObjects[objectId]['actionsreceived'][actionNr]['map'])
-		    animatedObjects[objectId]['actionsreceived'].splice(0,1);
+		    
+		    // If this object has turned of teleport in its wander, then skip it.
+		    if(animatedObjects[objectId]['wander'] !== undefined){
+			debugEcho('This is a wandering object!');
+		    } else {
+			// Do the teleport!
+			teleport(objectId, thisAction['x'], thisAction['y'], thisAction['map'])
+			
+			// Add it to the finished events array
+			addFinishedEvent(objectId, thisAction['name']);
+			
+		    };
+		    animatedObjects[objectId]['actionsreceived'].splice(actionNr-spliced,1);
 		    break;
+		
+		case "text":
+		    queueText(thisAction['message']);
+		    // Add it to the finished events array
+		    addFinishedEvent(objectId, thisAction['name']);
+		    animatedObjects[objectId]['actionsreceived'].splice(actionNr-spliced,1);
+		    spliced++;
+		    break;
+		
+		case "wander":
+
+		    if(animatedObjects[objectId]['path'].length == 0 && (now()-animatedObjects[objectId]['lastMoved']) > (animatedObjects[objectId]['wander']['basePause'] * randBetween(2,5))){
+			var curX = animatedObjects[objectId]['x'];
+		        var curY = animatedObjects[objectId]['y'];
+			var beginX = animatedObjects[objectId]['wander']['x'];
+			var beginY = animatedObjects[objectId]['wander']['y'];
+		        var maxX = beginX + animatedObjects[objectId]['wander']['xw'];
+		        var maxY = beginY + animatedObjects[objectId]['wander']['yw'];
+			
+			// Add it to the finished events array
+			addFinishedEvent(objectId, thisAction['name']);
+			
+			// Determine if there is a path between our current position and a random other position
+		        var path = findPath(curX, curY, randBetween(beginX, maxX), randBetween(beginY, maxY));
+			
+			// Beware! Sometimes no path can be found. Do not save it to the path if it's undefined
+			if(path !== undefined) animatedObjects[objectId]['path'] = deepCopy(path);
+		    };
+		    break;
+		
+		case "attack":
+		    // Turn on the attackmode
+		    queueAction("attackmode", objectId, 1, thisAction['from']);
+		    if(animatedObjects[objectId]['currenthealth'] > 0){
+			animatedObjects[objectId]['currenthealth'] -= thisAction['value'];
+			animatedObjects[objectId]['effects'].push({'sprite': 1, 'currentsprite': 1, 'sx': animatedObjects[thisAction['from']]['x'], 'sy': animatedObjects[thisAction['from']]['y'], 'dx': animatedObjects[objectId]['x'], 'dy': animatedObjects[objectId]['y'], 'x': animatedObjects[thisAction['from']]['x'], 'y': animatedObjects[thisAction['from']]['y'], 'msPerTile': 90, 'msMoved': 100, 'started': now(), 'id': rand(100)});
+		    }
+		    addFinishedEvent(objectId, thisAction['name']);
+		    animatedObjects[objectId]['actionsreceived'].splice(actionNr-spliced,1);
+		    spliced++;
+		    break;
+		
+		case "attackmode": // Attack something
+		    // Remove the attackmode if the own user received it or if the target is dead
+		    debugArray(thisAction);
+		    if(objectId == userPosition.uid || animatedObjects[thisAction['target']]['currenthealth'] == 0) {
+			animatedObjects[objectId]['actionsreceived'].splice(actionNr-spliced,1);
+			spliced++;
+		    } else {
+			queueAction("attack", thisAction['from'], 1, objectId);
+		    }
+		    
+
 	    }
 	}
+    }
+    
+}
+
+/**
+ *Add a finished event to the object's array
+ */
+function addFinishedEvent(objectId, eventname){
+    
+    // Add it to the finished events if it doesn't exist there yet
+    if(animatedObjects[objectId]['finishedEvents'][eventname] === undefined){
+	animatedObjects[objectId]['finishedEvents'][eventname] = 1;
+    } else { // Else up the counter
+	animatedObjects[objectId]['finishedEvents'][eventname]++;
     }
     
 }
@@ -255,8 +348,12 @@ function addPath(x, y, objectid, checkfull){
 	var prevY = animatedObjects[objectid]['fromY'];
     }
     
-    // Add the new path
-    animatedObjects[objectid]['path'].push({'x': prevX + x, 'y': prevY + y});
+    // Add the new path directly if we're not connected to a server
+    if(connectToServer == false){
+	animatedObjects[objectid]['path'].push({'added': now(), 'x': prevX + x, 'y': prevY + y});
+    } else {
+	wsend({'action': 'move', 'added': now(), 'x': prevX + x, 'y': prevY + y});
+    }
     
     return false;
     
@@ -318,7 +415,7 @@ function walkPath(objectId){
 	    animatedObjects[objectId]['lastMoved'] = now();
             
             // Get the event for this tile in the map and add it to the action list
-            getMapEvent(animatedObjects[userPosition.uid]['map'], step['x'], step['y']);
+            getMapEvent(objectId, step['x'], step['y']);
 	}
 	
         // How much time has past since we started this move?
@@ -394,7 +491,7 @@ function walkPath(objectId){
 	    animatedObjects[objectId]['lastMoved'] = now();
             
             // Get the event for this tile in the map and add it to the action list
-            getMapEvent(animatedObjects[userPosition.uid]['map'], step['x'], step['y']);
+            getMapEvent(objectId, step['x'], step['y']);
             
 	}
 	
@@ -460,5 +557,4 @@ function walkPath(objectId){
         
     }
     
-
 }

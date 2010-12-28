@@ -62,6 +62,14 @@ function rand(end){
 }
 
 /**
+ *Give us a random number between these 2 numbers
+ */
+function randBetween(begin, end){
+   
+   return rand(end-begin) + begin; 
+}
+
+/**
  *A function to send test messages with to the server
  */
 function sendTestJson(){
@@ -167,10 +175,10 @@ function decimal(number, decimals){
 }
 
 /**
- *Return the current time in milliseconds
+ *Return the current time in milliseconds + the timeDifference with the server
  */
 function now(){
-    return (new Date()).getTime();
+    return (new Date()).getTime() - timeDifference;
 }
 
 /**

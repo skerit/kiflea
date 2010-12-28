@@ -54,6 +54,7 @@ var visibleTilesX;      // The ammount of tiles visible per row (should be depre
 var visibleTilesY;      // The ammount of tiles visible per col (should be deprecated)
 var loopInterval = 0;
 var ws;
+var timeDifference = 0;	// The difference between the time on the server and the client
 // Normally you only want to draw what you can see (that's logic)
 // But since this engine supports multiple tile sizes in one world it's sometimes
 // necesarry to draw outside those bounds.
@@ -107,7 +108,18 @@ var hudLayers = {};		    // We'll store the HUD in here.
 var previousHudLayers = {};	    // To determine wheter we've clicked on the HUD we need to know where they WERE.
 var mouseX = 0;
 var mouseY = 0;
-    
+
+// The default font setting, if no other default is set in hud.json
+var font = {"size": 20,		    // Size in pixels
+	    "font": "monospace",    // Using anything but monospace would be stupid
+	    "hPadding": 5,
+	    "vPadding": 99,
+	    "width": 0.6,	    // The base width of a single character
+	    "height": 1.2,
+	    "orientation": "bottomleft",
+	    "dx": 5,
+	    "dy": 10};	    // The base height of a single character
+
 /**
  *Enables or disables the engine
  */
@@ -274,6 +286,10 @@ function processMap(xml, sourcename) {
 		var eventType = $(this).attr('type');
 		var eventProperties = {};
 		
+		eventProperties['name'] = eventName;
+		eventProperties['type'] = eventType;
+		eventProperties['action'] = eventType;
+		
 		// Now iterate through all the properties.
 		$(this).find('properties').find('property').each(function(){
 		    eventProperties[$(this).attr('name')] = $(this).attr('value');
@@ -419,7 +435,7 @@ function processMap(xml, sourcename) {
  */
 function getWalkableTiles(sourcename){
     
-    oneMap = maps[sourcename];
+    var oneMap = maps[sourcename];
     
     // Create an array we'll fill up and return later
     var walkableTiles = [];
@@ -470,7 +486,13 @@ function getWalkableTiles(sourcename){
  *@returns 			{bool}		Yes or no
  */
 function isTileWalkable(mapName, x, y){
+    
+    // If the x and y is beyond the bounds of the map, return false
+    if(y < 0 || y >= maps[animatedObjects[userPosition.uid]['map']]['height'] || x < 0 || x >= maps[animatedObjects[userPosition.uid]['map']]['width']) return false;
+    
     wantedTile = y * maps[mapName]['width'] + x;
+    
+    // If the wantedtile is defined in the walkableTiles array it isn't walkable: return false.
     if(maps[mapName]['walkableTiles'][wantedTile] !== undefined){
 	return false;
     }else {

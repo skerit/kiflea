@@ -1,3 +1,13 @@
+--- Tuesday 2010/12/28 ---
+(And the past week in general)
+* Started getting serious about the server, rethinking how updates would be sent
+  from client and such.
+* Named the server "kiser"
+* The code is terrible and will change a lot, but it's still something and nice
+  to add to the repository for historical purposes
+* Thinking about changing lots of things in the client. It does pathfinding and
+  such very well, but they actually belong on the server for this kind of game.
+  Though it's still nice to have for off-line games.
 
 --- Saturday 2010/08/14 ---
 * Started making another map, for the redditgamejam. This has already solved
@@ -10,6 +20,12 @@
 * Created a basic function that does events. Teleports now actually work in game.
 * Every object was drawn on every map, no matter where they were. Added a tiny
   if that takes care of that.
+* Modifying the text output, it's still needed for regular off-line games.
+  Renaming the showText function to queueText
+* When using the same tileset in 2 different maps, the last loaded map will overwrite
+  the tileset properties set in that map. Need to think about a way to fix this.
+* You're finally unable to walk out of the bounds of the map.
+* Made events depend on eachother.
 
 --- Friday 2010/08/13 ---
 * Discovered the real reason for the strange walking behaviour, as it still wasn't

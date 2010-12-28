@@ -37,7 +37,7 @@
 	<script type="text/javascript" src="kiflea.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
-			fps = 50;
+			fps = 25;
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
 			defaultTilesPerRow = 30;
@@ -56,7 +56,7 @@
 			backgroundColor = "rgb(255,255,255)";
 			defaultSprites = 'default.tmx.xml';
 			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites
-			connectToServer = false;
+			connectToServer = true;
 			conAddress = "ws://kipdola.be";
 			conPort = 1234;
 			animatedObjects = {	// Test data for objects
@@ -79,7 +79,9 @@
 					"currenthealth": 100,
 					"fullhealth": 100,
 					"path": [],
-					"actionsreceived": []
+					"wander": {"x": 35, "y": 35, "xw": 5, "yw": 5, "basePause": 5000},
+					"actionsreceived": [{"action": "wander", "active": 1}],
+					"finishedEvents": {}
 				},
 				"U00003":{
 					"uid": "U00003",
@@ -100,7 +102,9 @@
 					"currenthealth": 78,
 					"fullhealth": 100,
 					"path": [],
-					"actionsreceived": []
+					"wander": {"x": 25, "y": 25, "xw": 15, "yw": 15, "basePause": 9000},
+					"actionsreceived": [{"action": "wander", "active": 1}],
+					"finishedEvents": {}
 				}
 			}
 
@@ -123,7 +127,8 @@
 				"currenthealth": 55,
 				"fullhealth": 100,
 				"path": [],
-				"actionsreceived": []
+				"actionsreceived": [],
+				"finishedEvents": {}
 			};
 
 			startEngine();

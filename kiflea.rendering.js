@@ -111,21 +111,44 @@ function renderLoop(){
     // Draw it on the canvas for better framerates
     if(debugOn==true) drawDebugFps();
     
-    // Now start showing text objects
+    // Draw the queues text
+    drawTextQueue();
+
+}
+
+/**
+ *Draw the queued text
+ */
+function drawTextQueue(){
+
     for(message in textObjects){
-        ctx.fillStyle = "rgba(20, 20, 20, 0.7)";  
-        ctx.fillRect (2, canvasHeight-99, canvasWidth-4, 55);
-        ctx.strokeStyle = "white";  
-        ctx.font = "15px monospace";
+        ctx.fillStyle = textObjects[message]['style']['background'];  
+        ctx.fillRect (textObjects[message]['style']['dx'], textObjects[message]['style']['dy'], textObjects[message]['style']['dwidth'], textObjects[message]['style']['dheight']);
+        ctx.fillStyle = textObjects[message]['style']['color'];  
+        ctx.strokeStyle = textObjects[message]['style']['color'];  
+        ctx.font = textObjects[message]['style']['size'] + "px " + textObjects[message]['style']['font'];
         
+        var charHeight = textObjects[message]['style']['height']*textObjects[message]['style']['size'];
+        
+        var charsPerLine = textObjects[message]['charsPerLine']; // A variable used later
         
         // Show 2 lines at once
         for(var loop = 0; loop < 2; loop++){
             var cursor = loop + textObjects[message]['cursor'];
             
             if(textObjects[message]['text'][cursor] !== undefined) {
-                ctx.strokeText(textObjects[message]['text'][cursor], 5, (canvasHeight-80)+(20*(cursor%2)));
+                var dx = textObjects[message]['style']['dx']+textObjects[message]['style']['hBorder'];
+                var dy = (textObjects[message]['style']['dy'])+((charHeight)*(1+(cursor%2))) + textObjects[message]['style']['vBorder'] - charHeight/4;
+                ctx.strokeText(textObjects[message]['text'][cursor], dx, dy);
             }
+        }
+        
+        if(textObjects[message]['style']['dialog'] !== undefined) {
+            var dx = textObjects[message]['style']['dx'];
+            var dy = textObjects[message]['style']['dy'];
+
+            drawDialog(textObjects[message]['style']['dialog'], dx, dy, textObjects[message]['style']['dwidth']+hudLayers['dialog'][textObjects[message]['style']['dialog']]['topleft']['width']*2,
+                       textObjects[message]['style']['dheight']+hudLayers['dialog'][textObjects[message]['style']['dialog']]['topleft']['height']*2);
         }
         
 
@@ -133,7 +156,7 @@ function renderLoop(){
         textObjects[message]['fpsshown']++;
         
         // If the item has been shown too long, increment the cursor
-        if(textObjects[message]['fpsshown'] > (fpsr*3)){
+        if(textObjects[message]['fpsshown'] > (fpsr*(0.11 * charsPerLine))){
 
             // If the cursor hasn't reached as many pieces yet, there is more text to show
             if(textObjects[message]['cursor']+2 < textObjects[message]['pieces']){
@@ -151,7 +174,6 @@ function renderLoop(){
         break;
 
     }
-
 }
 
 /**
@@ -220,7 +242,7 @@ function renderEffects(objectId){
         if(objectMoveProgressX < 1) animatedObjects[objectId]['effects'][effectNr]['x'] = sx + ((dx - sx)*objectMoveProgressX);
         if(objectMoveProgressY < 1) animatedObjects[objectId]['effects'][effectNr]['y'] = sy + ((dy - sy)*objectMoveProgressY);
         
-        var coordinates = getRealCoordinates(null,x, y);
+        var coordinates = getRealCoordinates(objectId,x, y);
         
         // Only for objects and effects: when an adjustx and/or an adjusty is given as a tileproperty, apply it
         // This is because BIG animations (like the explosion) still take only one tile on the map.
@@ -295,8 +317,16 @@ function renderEffects(objectId){
             // If we have reached our destination
             if(objectMoveProgressX > 1 && objectMoveProgressY > 1){
                 
+                // Get the playcount only if it actually is an animation, and it exists.
+                // Otherwise it has only 1 frame and has played once.
+                if(animatedTiles[baseTilesetInfo['tileSetName']][animationId] !== undefined) {
+                    var played = animatedTiles[baseTilesetInfo['tileSetName']][animationId]['played'];
+                } else {
+                    var played = 1;
+                }
+                
                 // And if we've played the effect one full time OR (it was a moving object OR it has an aftereffect)
-                if(animatedTiles[baseTilesetInfo['tileSetName']][animationId]['played'] > 0 || ((dx != sx || dy != sy) || animatedObjects[objectId]['effects'][effectNr]['aftereffect'] !== undefined)){
+                if(played > 0 || ((dx != sx || dy != sy) || animatedObjects[objectId]['effects'][effectNr]['aftereffect'] !== undefined)){
                     
                     if(animatedObjects[objectId]['effects'][effectNr]['aftereffect'] !== undefined){
                         animatedObjects[objectId]['effects'].push({'sprite': animatedObjects[objectId]['effects'][effectNr]['aftereffect'],
@@ -357,7 +387,7 @@ function renderObjects(){
             
             // Get the real coördinates of the object (pixels on the canvas in relation to our user)
             var objC = getRealCoordinates(objectId);
-            
+
             var objX = objC['x'];
             var objY = objC['y'];
         }
@@ -514,19 +544,20 @@ function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
     if(y === undefined) y = animatedObjects[objectId]['y'];
     
     // Store the current map's tileWidth and Height, if it hasn't been given already
-    if(tileWidth === undefined) tileWidth = maps[animatedObjects[userPosition.uid]['map']]['tileWidth'];
-    if(tileHeight === undefined) tileHeight = maps[animatedObjects[userPosition.uid]['map']]['tileHeight'];
+    if(tileWidth === undefined) tileWidth = maps[animatedObjects[objectId]['map']]['tileWidth'];
+    if(tileHeight === undefined) tileHeight = maps[animatedObjects[objectId]['map']]['tileHeight'];
 
+    // - a tilewidth and height to account for the 0,0 based positioning
     tempWidth = ((canvasWidth - tileWidth) / 2);
-    tempHeight = ((canvasWidth - tileHeight) / 2);
+    tempHeight = ((canvasHeight - tileHeight) / 2);
 
     // When the screen is the correct multiple of the tilewidth, but half of it isn't an integer
     // we need to take that into account.
-    if(tempWidth % maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] != 0){
-        tempWidth = tempWidth - (tempWidth % maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    if(tempWidth % maps[animatedObjects[objectId]['map']]['tileWidth'] != 0){
+        tempWidth = tempWidth - (tempWidth % maps[animatedObjects[objectId]['map']]['tileWidth']);
     }
-    if(tempHeight % maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] != 0){
-        tempHeight = tempHeight - (tempHeight % maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    if(tempHeight % maps[animatedObjects[objectId]['map']]['tileHeight'] != 0){
+        tempHeight = tempHeight - (tempHeight % maps[animatedObjects[objectId]['map']]['tileHeight']);
     }
 
     var objX = (tempWidth - (Math.floor(animatedObjects[userPosition.uid]['x']) * tileWidth)) + (x * tileWidth) - mappOffsetX;
