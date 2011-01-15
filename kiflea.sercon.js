@@ -25,122 +25,136 @@ var vdata;
  *Open a connection to the server
  */
 function getConnection(){
-    
-    // If the connectToServer variable is true...
-    if(connectToServer == true) {
         
-        // Create the connection
-        ws = new WebSocket(conAddress + ':' + conPort + '/');
+    // Create the connection
+    ws = new WebSocket(conAddress + ':' + conPort + '/');
+
+    // Setup a few event handlers
+    ws.onopen = function(e) {
+     console.log('Made connection to ' + conAddress + ':' + conPort + '/');
+     out('Opened connection to the server at <b>' + conAddress + ':' + conPort + '/</b>');
+     k.state.server.connected = true;
+     // Send our users info
+     wsend(animatedObjects[userPosition.uid]);
+     
+    }
+
+    ws.onclose = function(e) {
+     console.log("The connection to the server has been closed");
+     out('The connection to the server has been closed');
+     wsend({'action': 'quit'});
+	 k.state.server.connected = false;
+     //wsend({"uid": userPosition.uid, "map":"close"});
+    }
     
-        // Setup a few event handlers
-        ws.onopen = function(e) {
-         console.log('Made connection to ' + conAddress + ':' + conPort + '/');
-         out('Opened connection to the server at <b>' + conAddress + ':' + conPort + '/</b>');
-         
-         // Send our users info
-         wsend(animatedObjects[userPosition.uid]);
-         
-        }
-
-        ws.onclose = function(e) {
-         console.log("The connection to the server has been closed");
-         out('The connection to the server has been closed');
-         wsend({'action': 'quit'});
-         //wsend({"uid": userPosition.uid, "map":"close"});
-        }
+    // Bij het ontvangen van data ...
+    ws.onmessage = function(e) {
+     console.log("Received data: " + e.data);
+     //out('Received data : ' + e.data);
+     
+     tempx = animatedObjects[userPosition.uid]['moveToX'];
+     tempy = animatedObjects[userPosition.uid]['moveToY'];
+     
+     try {
         
-        // Bij het ontvangen van data ...
-        ws.onmessage = function(e) {
-         console.log("Received data: " + e.data);
-         //out('Received data : ' + e.data);
-         
-         tempx = animatedObjects[userPosition.uid]['moveToX'];
-         tempy = animatedObjects[userPosition.uid]['moveToY'];
-         
-         try {
+        debugEcho('Wgetting data, length: ' + e.data.length);
+        receivedData = wget(e.data);
+        
+        if(receivedData !== false) {
+            verwerk = JSON.parse(receivedData);
             
-            debugEcho('Wgetting data, length: ' + e.data.length);
-            receivedData = wget(e.data);
+            debugEcho(verwerk['action'])
             
-            if(receivedData !== false) {
-                verwerk = JSON.parse(receivedData);
-                
-                debugEcho(verwerk['action'])
-                
-                switch(verwerk['action']){
-                    case 'initiated':
-                        debugEcho('Server has initiated us! Asking for timesync');
-                        wsend({'action': 'timesync'});
-                        break;
-                    case 'timesync':
-                        sNow = now();
-                        sTime = parseInt(verwerk['time']);
-                        
-                        timeDifference = timeDifference + (sNow - sTime)
-                        
-                        debugEcho('Received this time: ' + sTime + ' -- Local time: ' + sNow + ' -- Difference: ' + timeDifference);
-                        break;
+            switch(verwerk['action']){
+                case 'initiated':
+                    debugEcho('Server has initiated us! Asking for timesync, started downloading maps');
+                    k.operations.load.getMaps(verwerk['loadMaps']);
+                    k.operations.startLoop();
+                    wsend({'action': 'timesync'});
+                    break;
+                case 'timesync':
+                    sNow = now();
+                    sTime = parseInt(verwerk['time']);
                     
-                    case 'move':
-                        animatedObjects[verwerk['uid']]['path'].push(verwerk);
-                        break;
+                    timeDifference = timeDifference + (sNow - sTime)
                     
-                    case 'initiation':
-                        animatedObjects[verwerk['uid']] = verwerk;
-                        break;
-                    
-                    case 'userlist':
-                        animatedObjects = verwerk['userlist'];
-                        break;
-
-                }
+                    debugEcho('Received this time: ' + sTime + ' -- Local time: ' + sNow + ' -- Difference: ' + timeDifference);
+                    break;
                 
-                /*
-                for(var objectId in verwerk){
+                case 'move':
+                                            
+                                            // Add the new path if the user is known to us
+                                            if(animatedObjects[verwerk['from']] !== undefined){
 
-                    if(verwerk[objectId]['path'] !== undefined) {
-                        
-                        for(var path = 0; path < verwerk[objectId]['path'].length; path++){
-                            
-                            if(verwerk[objectId]['path'][path]['x'] !== undefined && animatedObjects[objectId] !== undefined) {
-                                
-                                //    if(animatedObjects[objectId]['lastMoved'] < verwerk[objectId]['lastMoved']){
-                                //        debugEcho('Replacing ' + objectId);
-                                //        animatedObjects[objectId] = verwerk[objectId];
-                                //    }
+	                                            	// The gap between the current (next) and the previous (now) step.
+													//verwerk.moveGap = stepFut.moveBegin - stepNext.moveEnd;
 
-                                if(animatedObjects[objectId]['path'][ (animatedObjects[objectId]['path'].length-1) ] !== undefined){
-                                    if(verwerk[objectId]['path'][path]['added'] > animatedObjects[objectId]['path'][ (animatedObjects[objectId]['path'].length-1) ]['added']){
-                                        debugEcho('Path is new');
-                                        animatedObjects[objectid]['path'].push(path);
-                                    }
-                                }else {
+                                                    animatedObjects[verwerk['from']]['path'].push(verwerk);
+                                            } else { // Ask for an initiation of the user if he isn't known
+                                                    wsend({'action': 'iniuser', 'who': verwerk['from']});
+                                            }
+                    
+                    break;
+                
+                case 'initiation':
+                    animatedObjects[verwerk['uid']] = verwerk;
+                    break;
+                
+                case 'userlist':
+                    animatedObjects = verwerk['userlist'];
+                    break;
+                                    
+                                    case 'logoff':
+                                            delete animatedObjects[verwerk['from']];
+                                            break;
 
-
-                                }
-
-                            } else {
-                                // If the objectId does not exist yet, add it to the array completely
-                                if(animatedObjects[objectId] == undefined) {
-                                    debugEcho("User nr " + objectId + " has been added");
-                                    animatedObjects[objectId] = verwerk[objectId];
-                                }
-                            }
-                        }
-                        
-                    }
-                    //animatedObjects[objectId]['path'] = verwerk[objectId]['path'];
-                }*/
-
-                //animatedObjects = verwerk;    
             }
             
-            ////animatedObjects[userPosition.uid]['moveToX'] = tempx;
-            ////animatedObjects[userPosition.uid]['moveToY'] = tempy;
-         } catch (error){
-            debugEcho('An error occured receiving data: ' + error);
-         }
+            /*
+            for(var objectId in verwerk){
+
+                if(verwerk[objectId]['path'] !== undefined) {
+                    
+                    for(var path = 0; path < verwerk[objectId]['path'].length; path++){
+                        
+                        if(verwerk[objectId]['path'][path]['x'] !== undefined && animatedObjects[objectId] !== undefined) {
+                            
+                            //    if(animatedObjects[objectId]['lastMoved'] < verwerk[objectId]['lastMoved']){
+                            //        debugEcho('Replacing ' + objectId);
+                            //        animatedObjects[objectId] = verwerk[objectId];
+                            //    }
+
+                            if(animatedObjects[objectId]['path'][ (animatedObjects[objectId]['path'].length-1) ] !== undefined){
+                                if(verwerk[objectId]['path'][path]['added'] > animatedObjects[objectId]['path'][ (animatedObjects[objectId]['path'].length-1) ]['added']){
+                                    debugEcho('Path is new');
+                                    animatedObjects[objectid]['path'].push(path);
+                                }
+                            }else {
+
+
+                            }
+
+                        } else {
+                            // If the objectId does not exist yet, add it to the array completely
+                            if(animatedObjects[objectId] == undefined) {
+                                debugEcho("User nr " + objectId + " has been added");
+                                animatedObjects[objectId] = verwerk[objectId];
+                            }
+                        }
+                    }
+                    
+                }
+                //animatedObjects[objectId]['path'] = verwerk[objectId]['path'];
+            }*/
+
+            //animatedObjects = verwerk;    
         }
+        
+        ////animatedObjects[userPosition.uid]['moveToX'] = tempx;
+        ////animatedObjects[userPosition.uid]['moveToY'] = tempy;
+     } catch (error){
+        debugEcho('An error occured receiving data: ' + error);
+     }
     }
     
     // Another debug function

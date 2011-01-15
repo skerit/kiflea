@@ -20,19 +20,15 @@
 /**
  *  Load the HUD
  */
-function getHud(){
-    
-    // Increase the toLoad variable
-    toLoad++;
+k.operations.load.getHud = function(){
     
     debugHud('Loading hud ...', false);
     
     // Use a jquery function to fetch the json
     $.getJSON(loadHud, function(data) {
-	hudLayers = data;	// Store the data
-        
+		k.collections.hudLayers = data;	// Store the data
+		k.state.load.loadedHud = true;
         debugHud('Hud has been loaded succesfully', false);
-        loaded++;
     });
 }
 
@@ -101,19 +97,19 @@ function orientationCoordinates(orientation, x, y, width, height){
     switch(orientation){
 
 	case 'topright':
-	    x = canvasWidth - x - width; // Y doesn't need to be set
+	    x = k.links.canvas.width - x - width; // Y doesn't need to be set
 	    break;
 
 	case 'topleft': // nothing needs to be changed for topleft, as it's canvas default
 	    break;
 
 	case 'bottomright':
-	    x = canvasWidth - x - width;
-	    y = canvasHeight - y - height;
+	    x = k.links.canvas.width - x - width;
+	    y = k.links.canvas.height - y - height;
 	    break;
 
 	case 'bottomleft': // X doesn't need to change
-	    y = canvasHeight - y - height;
+	    y = k.links.canvas.height - y - height;
 	    break;
     }
     
@@ -123,72 +119,79 @@ function orientationCoordinates(orientation, x, y, width, height){
 }
 
 /**
- *Draw the HUD
+ *Draw the HUD if it has been loaded
  */
 function drawHud(){
-    
-    // Clear the previousHudLayers variable
-    previousHudLayers = {};
-    previousHudLayers['layers'] = [];
-   
-   // Loop through the layers
-   for(var layer = 0; layer < hudLayers['layers'].length; layer++){
 
-	// Store the to-be-calculated values in this object
-	var tempValues = deepCopy(hudLayers['layers'][layer]);
+
+	if(!k.state.load.loadedHud) return false;
+
+	// Clear the previousHudLayers variable
+	k.state.hud.layers = [];
+
+	// Loop through the layers
+	for(var layer = 0; layer < k.collections.hudLayers.layers.length; layer++){
+
+		// Store the to-be-calculated values in this object
+		var tempValues = deepCopy(k.collections.hudLayers.layers[layer]);
+
+		// Loop through the object and alculate the hudvariable for each
+		for(name in tempValues){
+			// Only get the Hudvariable if it contains an object AND isn't an action, else just use the value in it.
+			tempValues[name] = (typeof(tempValues[name]) == 'object' && name != "action") ? dependCondition(tempValues[name]['dependon'], tempValues[name]['field'], tempValues[name]['value'], tempValues[name]) : tempValues[name];
+		}
+
+		tempValues["type"] = "hudelement";
 	
-	// Loop through the object and alculate the hudvariable for each
-	for(name in tempValues){
-	    // Only get the Hudvariable if it contains an object AND isn't an action, else just use the value in it.
-	    tempValues[name] = (typeof(tempValues[name]) == 'object' && name != "action") ? dependCondition(tempValues[name]['dependon'], tempValues[name]['field'], tempValues[name]['value'], tempValues[name]) : tempValues[name];
+		// Go to the next layer if the "show" field is 0
+		if(tempValues['show'] == 0) continue;
+
+		// The only thing left to do is to adjust the destination according to our orientation
+		var oriCor = orientationCoordinates(tempValues['orientation'], tempValues['dx'], tempValues['dy'], tempValues['width'], tempValues['height']);
+		tempValues['dx'] = oriCor['x'];
+		tempValues['dy'] = oriCor['y'];
+	
+		switch(tempValues['tileset']){
+
+			case "ctx-circle":
+				k.links.canvas.buffer.beginPath();
+				k.links.canvas.buffer.fillStyle = tempValues['fillstyle'];
+				k.links.canvas.buffer.strokeStyle = tempValues['strokestyle'];
+				k.links.canvas.buffer.arc(tempValues['dx'],tempValues['dy'],tempValues['width'],0,Math.PI*2,true);
+				k.links.canvas.buffer.fill();
+				k.links.canvas.buffer.stroke();
+				k.links.canvas.buffer.closePath();
+				break;
+
+			default:
+				debugHud('Drawhud ' + tempValues['name'] + ' (' + tempValues['sx'] + ',' + tempValues['sy'] + ',' + tempValues['width'] + ',' + tempValues['height'] + ') to (' + tempValues['dx'] + ',' + tempValues['dy'] + ',' + tempValues['width'] + ',' + tempValues['height'] + ')');
+
+				// Draw the actual image
+				k.links.canvas.buffer.drawImage(
+					 tileSet[tempValues['tileset']]['image'],
+					 tempValues['sx'],
+					 tempValues['sy'],
+					 tempValues['width'],
+					 tempValues['height'],
+					 tempValues['dx'],
+					 tempValues['dy'],
+					 tempValues['width'],
+					 tempValues['height']
+				);
+				break;
+		}
+	
+		// Put this layer in the previousHudLayers array.
+		// After this function, every layer that has been drawn will be there.
+		k.state.hud.layers.push(tempValues);
+
+	} // Loop to the next layer
+
+	// Now draw dialog windows
+	for(var layer = 0; layer < k.state.hud.openedDialogs.length; layer++){
+		var md = k.state.hud.openedDialogs[layer];
+		drawDialog(md.dialogset,  md.x,  md.y,  md.width,  md.height, layer);
 	}
-	
-	// Go to the next layer if the "show" field is 0
-	if(tempValues['show'] == 0) continue;
-	
-	// The only thing left to do is to adjust the destination according to our orientation
-	var oriCor = orientationCoordinates(tempValues['orientation'], tempValues['dx'], tempValues['dy'], tempValues['width'], tempValues['height']);
-	tempValues['dx'] = oriCor['x'];
-	tempValues['dy'] = oriCor['y'];
-	
-	switch(tempValues['tileset']){
-	    
-	    case "ctx-circle":
-		ctx.beginPath();
-		ctx.fillStyle = tempValues['fillstyle'];
-		ctx.strokeStyle = tempValues['strokestyle'];
-		ctx.arc(tempValues['dx'],tempValues['dy'],tempValues['width'],0,Math.PI*2,true);
-		ctx.fill();
-		ctx.stroke();
-		ctx.closePath();
-		break;
-	    
-	    default:
-		debugHud('Drawhud ' + tempValues['name'] + ' (' + tempValues['sx'] + ',' + tempValues['sy'] + ',' + tempValues['width'] + ',' + tempValues['height'] + ') to (' + tempValues['dx'] + ',' + tempValues['dy'] + ',' + tempValues['width'] + ',' + tempValues['height'] + ')');
-	   
-		// Draw the actual image
-		ctx.drawImage(
-			 tileSet[tempValues['tileset']]['image'],
-			 tempValues['sx'],
-			 tempValues['sy'],
-			 tempValues['width'],
-			 tempValues['height'],
-			 tempValues['dx'],
-			 tempValues['dy'],
-			 tempValues['width'],
-			 tempValues['height']
-		);
-		break;
-	}
-	
-	// Put this layer in the previousHudLayers array.
-	// After this function, every layer that has been drawn will be there.
-	previousHudLayers['layers'].push(tempValues);
-    
-   } // Loop to the next layer
-   
-   //drawDialog("bordersmall", 50, 100, 200,150);
-   //drawDialog("bordersmall", 200, 350, 68,150);
 
 }
 
@@ -198,31 +201,37 @@ function drawHud(){
  *@param	y	{integer}
  *@returns	{object}		The layer we've clicked
  */
-function getHudClicked(x, y){
-    
-    debugHud('Clicked ' + x + ',' + y);
-    
+k.operations.interface.getClicked = function(x, y){
+
     var returnObject = 0;	// Define it as an integer for now, otherwise the typeof won't work later on.
 
-   // Loop through the layers, even if we've alreayd found a match (because
+   // Loop through the layers, even if we've already found a match (because
    // you can only click on the top layer, which comes last)
-   for(var layer = 0; layer < previousHudLayers['layers'].length; layer++){
+   for(var layer = 0; layer < k.state.hud.layers.length; layer++){
     
 	// Calculate 'til what X and Y location this element goes
-	var endX = previousHudLayers['layers'][layer]['dx'] + previousHudLayers['layers'][layer]['width'];
-	var endY = previousHudLayers['layers'][layer]['dy'] + previousHudLayers['layers'][layer]['height'];
+	var endX = k.state.hud.layers[layer]['dx'] + k.state.hud.layers[layer]['width'];
+	var endY = k.state.hud.layers[layer]['dy'] + k.state.hud.layers[layer]['height'];
 	
 	// Now see if our clicked X and Y coordinates fall in between these ranges
-	if((x >= previousHudLayers['layers'][layer]['dx'] && x <= endX) && (y >= previousHudLayers['layers'][layer]['dy'] && y <= endY)){
+	if((x >= k.state.hud.layers[layer]['dx'] && x <= endX) && (y >= k.state.hud.layers[layer]['dy'] && y <= endY)){
 	    
 	    // Save it for sending later with deepCopy (as to not send it by reference)
-	    returnObject = deepCopy(previousHudLayers['layers'][layer]);
+	    returnObject = deepCopy(k.state.hud.layers[layer]);
+
+		// Calculate where we clicked the object
+		returnObject['clickedX'] = x - k.state.hud.layers[layer]['dx'];
+		returnObject['clickedY'] = y - k.state.hud.layers[layer]['dy'];
 	    
-	    debugHud('You\'ve clicked <b>' + previousHudLayers['layers'][layer]['name'] + '</b>');
+	    debugHud('Clicked a <b>' + k.state.hud.layers[layer].type + '</b> called "' + k.state.hud.layers[layer]['name'] + '"');
 	}
    }
    
-   if(typeof(returnObject) == 'object') return returnObject;
+   if(typeof(returnObject) == 'object'){
+	   return returnObject;
+   } else {
+	   return false;
+   }
 }
 
 /**
@@ -333,139 +342,180 @@ function getMapEvent(objectId, x, y){
 }
 
 /**
+ * Add a new dialog window to the list
+ */
+k.operations.interface.openDialog = function(dialogset, x, y, width, height){
+
+	var index = k.state.hud.openedDialogs.push({'dialogset': dialogset, 'x': x, 'y': y, 'width': width, 'height': height});
+
+	k.state.hud.openedDialogs[index-1]['index'] = index-1;
+}
+
+/**
+ * Move a window
+ * @param dialogObject {object}     A non-referenced copy of the dialogObject
+ */
+k.operations.interface.moveDialog = function(dialogObject, x, y){
+
+	if(typeof(dialogObject) == 'object') {
+		if(dialogObject.type == "dialog") {
+			k.state.hud.openedDialogs[dialogObject.index].x = x - dialogObject.clickedX;
+			k.state.hud.openedDialogs[dialogObject.index].y = y - dialogObject.clickedY;
+		}
+	}
+
+}
+
+/**
  *Drawing a dialog window
  */
-function drawDialog(dialogset, x, y, width, height){
+function drawDialog(dialogset, x, y, width, height, index){
+
+	if(!k.state.load.loadedHud) return false;
 
     // Get the wanted dialog information
-    var tempValues = hudLayers['dialog'][dialogset];
-    
-    // Get necesary info
-    var vMidHeight = tempValues['left']['height'];	// Get the height of the vertical middle pieces (they repeat)
-    var hMidWidth = tempValues['topmiddle']['width'];	// Get the width of the horizontal middle pieces (they also repeat)
-    var cornerWidth = tempValues['topleft']['width'];
-    var cornerHeight = tempValues['topleft']['height'];
-    
-    // Calculate what we actually need to draw
-    var hMidPieces = Math.floor((width - (2*cornerWidth))/hMidWidth);		// How many vertical middle pieces will we have to draw?
-    var vMidPieces = Math.floor((height - (2*cornerHeight))/vMidHeight);	// How many vertical middle pieces will we have to draw?
-    
-    previousHudLayers['layers'].push({"name": "dialog", "width" : width, "height": height, "dx": x, "dy": y});
-    
-    // Draw the top (the "title bar" as you wish)
-    // Start with the left corner
-    ctx.drawImage(
-	     tileSet[tempValues['tileset']]['image'],
-	     tempValues['topleft']['sx'],
-	     tempValues['topleft']['sy'],
-	     cornerWidth,
-	     cornerHeight,
-	     x,
-	     y,
-	     cornerWidth,
-	     cornerHeight
-    );
-    
-    // Now loop through every middle piece
-    for(var piece = 1; piece < hMidPieces; piece++){
-	ctx.drawImage(
-		 tileSet[tempValues['tileset']]['image'],
-		 tempValues['topmiddle']['sx'],
-		 tempValues['topmiddle']['sy'],
-		 hMidWidth,
-		 tempValues['topmiddle']['height'],
-		 x + (piece * hMidWidth),
-		 y,
-		 hMidWidth,
-		 tempValues['topmiddle']['height']
-	);
-    }
-    
-    // Now draw the right corner
-    ctx.drawImage(
-	     tileSet[tempValues['tileset']]['image'],
-	     tempValues['topright']['sx'],
-	     tempValues['topright']['sy'],
-	     cornerWidth,
-	     cornerHeight,
-	     x  + (hMidPieces * hMidWidth),
-	     y,
-	     cornerWidth,
-	     cornerHeight
-    );
+    var dialog = k.collections.hudLayers['dialog'][dialogset];
 
-    // Draw the vertical pieces
-    // Starting with the left ones
-    for(var piece = 1; piece < vMidPieces; piece++){
-	ctx.drawImage(
-		 tileSet[tempValues['tileset']]['image'],
-		 tempValues['left']['sx'],
-		 tempValues['left']['sy'],
-		 tempValues['left']['width'],
-		 vMidHeight,
-		 x,
-		 y + (piece * vMidHeight),
-		 tempValues['left']['width'],
-		 vMidHeight
-	);
-    };
+	// Keep track of how much space everything takes
+	var stack = {};
 
-    // Now the right ones
-    for(var piece = 1; piece < vMidPieces; piece++){
-	ctx.drawImage(
-		 tileSet[tempValues['tileset']]['image'],
-		 tempValues['right']['sx'],
-		 tempValues['right']['sy'],
-		 tempValues['right']['width'],
-		 vMidHeight,
-		 x + (hMidPieces * hMidWidth),
-		 y + (piece * vMidHeight),
-		 tempValues['right']['width'],
-		 vMidHeight
-	);
-    };
+	// Blur dialog background
+	if(x < 0){
+		blurWidth = width + x;
+		blurX = 0;
+	} else {
 
-    // Draw the bottom
-    // Start with the left corner
-    ctx.drawImage(
-	     tileSet[tempValues['tileset']]['image'],
-	     tempValues['bottomleft']['sx'],
-	     tempValues['bottomleft']['sy'],
-	     cornerWidth,
-	     cornerHeight,
-	     x,
-	     y + (vMidPieces * vMidHeight),
-	     cornerWidth,
-	     cornerHeight
-    );
-    
-    // Now loop through every middle piece
-    for(var piece = 1; piece < hMidPieces; piece++){
-	ctx.drawImage(
-		 tileSet[tempValues['tileset']]['image'],
-		 tempValues['bottommiddle']['sx'],
-		 tempValues['bottommiddle']['sy'],
-		 hMidWidth,
-		 tempValues['bottommiddle']['height'],
-		 x + (piece * hMidWidth),
-		 y + (vMidPieces * vMidHeight),
-		 hMidWidth,
-		 tempValues['bottommiddle']['height']
-	);
-    }
-    
-    // Now draw the right corner
-    ctx.drawImage(
-	     tileSet[tempValues['tileset']]['image'],
-	     tempValues['bottomright']['sx'],
-	     tempValues['bottomright']['sy'],
-	     cornerWidth,
-	     cornerHeight,
-	     x  + (hMidPieces * hMidWidth),
-	     y + (vMidPieces * vMidHeight),
-	     cornerWidth,
-	     cornerHeight
-    );
+		if((x+width) > k.links.canvas.width) {
+			blurWidth = width - ((x+width)-k.links.canvas.width);
+			blurX = x;
+		} else {
+			blurWidth = width;
+			blurX = x;
+		}
+	}
+
+	if(y < 0) {
+		blurHeight = height + y;
+		blurY = 0;
+	} else {
+		if((y+height) > k.links.canvas.height){
+			blurHeight = height - ((y+height) - k.links.canvas.height);
+			blurY = y;
+		} else {
+			blurHeight = height;
+			blurY = y;
+		}
+	}
+
+	// Test blur background
+	var tEl = document.createElement('canvas');
+	tEl.width = width;
+	tEl.height = height;
+
+	tBuf = tEl.getContext('2d');
+
+	tBuf.drawImage(k.links.canvas.bufferElement, blurX, blurY, blurWidth, blurHeight, 0, 0, blurWidth, blurHeight);
+	//tBuf.putImageData(k.links.canvas.buffer.getImageData(x, y, width, height));
+
+	blur(tBuf, tEl, 4);
+
+	k.links.canvas.buffer.drawImage(tEl, blurX, blurY);
+
+	// Draw the background rectangle
+	k.links.canvas.buffer.fillStyle = dialog.fillstyle;
+	k.links.canvas.buffer.fillRect(x+1, y+1, width-2, height-2);
+
+	// Render every layer
+	for(var layer in dialog.layers){
+
+		var d = {
+			width: dialog.layers[layer]['width'],           // The actual width of the item
+			height: dialog.layers[layer]['height'],         // The actual height of the item
+			loopWidth: 0,       // The cumulating width of the items
+			loopHeight: 0,     // The cumulating height of the items
+			useWidth: dialog.layers[layer]['width'],        // The width to use for drawing
+			useHeight: dialog.layers[layer]['height'],      // The height to use for drawing
+			repeatx: 0,
+			repeaty: 0,
+			repeatv: dialog.layers[layer].repeatv,
+			repeath: dialog.layers[layer].repeath,
+			offset: dialog.layers[layer].offset,
+			wantedWidth: dialog.layers[layer]['width'],
+			wantedHeight: dialog.layers[layer]['height']
+		}
+
+		if(d.repeath) d.wantedWidth = width;
+		if(d.repeatv) d.wantedHeight = height;
+
+		// Calculate the total offset
+		d.offsettop = d.offset[0];
+		d.offsetright = d.offset[1];
+		d.offsetbottom = d.offset[2];
+		d.offsetleft = d.offset[3];
+
+		if(dialog.layers[layer].stackw !== undefined) d.offsetleft += stack[dialog.layers[layer].stackw]['width'];
+		if(dialog.layers[layer].stackh !== undefined) d.offsettop += stack[dialog.layers[layer].stackh]['height'];
+
+		// Recalculate the wanted sized
+		d.wantedWidth = d.wantedWidth - (d.offsetleft + d.offsetright);
+		d.wantedHeight = d.wantedHeight - (d.offsettop + d.offsetbottom);
+
+		do {
+
+			todo = 0;
+
+			dx = x + (d.repeatx * d.width) + d.offsetleft;
+			dy = y + (d.repeaty * d.height) + d.offsettop;
+
+			k.links.canvas.buffer.drawImage(                // Draw to the buffer
+				 tileSet[dialog['tileset']]['image'],       // The image to use
+				 dialog.layers[layer]['sx'],               // The source x on the image
+				 dialog.layers[layer]['sy'],               // The source y on the image
+				 d.useWidth,             // The source width
+				 d.useHeight,            // The source height
+				 dx,
+				 dy,
+				 d.useWidth,
+				 d.useHeight
+			);
+
+			if(d.repeatx == 0) d.loopWidth = d.useWidth;
+
+			if(dialog.layers[layer].repeath) {
+				d.wantedWidth -= d.useWidth;
+				if(d.repeatx > 0) d.loopWidth += d.useWidth;
+				d.repeatx++;
+				if(d.wantedWidth < d.useWidth) d.useWidth = d.wantedWidth;
+				todo += d.wantedWidth;
+			}
+
+			if(d.repeaty == 0) d.loopHeight = d.useHeight;
+			
+			if(dialog.layers[layer].repeatv) {
+				
+				d.wantedHeight -= d.useHeight;
+				if(d.repeaty > 0) d.loopHeight += d.useHeight;
+				d.repeaty++;
+				if(d.wantedHeight < d.useHeight) d.useHeight = d.wantedHeight;
+				todo += d.wantedHeight;
+			}
+
+		}while(todo > 0);
+
+		if(dialog.layers[layer].stackw !== undefined) {
+			d.loopWidth += stack[dialog.layers[layer].stackw]['width'];
+		}
+
+		if(dialog.layers[layer].stackh !== undefined) {
+			d.loopHeight += stack[dialog.layers[layer].stackh]['height'];
+		}
+
+		// We'll store how much space everything takes in here, needed for stacks
+		stack[layer] = {'width': d.loopWidth, 'height': d.loopHeight};
+
+	}
+
+	k.state.hud.layers.push({"name": "dialog", "width" : width, "height": height, "dx": x, "dy": y, "type": "dialog", "index": index});
 
 }
 
@@ -475,14 +525,14 @@ function drawDialog(dialogset, x, y, width, height){
 function drawCursor(){
     //drawTileSpecific("fireball", 1, mouseX, mouseY);
 
-    ctx.drawImage(
+    k.links.canvas.ctx.drawImage(
 	     tileSet['pointer']['image'],
 	     0,
 	     0,
 	     19,
 	     19,
-	     mouseX,
-	     mouseY,
+	     k.links.canvas.mouseX,
+	     k.links.canvas.mouseY,
 	     19,
 	     19
     );

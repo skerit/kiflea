@@ -9,10 +9,19 @@ import datetime
 import Queue
 import json
 import rwlock
+import toolbox
+import xml.etree.ElementTree as ET
+import Maps
 
-serverQueue = Queue.Queue()	# A general queue for all threads
+
+serverQueue = Queue.Queue()	    # A general queue for all threads
 globQueue = []			    # An array to store every queue in
 globUser = {}			    # An object to store all the on-line users in
+
+loadMaps = ['grassland.tmx.xml', 'default.tmx.xml']
+rootFolder = '/home/skerit/www/subdomain/kiflea/';
+globMaps = {}
+
 
 rwQ = rwlock.ReadWriteLock()       # The r/w-lock for the globQueue
 rwU = rwlock.ReadWriteLock()       # The r/w-lock for the globUser
@@ -27,8 +36,17 @@ class Server:
         self.size = 1024
         self.server = None
         self.threads = []
+        
+    def loadMaps(self, maps):
+        for fileName in maps:
+            globMaps[fileName] = Maps.Map(fileName, rootFolder)
+        
+        print "Finished loading maps"
+        print globMaps['grassland.tmx.xml'].printName()
+        print "finished printing name"
 
     def run(self):
+        self.loadMaps(loadMaps)
         self.open_socket()
         input = [self.server,sys.stdin]	#input listens to the server and standard input
         running = 1
@@ -117,7 +135,6 @@ class Server:
                 self.server.close()
             print "Could not open socket: " + message
             sys.exit(1)
-
 
 # The Client class
 # This main thread will receive information from the client,
@@ -259,14 +276,13 @@ class Client(threading.Thread):
         return False
     
     def closeClient(self):
-        print "Closing connection ..."
+        
+        self.updateWorld({'action': 'logoff'})
         
         self.running = 0
         # Loop through all the threads and close (join) them
         for c in self.threads:
             c.join()
-        
-        print "Finished joining threads, getting lock"
         
         # Delete our queue from the dictionary
         rwQ.acquireRead()
@@ -281,8 +297,20 @@ class Client(threading.Thread):
                 rwQ.release()
         finally:
             rwQ.release()
-        
-        print "Finished closeClient"
+            
+        # Delete our user from the dictionary
+        rwU.acquireRead()
+        try:
+            rwU.acquireWrite()
+            try:
+                del globUser[self.uid]
+            finally:
+                rwU.release()
+        finally:
+            rwU.release()
+            
+    def join(self):
+        self.closeClient()
         
     def run(self):
         queue = self.queue
@@ -294,7 +322,12 @@ class Client(threading.Thread):
             
             # If data equals false after running through wget, continue to the next iteration
             if data == False:
-                print "No data"
+                print "No data, upping error for user " + self.uid
+                error += 1
+                
+                if error > 5:
+                    self.closeClient()
+                    
                 continue
             
             #Try to parse the JSON data
@@ -329,10 +362,22 @@ class Client(threading.Thread):
                                 break
                             if case('move'):
                                 data['uid'] = self.uid
+                                
+                                isWalkable = globMaps[globUser[self.uid]['map']].isTileWalkable(int(data['x']), int(data['y']))
+                                data['walkable'] = isWalkable
+                                data['terrainSpeed'] = globMaps[globUser[self.uid]['map']].getTerrainSpeed(int(data['x']), int(data['y']))
                                 self.updateWorld(data)
+                                
+                                # Update the globuser var if it's walkable
+                                if isWalkable:
+                                    globUser[self.uid]['x'] = int(data['x'])
+                                    globUser[self.uid]['y'] = int(data['y'])
+                                
                                 break
-                            if case('eleven'):
-                                print 11
+                            if case('iniuser'):
+                                data = globUser[data['who']]
+                                data['action'] = 'initiation'
+                                self.queue.put(data)
                                 break
                             if case(): # default, could also just omit condition or 'if True'
                                 print "something else!"
@@ -347,6 +392,8 @@ class Client(threading.Thread):
         #self.wsend(json.dumps(dict({'time': time.mktime(t.timetuple()))));
         
     def updateWorld(self, data):
+        
+        data['from'] = self.uid
         
         # Get a read lock
         rwQ.acquireRead()
@@ -406,7 +453,9 @@ class UpdateClient(threading.Thread):
         self.client = client
         self.running = True
         global globUser
-        self.wsend({'action': 'initiated'})
+        
+        # Tell the client its initiated, and tell him what maps to load
+        self.wsend({'action': 'initiated', 'loadMaps': loadMaps})
         print 'UpdateClient thread started!'
 
     def run(self):

@@ -103,17 +103,30 @@
 		"show": {"dependon":"selection", "field":"health", "value":1}
 	}],
 
+"screens": { "login": {
+		"dialog": "bordersmall",
+		"width": "100%",
+		"height": "100%",
+		"content": [
+
+			]
+
+		}
+
+	},
+
 "dialog": { "bordersmall": {
 		"tileset": "bordersmall",
-		"topleft": {"sx": 2, "sy": 2, "width": 21, "height": 21},
-		"topmiddle": {"sx": 37, "sy": 2, "width": 20, "height": 11},
-		"topright": {"sx": 71, "sy": 2, "width": 21, "height": 21},
-		"left": {"sx": 2, "sy": 41, "width": 11, "height": 20},
-		"right": {"sx": 71, "sy": 41, "width": 21, "height": 20},
-		"bottomleft": {"sx": 2, "sy": 73, "width": 21, "height": 21},
-		"bottommiddle": {"sx": 40, "sy": 73, "width": 20, "height": 20},
-		"bottomright": {"sx": 71, "sy": 73, "width": 21, "height": 20},
-		"fillstyle": "rgba(20, 20, 20, 0.7)"
+		"layers": {"topleft": {"sx": 2, "sy": 2, "width": 21, "height": 21, "repeatv": false, "repeath": false, "offset": [0,0,0,0]},
+					"topmiddle": {"sx": 37, "sy": 2, "width": 20, "height": 11, "repeatv": false, "repeath": true, "offset": [0,21,0,0], "stackw": "topleft"},
+					"topright": {"sx": 71, "sy": 2, "width": 21, "height": 21,  "repeatv": false, "repeath": false, "offset": [0,0,0,0], "stackw": "topmiddle"},
+					"left": {"sx": 2, "sy": 41, "width": 11, "height": 20, "repeatv": true, "repeath": false, "offset": [0,0,21,0], "stackh": "topleft"},
+					"right": {"sx": 71, "sy": 41, "width": 21, "height": 20, "repeatv": true, "repeath": false, "offset": [0,0,21,0], "stackw": "topmiddle", "stackh": "topleft"},
+					"bottomleft": {"sx": 2, "sy": 73, "width": 21, "height": 21, "repeatv": false, "repeath": false, "offset": [0,0,0,0], "stackh": "left"},
+					"bottommiddle": {"sx": 40, "sy": 73, "width": 20, "height": 20, "repeatv": false, "repeath": true, "offset": [0,21,0,0], "stackw": "topleft", "stackh": "left"},
+					"bottomright": {"sx": 71, "sy": 73, "width": 21, "height": 20, "repeatv": false, "repeath": false, "offset": [0,0,0,0], "stackw": "topmiddle", "stackh": "left"}
+		}   ,
+		"fillstyle": "rgba(20, 20, 20, 0.4)"
 		}
 	},
 

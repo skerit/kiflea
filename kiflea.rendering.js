@@ -32,7 +32,7 @@ function renderLoop(){
         debugEcho('Fetching walkable tiles');
         toLoad++;
         //Loop through every map and fetch the walkable tiles
-        for(map in maps) maps[map]['walkableTiles'] = getWalkableTiles(map);
+        for(map in maps) maps[map]['walkableTiles'] = k.operations.load.getWalkableTiles(map);
         
         // We can finally start
         debugEcho('The engine has started');
@@ -56,8 +56,7 @@ function renderLoop(){
     }
     
     // Clear the canvas
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    k.links.canvas.clear();
     
     fakePress(); // Simulate autorepeating keypresses
     
@@ -67,7 +66,6 @@ function renderLoop(){
 
     prerenderMapOffset(); // Calculate the map offset
     
-
 
     // Loop through the layers and render them
     for(var layerName in maps[animatedObjects[userPosition.uid]['map']]['layers']) {
@@ -107,6 +105,13 @@ function renderLoop(){
     // Draw the HUD
     drawHud();
 
+	//drawDialog('bordersmall', 0, 0, k.links.canvas.width, k.links.canvas.height);
+//	drawDialog('bordersmall', dtest.x, dtest.y, dtest.width, dtest.height);
+	//k.operations.interface.openDialog('bordersmall', dtest.x, dtest.y, dtest.width, dtest.height);
+
+	// Now flush the canvas buffer to the real canvas
+	k.links.canvas.flush();
+
     // If we've enabled debugging, we actually want the fps (bad name, I know)
     // Draw it on the canvas for better framerates
     if(debugOn==true) drawDebugFps();
@@ -116,17 +121,19 @@ function renderLoop(){
 
 }
 
+dtest = {'x': 50, 'y': 50, 'width': 200, 'height': 100};
+
 /**
  *Draw the queued text
  */
 function drawTextQueue(){
 
     for(message in textObjects){
-        ctx.fillStyle = textObjects[message]['style']['background'];  
-        ctx.fillRect (textObjects[message]['style']['dx'], textObjects[message]['style']['dy'], textObjects[message]['style']['dwidth'], textObjects[message]['style']['dheight']);
-        ctx.fillStyle = textObjects[message]['style']['color'];  
-        ctx.strokeStyle = textObjects[message]['style']['color'];  
-        ctx.font = textObjects[message]['style']['size'] + "px " + textObjects[message]['style']['font'];
+        k.links.canvas.ctx.fillStyle = textObjects[message]['style']['background'];  
+        k.links.canvas.ctx.fillRect (textObjects[message]['style']['dx'], textObjects[message]['style']['dy'], textObjects[message]['style']['dwidth'], textObjects[message]['style']['dheight']);
+        k.links.canvas.ctx.fillStyle = textObjects[message]['style']['color'];  
+        k.links.canvas.ctx.strokeStyle = textObjects[message]['style']['color'];  
+        k.links.canvas.ctx.font = textObjects[message]['style']['size'] + "px " + textObjects[message]['style']['font'];
         
         var charHeight = textObjects[message]['style']['height']*textObjects[message]['style']['size'];
         
@@ -139,7 +146,7 @@ function drawTextQueue(){
             if(textObjects[message]['text'][cursor] !== undefined) {
                 var dx = textObjects[message]['style']['dx']+textObjects[message]['style']['hBorder'];
                 var dy = (textObjects[message]['style']['dy'])+((charHeight)*(1+(cursor%2))) + textObjects[message]['style']['vBorder'] - charHeight/4;
-                ctx.strokeText(textObjects[message]['text'][cursor], dx, dy);
+                k.links.canvas.ctx.strokeText(textObjects[message]['text'][cursor], dx, dy);
             }
         }
         
@@ -185,7 +192,7 @@ function getSelectedObject(){
     if(animatedObjects[userPosition.uid]['selection'] !== undefined) {
         return animatedObjects[userPosition.uid]['selection'];
     } else {
-        return;
+        return '';
     }
 }
 
@@ -199,13 +206,13 @@ function highlightSelectedObject(){
         
         var selectionC = getRealCoordinates(animatedObjects[userPosition.uid]['selection']);
         
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(0,0,255,0.3)";
-        ctx.strokeStyle = "rgba(0,0,0,0.8)";
-        ctx.arc(selectionC['x']+(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2),selectionC['y']-(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']/2),maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2,0,Math.PI*2,true);
-        ctx.fill();
-        ctx.stroke();
-        ctx.closePath();
+        k.links.canvas.ctx.beginPath();
+        k.links.canvas.ctx.fillStyle = "rgba(0,0,255,0.3)";
+        k.links.canvas.ctx.strokeStyle = "rgba(0,0,0,0.8)";
+        k.links.canvas.ctx.arc(selectionC['x']+(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2),selectionC['y']-(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']/2),maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2,0,Math.PI*2,true);
+        k.links.canvas.ctx.fill();
+        k.links.canvas.ctx.stroke();
+        k.links.canvas.ctx.closePath();
     }
 }
 
@@ -371,8 +378,8 @@ function renderObjects(){
         
         // If this is our own user, set the coordinates at the center of the screen.
         if(objectId == userPosition.uid) {
-            var objX = (canvasWidth - maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2;
-            var objY = (canvasHeight - maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2;
+            var objX = (k.links.canvas.width - maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2;
+            var objY = (k.links.canvas.height - maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2;
             
             // When the screen is the correct multiple of the tilewidth, but half of it isn't an integer
             // we need to take that into account.
@@ -415,19 +422,19 @@ function renderObjects(){
 function renderLayer(layerName){
     
     // For every visible row (+ the drawExtras row, needed for tiles that are bigger than the default map tile)
-    for (var tileY = 0; tileY <= visibleTilesY+drawExtras; tileY++) {
+    for (var tileY = 0; tileY <= k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight'])+drawExtras; tileY++) {
         
         // And for every tile in that row (+ the drawExtras)
-        for (var tileX = (0-drawExtras); tileX <= visibleTilesX; tileX++) {
+        for (var tileX = (0-drawExtras); tileX <= k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']); tileX++) {
             
             // Calculate the coördinates of the tile we need, based on our current position
             // (Example: The tile in row 10, column 5)
-            var rowTile = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2))+1) - visibleTilesX;
+            var rowTile = animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2))+1) - k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
             
             // Do not continue if rowTile is negative or bigger than the width of the map
             if(rowTile < 0 || rowTile >= maps[animatedObjects[userPosition.uid]['map']]['width']) continue;
             
-            var colTile = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2))+1) - visibleTilesY;
+            var colTile = animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+1) - k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
 
             // Do not continue if colTile is negative or bigger than the height of the map
             if(colTile < 0 || colTile >= maps[animatedObjects[userPosition.uid]['map']]['height']) continue;
@@ -446,6 +453,7 @@ function renderLayer(layerName){
             // And now draw that tile!
             try {
                 drawTile(tileNumber, destinationX, destinationY);
+
             } catch(error) {
                 debugEchoLfps('[renderLoop] Error drawing tilenumber <b>"' + tileNumber +
                               '"</b> from layer "<b>' + layerName + '</b>" - coordinates (<b>' + rowTile +
@@ -453,6 +461,7 @@ function renderLayer(layerName){
                               destinationX + '</b>,<b>' + destinationY +
                               '</b>)'
                 );
+
             }
         }
     }
@@ -463,11 +472,11 @@ function renderLayer(layerName){
  */
 function drawDebugFps(){
     
-    ctx.fillStyle = "rgba(20, 20, 20, 0.7)";  
-    ctx.fillRect (2, canvasHeight-33, canvasWidth-4, 20);
-    ctx.strokeStyle = "white";  
-    ctx.font = "12px monospace";
-    ctx.strokeText('Fake ms: ' + msf.toPrecision(4) + ' - Real ms: ' + msr.toPrecision(4)  + ' - Fake fps: ' + Math.round(fpsf).toPrecision(3) + ' - Real fps: ' + Math.round(fpsr).toPrecision(3), 5, canvasHeight-20);
+    k.links.canvas.ctx.fillStyle = "rgba(20, 20, 20, 0.7)";  
+    k.links.canvas.ctx.fillRect (2, k.links.canvas.height-33, k.links.canvas.width-4, 20);
+    k.links.canvas.ctx.strokeStyle = "white";  
+    k.links.canvas.ctx.font = "12px monospace";
+    k.links.canvas.ctx.strokeText('Fake ms: ' + msf.toPrecision(4) + ' - Real ms: ' + msr.toPrecision(4)  + ' - Fake fps: ' + Math.round(fpsf).toPrecision(3) + ' - Real fps: ' + Math.round(fpsr).toPrecision(3), 5, k.links.canvas.height-20);
 
 }
 
@@ -476,22 +485,22 @@ function drawDebugFps(){
  */
 function drawDebugGrid(){
     
-        ctx.strokeStyle = "rgba(20, 20, 20, 0.7)";  
+        k.links.canvas.ctx.strokeStyle = "rgba(20, 20, 20, 0.7)";  
         
         // Draw horizontal lines
-        for(var row = 0; row < (canvasWidth/debugGridX); row++ ){
-            ctx.beginPath();
-            ctx.moveTo(0, row*debugGridX);  
-            ctx.lineTo(canvasWidth, row*debugGridX);
-            ctx.stroke();
+        for(var row = 0; row < (k.links.canvas.width/debugGridX); row++ ){
+            k.links.canvas.ctx.beginPath();
+            k.links.canvas.ctx.moveTo(0, row*debugGridX);  
+            k.links.canvas.ctx.lineTo(k.links.canvas.width, row*debugGridX);
+            k.links.canvas.ctx.stroke();
         }
         
         // Draw vertical lines
-        for(var col = 0; col < (canvasWidth/debugGridY); col++ ){
-            ctx.beginPath();
-            ctx.moveTo(col*debugGridY, 0);  
-            ctx.lineTo(col*debugGridY, canvasHeight);
-            ctx.stroke();
+        for(var col = 0; col < (k.links.canvas.height/debugGridY); col++ ){
+            k.links.canvas.ctx.beginPath();
+            k.links.canvas.ctx.moveTo(col*debugGridY, 0);  
+            k.links.canvas.ctx.lineTo(col*debugGridY, k.links.canvas.height);
+            k.links.canvas.ctx.stroke();
         }
         
 }
@@ -499,18 +508,11 @@ function drawDebugGrid(){
  *Calculate the "mapOffset" of the user if we're moving when the map is drawn
  */
 function prerenderMapOffset(){
-    
-    //Only do this if we're actually moving. This saves us a tiny ammount of speed.
-    //It was a nice idea, but it only worked when moving left or up. Ugh
-    //if(animatedObjects[userPosition.uid]['x'] != animatedObjects[userPosition.uid]['moveToX'] ||
-    //   animatedObjects[userPosition.uid]['y'] != animatedObjects[userPosition.uid]['moveToY']){
 
-
-        //This has to be floored, because pixels can't have a decimal value
-        //And this would create 1 pixel spacing between the tiles while moving.
-        mappOffsetX = Math.floor((maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] * decimal(animatedObjects[userPosition.uid]['x'])));
-        mappOffsetY = Math.floor((maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] * decimal(animatedObjects[userPosition.uid]['y'])));
-    //}
+	//This has to be floored, because pixels can't have a decimal value
+	//And this would create 1 pixel spacing between the tiles while moving.
+	mappOffsetX = Math.floor((maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] * decimal(animatedObjects[userPosition.uid]['position']['x'])));
+	mappOffsetY = Math.floor((maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] * decimal(animatedObjects[userPosition.uid]['position']['y'])));
 
 }
 
@@ -538,18 +540,20 @@ function prerenderMoveObjects(){
  *@param    tileHeight  {integer}   Optional tileHeight
  */
 function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
-    
+
+    var position = animatedObjects[objectId]['position'];
+
     // Get the x and y coördinates if they haven't been given
-    if(x === undefined) x = animatedObjects[objectId]['x'];
-    if(y === undefined) y = animatedObjects[objectId]['y'];
+    if(x === undefined) x = position.x;
+    if(y === undefined) y = position.y;
     
     // Store the current map's tileWidth and Height, if it hasn't been given already
     if(tileWidth === undefined) tileWidth = maps[animatedObjects[objectId]['map']]['tileWidth'];
     if(tileHeight === undefined) tileHeight = maps[animatedObjects[objectId]['map']]['tileHeight'];
 
     // - a tilewidth and height to account for the 0,0 based positioning
-    tempWidth = ((canvasWidth - tileWidth) / 2);
-    tempHeight = ((canvasHeight - tileHeight) / 2);
+    tempWidth = ((k.links.canvas.width - tileWidth) / 2);
+    tempHeight = ((k.links.canvas.height - tileHeight) / 2);
 
     // When the screen is the correct multiple of the tilewidth, but half of it isn't an integer
     // we need to take that into account.
@@ -560,8 +564,8 @@ function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
         tempHeight = tempHeight - (tempHeight % maps[animatedObjects[objectId]['map']]['tileHeight']);
     }
 
-    var objX = (tempWidth - (Math.floor(animatedObjects[userPosition.uid]['x']) * tileWidth)) + (x * tileWidth) - mappOffsetX;
-    var objY = (tempHeight - (Math.floor(animatedObjects[userPosition.uid]['y']) * tileHeight)) + (y * tileHeight) - mappOffsetY;
+    var objX = (tempWidth - (Math.floor(animatedObjects[userPosition.uid]['position']['x']) * tileWidth)) + (x * tileWidth) - mappOffsetX;
+    var objY = (tempHeight - (Math.floor(animatedObjects[userPosition.uid]['position']['y']) * tileHeight)) + (y * tileHeight) - mappOffsetY;
 
     return({'x': objX, 'y': objY});
     
@@ -760,6 +764,9 @@ function checkSameFrame(tileSetName, tileGidOnMap, animationId){
  *@param    extraId      {integer}      An extra id, mainly for animations
  */
 function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
+
+	// Declarations
+	var movingObject;    // Is the object moving?
     
     // The name of the tileset we will pass on
     var tileSetName;
@@ -772,14 +779,17 @@ function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
     }else {
         // If it is an object we have to get the tilesets from the default "map". Hackish, but it works
         sourceMap = defaultSprites;
-        
+
+	    /*
         // We also have to determine if the object is moving.
-        if(animatedObjects[objectId]['moveToX'] != animatedObjects[objectId]['x']
-           || animatedObjects[objectId]['moveToY'] != animatedObjects[objectId]['y']
-           || animatedObjects[objectId]['path'].length > 0
-           || (now() - animatedObjects[objectId]['lastMoved']) < 300){
+        if(animatedObjects[objectId]['path'][k.state.walk.indexNow]['x'] != animatedObjects[objectId]['position']['x']
+           || animatedObjects[objectId]['path'][k.state.walk.indexNow]['y'] != animatedObjects[objectId]['position']['y']
+           || animatedObjects[objectId]['path'].length > (k.state.walk.indexNext + 1)
+           || (now() - animatedObjects[objectId]['path'][k.state.walk.indexNow]['moveChange']) < 300){
             var movingObject = true; // Is this object moving?
-        }
+        }*/
+
+	    if(animatedObjects[objectId]['path'].length > (k.state.walk.indexNow + 1)) movingObject = true;
     }
     //if(objectId == userPosition.uid) debugEcho(now() - animatedObjects[objectId]['lastMoved']);
     // We know the map and the tilenumber, but not the tilesetname.
@@ -868,7 +878,7 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
     
     try {
         // Draw the tile on the canvas
-        ctx.drawImage(tileSet[tileSetName]["image"], sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
+        k.links.canvas.buffer.drawImage(tileSet[tileSetName]["image"], sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
     } catch (error) {
         debugEchoLfps('[drawTileSpecific] Error: ' + error.code + ' - ' +
                       error.message + '<br/>'+
@@ -969,4 +979,30 @@ function drawTestPath(){
 
     }
 
+}
+
+/**
+ * Blur function
+ * @author flother
+ * http://www.flother.com/blog/2010/image-blur-html5-canvas/
+ */
+function blur(context, element, passes) {
+	var i, x, y;
+	context.globalAlpha = 0.125;
+	// Loop for each blur pass.
+	for (i = 1; i <= passes; i += 1) {
+		for (y = -1; y < 2; y += 1) {
+			for (x = -1; x < 2; x += 1) {
+			// Place eight versions of the image over the original
+			// image, each with 1/8th of full opacity. The images are
+			// placed around the original image like a square filter.
+			// This gives the impression the image has been blurred,
+			// but it's done at native browser speed, thus making it
+			// much faster than writing a proper blur filter in
+			// Javascript.
+			context.drawImage(element, x, y);
+			}
+		}
+	}
+	context.globalAlpha = 1.0;
 }

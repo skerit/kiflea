@@ -1,3 +1,9 @@
+--- Friday 2011-01-14 ---
+I've started the year by deciding to restructure the entire engine.
+I've done quite a lot of recoding from scratch and though I'm far from finished,
+I thought it would be a good idea to do a commit right now. The code works, a
+connection with the server can be made and we now have transparant dialog boxes!
+
 --- Tuesday 2010/12/28 ---
 (And the past week in general)
 * Started getting serious about the server, rethinking how updates would be sent

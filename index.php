@@ -27,17 +27,16 @@
 	<!--[if IE]><script type="text/javascript" src="excanvas.compiled.js"></script><![endif]-->
 	<script type="text/javascript" src="json.js"></script>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-	<script type="text/javascript" src="kiflea.pathfinding.js"></script>
 	<script type="text/javascript" src="kiflea.rendering.js"></script>
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
-	<script type="text/javascript" src="kiflea.keyboard.js"></script>
 	<script type="text/javascript" src="kiflea.sercon.js"></script>
 	<script type="text/javascript" src="kiflea.misc.js"></script>
-	<script type="text/javascript" src="kiflea.hud.js"></script>
-	<script type="text/javascript" src="kiflea.js"></script>
+		<script type="text/javascript" src="kiflea.js"></script>
+    	<script type="text/javascript" src="kiflea.hud.js"></script>
+    <script type="text/javascript" src="kiflea.keyboard.js"></script>
+	<script type="text/javascript" src="kiflea.pathfinding.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
-			fps = 25;
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
 			defaultTilesPerRow = 30;
@@ -126,12 +125,13 @@
 				"selection": 0,
 				"currenthealth": 55,
 				"fullhealth": 100,
-				"path": [],
+                "position": {'x': 35, 'y': 17},
+				"path": [{x: 33, y: 17}, {x: 34, y: 17}, {x: 35, y: 17}],
 				"actionsreceived": [],
 				"finishedEvents": {}
 			};
 
-			startEngine();
+			k.operations.startEngine();
 		});
 	</script>
 	
@@ -158,12 +158,17 @@
 			<h2 class="title">Kipdola's Flat Earth Engine</h2>
 			<canvas id="flatearth" width="480" height="480"></canvas>
 			<br/>
-			<button id="clearecho" onclick="echoOutput.empty();">Clear echo div</button>
-			<button id="toggleengine" onclick="toggleEngine();">Toggle engine</button>
+			<button id="clearecho" onclick="k.links.echo.empty();">Clear echo div</button>
+			<button id="toggleengine" onclick="k.operations.toggleEngine();">Toggle engine</button>
 			<button id="togglegrid" onclick="debugGrid=!debugGrid;">Toggle grid</button>
 			<button id="togglefps" onclick="debugOn=!debugOn;">Toggle debug</button><br/>
 			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['currenthealth']--;">Detract life</button>
-			<button id="testjson" onclick="sendTestJson()">Send JSON Test</button>
+			<button id="testjson" onclick="sendTestJson()">Send JSON Test</button><br/>
+            <button id="previousFrame" onclick="movie.previousFrame()">previousFrame</button>
+            <button id="nextFrame" onclick="movie.nextFrame()">nextFrame</button>
+            <button id="next100" onclick="movie.nextFrame(100)">nextFrame 100</button>
+            <button id="previous100" onclick="movie.previousFrame(100)">previousFrame 100</button>
+            <button id="play" onclick="movie.play(25)">Play 25 fps</button>
 			<br/><br/>
 			<input id="dummyinput" style="margin-bottom:150px;">
 		</div>

@@ -295,14 +295,18 @@ function getEvents(mapName, x, y){
 }
 
 /**
- *Do this on mouseclick
+ * Do this on mouseUp
+ * @param   {int}   x
+ * @param   {int}   y
  */
-function onMouseclick(x, y){
-    
-    var clickedLayer = getHudClicked(x,y);
+k.operations.interface.mouseUp = function(x, y){
+
+    var clickedLayer = k.operations.interface.getClicked(x,y);
     
     // If we've clicked a HUD layer, do something
     if(typeof(clickedLayer) == 'object') {
+
+	    debugArray(clickedLayer);
         
         if(clickedLayer['action'] !== undefined) queueAction(clickedLayer['action']['what'], getSelectedObject(), clickedLayer['action']['value']);
         
@@ -320,7 +324,27 @@ function onMouseclick(x, y){
         }
     }
     // Send the data to the server
-    if(connectToServer == true) wsend(JSON.stringify(animatedObjects[userPosition.uid]));
+    //if(connectToServer == true) wsend(JSON.stringify(animatedObjects[userPosition.uid]));
+
+	/*
+	var downLayer = k.operations.interface.getClicked(k.links.canvas.mouse.downx, k.links.canvas.mouse.downx);
+
+	if(typeof(downLayer) == 'object') {
+		if(downLayer.type == "dialog") k.state.hud.openedDialogs[downLayer.index].x = x - downLayer.clickedX;
+		if(downLayer.type == "dialog") k.state.hud.openedDialogs[downLayer.index].y = y - downLayer.clickedY;
+	}
+	*/
+}
+
+/**
+ * Do this on mouseDown
+ * @param   {int}   x
+ * @param   {int}   y
+ */
+k.operations.interface.mouseDown = function(x, y){
+
+    
+
 }
 
 /**
@@ -334,8 +358,8 @@ function getClickedTile(x, y){
     tileX = Math.floor(x / maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
     tileY = Math.floor(y / maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
     
-    x = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(visibleTilesX / 2)) + 1) - visibleTilesX;
-    y = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(visibleTilesY / 2))+2) - visibleTilesY;
+    x = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    y = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
     
     //testPath = findPath(animatedObjects['U00002']['x'], animatedObjects['U00002']['y'], x, y);
     //animatedObjects['U00002']['path'] = deepCopy(testPath);

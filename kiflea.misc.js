@@ -17,6 +17,99 @@
 	Last Modified: Trunk
 */
 
+canvasCollection = function(width, height){
+
+	this.collection = [];
+	this.width = width;
+	this.height = height;
+	this.currentFrame = 0;
+	this.frames = 0;
+	this.debug = '';
+	this.loop;
+
+	k.state.recording = true;
+
+	this.addImage = function(canvasElement){
+		var index = this.collection.push({'element': document.createElement('canvas'), 'control' : 0, 'debug': 'Nothing'});
+		var frame = this.collection[index-1];
+
+		frame.element.width = this.width;
+		frame.element.height = this.height;
+
+		frame.control = frame.element.getContext('2d');
+
+		frame.control.drawImage(canvasElement, 0 ,0);
+
+		frame.debug = this.debug;
+		this.debug = '';
+
+		this.frames++;
+	}
+
+	this.nextFrame = function(jump){
+
+		if(jump > 0) this.currentFrame += jump;
+		else this.currentFrame++;
+
+		if(this.currentFrame > this.frames) this.currentFrame = 0;
+
+		this.drawFrame();
+
+		if(this.currentFrame-1 >= 0) {
+			k.links.echo.append('<h1>Previous frame:</h1>');
+			k.links.echo.html(this.collection[this.currentFrame-1].debug);
+		}
+
+		k.links.echo.append('<h1>Current frame:</h1>');
+		k.links.echo.append(this.collection[this.currentFrame].debug);
+
+		if(this.currentFrame+1 < this.frames) {
+			k.links.echo.append('<h1>Next frame:</h1>');
+			k.links.echo.append(this.collection[this.currentFrame+1].debug);
+		}
+
+	}
+
+	this.previousFrame = function(jump){
+		if(jump > 0) this.currentFrame -= jump;
+		this.currentFrame--;
+
+		if(this.currentFrame < 0) this.currentFrame = this.frames;
+
+		this.drawFrame();
+
+		if(this.currentFrame-1 >= 0) {
+			k.links.echo.append('<h1>Previous frame:</h1>');
+			k.links.echo.html(this.collection[this.currentFrame-1].debug);
+		}
+
+		k.links.echo.append('<h1>Current frame:</h1>');
+		k.links.echo.append(this.collection[this.currentFrame].debug);
+
+		if(this.currentFrame+1 < this.frames) {
+			k.links.echo.append('<h1>Next frame:</h1>');
+			k.links.echo.append(this.collection[this.currentFrame+1].debug);
+		}
+	}
+
+	this.drawFrame = function(){
+		k.links.canvas.ctx.drawImage(this.collection[this.currentFrame].element, 0 ,0);
+	}
+
+	this.play = function(fps){
+		this.loop = window.setInterval(this.playFrame, 1000 / k.settings.engine.fps );
+	}
+
+	this.playFrame = function(){
+		movie.nextFrame();
+	}
+
+	this.addDebug = function(text){
+		this.debug += text;
+	}
+
+
+}
 
 /**
  *Get the angle between 2 points
@@ -235,7 +328,7 @@ function debugEcho(message, counter){
     
     if(counter === undefined || counter === true) counter = true;
     
-    if(debugOn==true) echo(message, counter);
+    if(k.settings.debug.DEBUG==true) echo(message, counter);
 
 }
 
@@ -250,7 +343,7 @@ function debugEchoLfps(message, counter){
     
     if(counter === undefined || counter === true) counter = true;
     
-    if(debugOn==true && fps < 5) echo(message, counter);
+    if(k.settings.debug.DEBUG==true && k.settings.engine.fps <= 5) echo(message, counter);
 
 }
 
@@ -262,9 +355,9 @@ function debugEchoLfps(message, counter){
  */
 function debugMove(message, counter){
     
-    if(counter === undefined || counter === true) counter = true;
+    if(counter === undefined) counter = true;
     
-    if(debugOn==true && debugMovement == true) echo(message, counter);
+    if(k.settings.debug.DEBUG && k.settings.debug.MOVEMENT) echo(message, counter);
 
 }
 
@@ -304,15 +397,21 @@ function debugPath(message, counter){
  */
 function echo(message, counter){
 
+	var text;
+
     if(counter === undefined || counter === false) {
-        echoOutput.append('<p>[<span class="msi">--INFO--</span>] ' + message + '</p>');
+	    text = '<p>[<span class="msi">--INFO--</span>] ' + message + '</p>';
+        k.links.echo.append(text);
     } else {
         msPassed = (new Date()).getTime() - debugCounter;
-        echoOutput.append('<p>[<span class="ms">'+msPassed.toPrecision(5)+'ms</span>] ' + message + '</p>');    
+	    text='<p>[<span class="ms">'+msPassed.toPrecision(5)+'ms</span>] ' + message + '</p>';
+        k.links.echo.append(text);
     
         // Reset debugcounter
         debugCounterReset();
     }
+
+	if(k.state.recording) movie.addDebug(text);
 }
 
 /**
@@ -356,4 +455,22 @@ function deepCopy(obj) {
         retVal[key] = deepCopy(obj[key]);
     }
     return retVal;
+}
+
+/**
+ * Allows you to time something
+ */
+function benchTime(){
+
+	if(k.settings.debug.DEBUG==false) return;
+
+	this.begin = now();
+
+	this.end = function(type){
+		if(typeof(type) == "string"){
+			echo('Benchmark timer "' + type + '" completed in ' + (now() - this.begin) + 'ms');
+		} else {
+			return (now() - this.begin);
+		}
+	}
 }

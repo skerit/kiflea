@@ -19,10 +19,10 @@
 
 /**
  *Find the walkable path between 2 points
- *@param    sx  {integer}   Beginning X
- *@param    sy  {integer}   Beginning Y
- *@param    dx  {integer}   Destination X
- *@param    dy  {integer}   Destination Y
+ *@param    sx  {int}   Beginning X
+ *@param    sy  {int}   Beginning Y
+ *@param    dx  {int}   Destination X
+ *@param    dy  {int}   Destination Y
  */
 function findPath(sx, sy, dx, dy){
 
@@ -140,7 +140,7 @@ function findPath(sx, sy, dx, dy){
         for(var subTile in thisTile){
 
             // If it's walkable ...
-            if(isTileWalkable(animatedObjects[userPosition.uid]['map'], thisTile[subTile]['x'],thisTile[subTile]['y'])){
+            if(k.operations.isTileWalkable(animatedObjects[userPosition.uid]['map'], thisTile[subTile]['x'],thisTile[subTile]['y'])){
 		
 
                 // Make sure the x already exists in the done array before adding the Y
@@ -322,41 +322,31 @@ function addFinishedEvent(objectId, eventname){
  *@param	objectid {string}	The id of the object to move
  *@param	checkfull {boolean}	Enabled by default, only add paths if the array isn't full?
  */
-function addPath(x, y, objectid, checkfull){
-    
-    
-    // If there isn't an objectid, use our own user
-    if(objectid === undefined) {
-	objectid = userPosition.uid;
-    }
-      
-    var arraySize = animatedObjects[objectid]['path'].length;
+function addPath(x, y, objectid, checkfull) {
 
-    //debugArray(animatedObjects[objectid]);
-    // Checkfull makes us check if the array is full. If it's not, add the path.
-    // This variable is enabled by default.
-    if(checkfull === undefined || checkfull == true) {
-	if(arraySize > 0) return;
-    }
-    
-    // If the size of the walkable paths is bigger than zero, we take our previous x and y values from here
-    if (arraySize > 0) {
-	var prevX = animatedObjects[objectid]['path'][arraySize-1]['x'];
-	var prevY = animatedObjects[objectid]['path'][arraySize-1]['y'];
-    } else { // Else we take it from the objects current X and Y values
-	var prevX = animatedObjects[objectid]['fromX'];
-	var prevY = animatedObjects[objectid]['fromY'];
-    }
-    
-    // Add the new path directly if we're not connected to a server
-    if(connectToServer == false){
-	animatedObjects[objectid]['path'].push({'added': now(), 'x': prevX + x, 'y': prevY + y});
-    } else {
-	wsend({'action': 'move', 'added': now(), 'x': prevX + x, 'y': prevY + y});
-    }
-    
-    return false;
-    
+	// If there isn't an objectid, use our own user
+	if(objectid === undefined) objectid = userPosition.uid;
+
+	var arraySize = animatedObjects[objectid]['path'].length;
+
+	//debugArray(animatedObjects[objectid]);
+	// Checkfull makes us check if the array is full. If it's not, add the path.
+	// This variable is enabled by default.
+	if((checkfull === undefined || checkfull == true) && arraySize > k.state.walk.maxQueue)return;
+
+	// Take the last x & y value from our path
+	var prevX = animatedObjects[objectid]['path'][arraySize - 1]['x'];
+	var prevY = animatedObjects[objectid]['path'][arraySize - 1]['y'];
+
+	// Add the new path directly if we're not connected to a server
+	if(!k.state.server.connected) {
+		animatedObjects[objectid]['path'].push({'added': now(), 'x': prevX + x, 'y': prevY + y, 'moveRequested': now()});
+	} else {
+		wsend({'action': 'move', 'added': now(), 'x': prevX + x, 'y': prevY + y, 'moveRequested': now()});
+	}
+
+	return false;
+
 }
 
 /**
@@ -396,165 +386,166 @@ function teleport(objectid, x, y, map){
 /**
  * If an object has a certain path it needs to walk, make sure that path gets
  * executed properly.
- * @param   objectId    {string}    The ID of the object
+ * @param       objectId    {string}    The ID of the object
  */
-function walkPath(objectId){
-    
-    // Does this object have a path? Otherwise we can end this function already
-    if(animatedObjects[objectId]['path'].length == 0) return;
-    
-    // Now store the first step in the path
-    var step = animatedObjects[objectId]['path'][0];
+function walkPath(objectId) {
 
-    // Adjust the object's x position if the current position does not equal its destination.
-    if(animatedObjects[objectId]['x'] != step['x']){
-        
-	// Has the lastMoved been set?
-	if(step['lastMoved'] === undefined) {
-	    step['lastMoved'] = now();
-	    animatedObjects[objectId]['lastMoved'] = now();
-            
-            // Get the event for this tile in the map and add it to the action list
-            getMapEvent(objectId, step['x'], step['y']);
+	// When there are no steps queued exit the function
+	if(animatedObjects[objectId]['path'].length < (k.state.walk.indexNext + 1)) return;
+
+	// Normally we only run walk.step once, but sometimes we need to do it twice for a nice smooth transition
+	var keepWalking = false;
+
+	do {
+		// Benchmarking
+		//var benchMe = new benchTime();
+		//benchMe.end(objectId + '\'s walkpath')
+
+		// Store our previous, current and next step
+		var stepPrev = animatedObjects[objectId]['path'][k.state.walk.indexPrev];
+		var stepNow = animatedObjects[objectId]['path'][k.state.walk.indexNow];
+		var stepNext = animatedObjects[objectId]['path'][k.state.walk.indexNext];
+		var stepFut = animatedObjects[objectId]['path'][k.state.walk.indexNext+1];
+		var futRequestTime;
+
+		// Calculate the waiting time for the future step, if there is one
+		if(stepFut) {
+			futRequestTime = (stepFut.moveRequested - stepNext.moveRequested)
+		}
+		else {
+			futRequestTime = 9999;
+		}
+
+		keepWalking = k.operations.walk.step(objectId, stepNow, stepNext, futRequestTime, keepWalking);
+
+		if(keepWalking) debugEcho('<b>Its true!</b>', false);
+
+	} while(keepWalking == true);
+}
+
+k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, keepWalking){
+
+	// Our basic return value to determine if we need to walk another step
+	var walkAnotherStep = false;
+
+	// Store our current location
+	var position = animatedObjects[objectId]['position'];
+
+	// Is this the first time we see this step?
+	if(stepNext.moveBegin === undefined) {
+
+		// Determine along what axis we need to move (x or y)
+		stepNext.moveAxis = stepNow.x != stepNext.x ? 'x' : 'y';
+
+		// Mark now() as the beginning of the step
+		stepNext.moveBegin = now();
+
+		// Get the event for this tile in the map and add it to the action list
+		getMapEvent(objectId, stepNext.x, stepNext.y);
+
+		// Calculate the waiting times
+		// The wait time between the request and the beginning of the next step
+		stepNext.moveWait = stepNext.moveBegin - stepNext.moveRequested;
+
+		// How fast we requested this move after the previous one (Pressing down generates a keypress around every 68ms)
+		stepNext.moveRequestTime = stepNext.moveRequested - stepNow.moveRequested;
+
+		// The gap between the current (next) and the previous (now) step.
+		stepNext.moveGap = stepNext.moveBegin - stepNow.moveEnd;
+
+		// Get the terrain speed (certain terrains make you move faster)
+		stepNext.terrainSpeed = stepNext.terrainSpeed === undefined ? 1.0 : stepNext.terrainSpeed;
+
+		// Calculate the numerical direction
+		stepNext.moveDirection = (stepNext[stepNext.moveAxis] - stepNow[stepNext.moveAxis]);
+
+		// If the absolute moveDirection is bigger than 1, remove the step and all the following
+		if(Math.abs(stepNext.moveDirection) > 1) animatedObjects[objectId]['path'].splice(k.state.walk.indexNext, (animatedObjects[objectId]['path'].length - k.state.walk.indexNext));
+
+		// Depending on the direction on this axis, choose the right tile
+		stepNext.moveSprite = stepNext.moveDirection > 0 ? (stepNext.moveAxis == 'x') ? 'righttile' : 'downtile' : (stepNext.moveAxis == 'x') ? 'lefttile' : 'uptile';
+
+		// What is the next tile in this direction?
+		stepNext.tileNext = Math.floor(position[stepNext.moveAxis]) + stepNext.moveDirection;
+
+		// Change the direction of the tile with our function
+		// This has to happen wheter the tile is walkable or not
+		changeMovingObjectSprite(objectId, stepNext.moveSprite);
+
+		// If the next tile we're going to enter isn't walkable, remove that and all the following steps, and make sure we're propperly positioned
+		// Do the same if the tile is more than 1 tile away
+		// || ((Math.abs(Math.abs(stepNext.x) - Math.abs(position.x)) > 1) || (Math.abs(Math.abs(stepNext.y) - Math.abs(position.y)) > 1))
+		if(!stepNext.walkable) {
+
+			animatedObjects[objectId]['path'].splice(k.state.walk.indexNext, (animatedObjects[objectId]['path'].length - k.state.walk.indexNext));
+
+			position['x'] = stepNow['x'];
+			position['y'] = stepNow['y'];
+
+		}
+
 	}
-	
-        // How much time has past since we started this move?
-        animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
-        step['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
-        
-        // Calculate how many tiles we have to move
-        var moveAmmount = (step['x'] - animatedObjects[objectId]['fromX']);
 
-        // Detect the direction of the move (left or right and numerical)
-        if(moveAmmount>0){
-            // Move to the right
-            var movementDirection = 'righttile';
-            var directionAmmount = +1;
-        } else {
-            var movementDirection = 'lefttile';
-            var directionAmmount = -1;
-        }
+	// If the axes of the move is found and the tile is walkable
+	if(stepNext.moveAxis && stepNext.walkable) {
 
-        // What is the next tile in this direction?
-        var nextTile = Math.floor(animatedObjects[objectId]['x'])+directionAmmount;
-        
-        // If the next tile is past our destination, we don't need to take it into account
-        if((nextTile*directionAmmount) > (step['x'] * directionAmmount)) nextTile -= directionAmmount;
-        
-        // Change the direction of the tile with our function
-        // This has to happen wheter the tile is walkable or not
-        changeMovingObjectSprite(objectId, movementDirection);
-	
-        // If the next tile we're going to enter (floor of current tile +1 or -1)
-        // is not walkable, then empty the array
-        if(isTileWalkable(animatedObjects[userPosition.uid]['map'], nextTile, step['y']) == false){
-            
-            animatedObjects[objectId]['path'].splice(0,animatedObjects[objectId]['path'].length);
-            
-        } else { // If it is walkable, actually move
-            // Our progress in this move (between 0 and 1)
-            var objectMoveProgress = step['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
-            
-            animatedObjects[objectId]['moveToX'] = step['x'];
-            
-            debugMove('Object <b>' + objectId + '</b> has to move <b>' + moveAmmount + ' tiles, moving progress (X): ' + objectMoveProgress, false);
-            
-            // If we've spent too much time on this move: finish it
-            if(step['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
-                animatedObjects[objectId]['x'] = step['x'];
-                animatedObjects[objectId]['fromX'] = animatedObjects[objectId]['x'];
-                
-                // And remove this from the array
-                animatedObjects[objectId]['path'].splice(0,1);
-                
-            } else { // Else calculate our current position
-                
-                debugMove('<b>From ' + animatedObjects[objectId]['fromX'] + ' to ' + step['x']);
-                debugMove('Moving X: ' + animatedObjects[objectId]['x'] + ' to ... ');
-                
-                animatedObjects[objectId]['x'] = animatedObjects[objectId]['fromX'] + ((step['x'] - animatedObjects[objectId]['fromX'])*objectMoveProgress);
-            }
-            
-            debugMove('Object ' + objectId + '\'s new X: ' + animatedObjects[objectId]['x']);
-        }
-        
-    }
-    
-    // Adjust the user's y position if the current position
-    // does not equal our destination.
-    if(animatedObjects[objectId]['y'] != step['y']){    
-        
-	// Has the lastMoved been set?
-        // If it hasn't, we also have to check for an event here
-	if(step['lastMoved'] === undefined) {
-	    step['lastMoved'] = now();
-	    animatedObjects[objectId]['lastMoved'] = now();
-            
-            // Get the event for this tile in the map and add it to the action list
-            getMapEvent(objectId, step['x'], step['y']);
-            
+		// How much time has past since the beginning of this step?
+		stepNext.moveChange = parseInt(now() - stepNext.moveBegin);
+
+		// If keepWalking is true this is the second time we run this function this frame
+		// This time adition to the moveChange should make walking smoother.
+		if(keepWalking) stepNext.moveChange += stepNext.moveGap;
+
+		// If the next tile is past our destination, we don't need to take it into account
+		// if ((nextTile * directionAmmount) > (step['x'] * directionAmmount)) nextTile -= directionAmmount;
+
+		// If it is walkable, actually move
+		// Our progress in this move (between 0 and 1)
+		stepNext.moveProgress = ((stepNext.moveChange * stepNext.terrainSpeed) / k.settings.walk.msPerTile);
+
+		debugMove('<b>' + objectId + '</b> has to move ' + stepNext.moveDirection + ' (' + stepNext.moveAxis + '): ' + stepNext.moveProgress + ' Now: <b>(' + position['x'] + ', ' + position['y'] + ')</b> - Destination: (' + stepNext.x + ', ' + stepNext.y + ') ' + futRequestTime, false);
+
+		// If we've spent too much time on this move: finish it
+		if((stepNext.moveChange * stepNext.terrainSpeed) >= k.settings.walk.msPerTile) {
+
+			// Indicate when this move ended
+			stepNext.moveEnd = now();
+
+			// Store the overtime
+			stepNext.moveOvertime = ((stepNext.moveChange)  * stepNext.terrainSpeed) - k.settings.walk.msPerTile;
+
+			// If this is the end of the queue, use the requested ending axis position
+			// If not, leave it as it is.
+			if((animatedObjects[objectId]['path'].length - 1) <= (k.state.walk.indexNext)) {
+				// Store our destination in the position
+				position[stepNext.moveAxis] = stepNext[stepNext.moveAxis];
+			} else {
+
+				// If the future step isn't on the same axis, do reset the position
+				if(animatedObjects[objectId]['path'][k.state.walk.indexNext+1][stepNext.moveAxis] == stepNext[stepNext.moveAxis]){
+					position[stepNext.moveAxis] = stepNext[stepNext.moveAxis];
+				}
+
+				// Was the next step (the future one) requested in time?
+				// Future steps do not have a moveRequestTime property yet
+				if(futRequestTime < 300) walkAnotherStep = true;
+			}
+
+			if(!walkAnotherStep) {
+					position['x'] = stepNext['x']
+					position['y'] = stepNext['y']
+			}
+
+			// Move the queue up by one
+			animatedObjects[objectId]['path'].splice(0, 1);
+
+		} else { // Else calculate our current position
+
+			position[stepNext.moveAxis] = stepNow[stepNext.moveAxis] + ((stepNext[stepNext.moveAxis] - stepNow[stepNext.moveAxis]) * stepNext.moveProgress);
+		}
+
 	}
-	
-        // How much time has past since we started this move?
-        animatedObjects[objectId]['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
-        step['msMoved'] = now() - animatedObjects[objectId]['lastMoved'];
-        
-        // Calculate how many tiles we have to move
-        var moveAmmount = (step['y'] - animatedObjects[objectId]['fromY']);
 
-        // Detect the direction of the move (left or right and numerical)
-        if(moveAmmount>0){
-            // Move down
-            var movementDirection = 'downtile';
-            var directionAmmount = +1;
-        } else {
-            var movementDirection = 'uptile';
-            var directionAmmount = -1;
-        }
+	return walkAnotherStep;
 
-        // What is the next tile in this direction?
-        var nextTile = Math.floor(animatedObjects[objectId]['y'])+directionAmmount;
-        
-        // If the next tile is past our destination, we don't need to take it into account
-        if((nextTile*directionAmmount) > (step['y'] * directionAmmount)) nextTile -= directionAmmount;
-        
-        // Change the direction of the tile with our function
-        // This has to happen wheter the tile is walkable or not
-        changeMovingObjectSprite(objectId, movementDirection);
-
-        // If the next tile we're going to enter (floor of current tile +1 or -1)
-        // is not walkable, then empty the array
-        if(isTileWalkable(animatedObjects[userPosition.uid]['map'], step['x'], nextTile) == false){
-            
-            animatedObjects[objectId]['path'].splice(0,animatedObjects[objectId]['path'].length);
-            
-        } else { // If it is walkable, actually move
-            // Our progress in this move (between 0 and 1)
-            var objectMoveProgress = step['msMoved']/(userMoveMsPerTile*Math.abs(moveAmmount));
-            
-            animatedObjects[objectId]['moveToY'] = step['y'];
-            
-            debugMove('Object <b>' + objectId + '</b> has to move <b>' + moveAmmount + ' tiles, moving progress (Y): ' + objectMoveProgress, false);
-            
-            // If we've spent too much time on this move: finish it
-            if(step['msMoved'] >= (userMoveMsPerTile*Math.abs(moveAmmount))){
-                animatedObjects[objectId]['y'] = step['y'];
-                animatedObjects[objectId]['fromY'] = animatedObjects[objectId]['y'];
-                
-                // And remove this from the array
-                animatedObjects[objectId]['path'].splice(0,1);
-                
-            } else { // Else calculate our current position
-                
-                debugMove('<b>From ' + animatedObjects[objectId]['fromY'] + ' to ' + step['y']);
-                debugMove('Moving Y: ' + animatedObjects[objectId]['y'] + ' to ... ');
-                
-                animatedObjects[objectId]['y'] = animatedObjects[objectId]['fromY'] + ((step['y'] - animatedObjects[objectId]['fromY'])*objectMoveProgress);
-            }
-            
-            debugMove('Object ' + objectId + '\'s new Y: ' + animatedObjects[objectId]['y']);
-        }
-        
-    }
-    
 }
