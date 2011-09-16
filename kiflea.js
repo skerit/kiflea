@@ -93,7 +93,7 @@ k.settings.server.CONNECT = true;
  * What port should we connect to?
  * @define {integer}
  */
-k.settings.server.PORT = 2000;
+k.settings.server.PORT = 1234;
 
 /**
  * What's the address of the server?
@@ -114,6 +114,11 @@ k.settings.walk.msPerTile = 200;    // The time it takes to move one tile (at no
  *  @define {string}
  */
 k.settings.engine.DEFAULTSPRITES = 'default.tmx.xml';
+
+/**
+ * The url from where we'll be downloading the files
+ */
+k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea/';
 
 /**
  * The id of the canvas element
@@ -182,9 +187,6 @@ k.collections.maps = {};
 k.collections.objects = {}		// The variable that will contain all the objects, including the user's data
 k.collections.hudLayers = {};
 
-var connectToServer = false;	// Do we want to connect to a server?
-var conPort = 2000;		// The port to connect to the server
-var conAddress = "ws://host.tld";// The domain to connect to
 var fps = 30;
 
 
@@ -284,6 +286,7 @@ var font = {"size": 20,		    // Size in pixels
 	"dy": 10};	    // The base height of a single character
 
 
+/* @deprecated  */
 var movie;
 
 /**
@@ -299,7 +302,7 @@ k.operations.toggleEngine = function(){
 	}else {
 
 		// Output a stopping message
-		debugEcho('<h3 style="color:red;">The engine has stopped!</h3><hr>');
+		debugEcho('<h2 style="color:red;">The engine has stopped!</h2><hr>');
 
 		// Clear the timer
 		k.state.loopinterval = window.clearInterval(k.state.loopinterval);
@@ -316,7 +319,6 @@ k.operations.toggleEngine = function(){
 k.classes.Canvas = function(canvasId){
 
 	var that = this;
-
 	this.canvasId = canvasId;
 
 	// Retrieve the canvas DOM node, this gives us access to its drawing functions
@@ -326,29 +328,31 @@ k.classes.Canvas = function(canvasId){
 	this.width = document.getElementById(canvasId).width;
 	this.height = document.getElementById(canvasId).height;
 
-	// Mouse positions
-	this.mouseX = 0;
-	this.mouseY = 0;
+	// If the RECORD var is true, create a movie object
+	if(k.settings.debug.RECORD) this.movie = new CanvasReplay(this.width,  this.height);
 
 	// Mouse settings
 	this.mouse = {};
-	this.mouse.x = 0;
-	this.mouse.y = 0;
-	this.mouse.down = false;
-	this.mouse.downx = 0;
-	this.mouse.downy = 0;
-	this.mouse.upx = 0;
-	this.mouse.upy = 0;
+	this.mouse.x = 0;               // Where is the cursor now?
+	this.mouse.y = 0;               // Where is the cursor now?
+	this.mouse.down = false;        // Is the mouse pressed down?
+	this.mouse.downx = 0;           // Where was the mouse pressed down?
+	this.mouse.downy = 0;           // Where was the mouse pressed down?
+	this.mouse.upx = 0;             // Where was the mouse last released?
+	this.mouse.upy = 0;             // Where was the mouse last released?
 	this.mouse.dialogDown = false;  // The dialog window we have under our cursor when pressing down
 	this.mouse.dialogUp = false;    // The dialog window we have under our cursor when releasing the mouse button
+	this.mouse.underType;           // What is beneath the mouse now?
+	this.mouse.focus = false;       // What has focus right now?
 
-	// Create a buffer
+	// Create a buffer canvas. We'll draw everything to this first
 	this.bufferElement = document.createElement('canvas');
 
+	// Set the resolution of the buffer element
 	this.bufferElement.width = this.width;
 	this.bufferElement.height = this.height;
 
-	// Get the context
+	// Get the buffer context
 	this.buffer = this.bufferElement.getContext('2d');
 
 	/**
@@ -357,7 +361,8 @@ k.classes.Canvas = function(canvasId){
 	this.flush = function(){
 		this.ctx.drawImage(this.bufferElement, 0 ,0);
 
-		if(k.settings.debug.RECORD) movie.addImage(document.getElementById(this.canvasId));
+		// If the RECORD variable is true, add the current frame to the movie
+		if(k.settings.debug.RECORD) this.movie.addImage(document.getElementById(this.canvasId));
 	}
 	
 
@@ -389,52 +394,36 @@ k.classes.Canvas = function(canvasId){
 		if(backgroundColor === undefined) backgroundColor = k.settings.engine.background;
 
 		// Draw the rectangle
-		this.ctx.fillStyle = backgroundColor;
-		this.ctx.fillRect(0, 0, this.width, this.height);
+		this.buffer.fillStyle = backgroundColor;
+		this.buffer.fillRect(0, 0, this.width, this.height);
 	}
 
 	// Disable "selecting" the canvas when clicked.
 	var element = document.getElementById(canvasId);
 	element.onselectstart = function () { return false; }
 
-	// Store the mouse position at all times
+	// What to do when the mouse moves over this canvas
 	$('#'+canvasId).mousemove( function(e) {
+
 		that.mouse.x = e.pageX-this.offsetLeft;
 		that.mouse.y = e.pageY-this.offsetTop;
-
-		that.mouseX = e.pageX-this.offsetLeft;
-		that.mouseY = e.pageY-this.offsetTop;
-
-		if(that.mouse.down && that.mouse.dialogDown) {
-
-			k.operations.interface.moveDialog(that.mouse.dialogDown, that.mouse.x, that.mouse.y);
-
-		}
 		
 	});
 
 	// Store the mouse position when pressing down a button
 	$('#'+canvasId).mousedown(function(e){
-		debugEcho('Mousedown');
-		that.mouse.down = true;
+
 		that.mouse.downx = e.pageX-this.offsetLeft;
 		that.mouse.downy = e.pageY-this.offsetTop;
 
-		that.mouse.dialogDown = k.operations.interface.getClicked(that.mouse.downx, that.mouse.downy);
-
-		k.operations.interface.mouseDown(that.mouse.downx, that.mouse.downy);
 	});
 
 	// Store the mouse position when releasing (clicking) down a button
 	$('#'+canvasId).mouseup(function(e){
-		debugEcho('Mouseup');
-		that.mouse.down = false;
+
 		that.mouse.upx = e.pageX-this.offsetLeft;
 		that.mouse.upy = e.pageY-this.offsetTop;
 
-		that.mouse.dialogUp = k.operations.interface.getClicked(that.mouse.upx, that.mouse.upy);
-
-		k.operations.interface.mouseUp(that.mouse.upx, that.mouse.upx);
 	});
 
 	// Now check if we actually have a canvas object.
@@ -442,8 +431,6 @@ k.classes.Canvas = function(canvasId){
 	if(this.ctx) {
 		this.loaded = true;
 		debugEcho('Canvas has been initialized');
-		console.log('Canvas has been initialized');
-		k.operations.interface.openDialog('bordersmall', dtest.x, dtest.y, dtest.width, dtest.height);
 	} else {
 		this.loaded = false;
 	}
@@ -456,6 +443,9 @@ k.classes.Canvas = function(canvasId){
  * After that it initiates the renderloop
  */
 k.operations.startEngine = function() {
+	
+	// The return variable
+	result = '';
 
     // Setup the output divs as referrable jquery items
     k.links.debug = $('#' + k.settings.ids.DEBUG);
@@ -472,8 +462,6 @@ k.operations.startEngine = function() {
         echo('Canvas is not available in this browser!');
     }
 
-	if(k.settings.debug.RECORD) movie = new canvasCollection(k.links.canvas.width,  k.links.canvas.height);
-
 	// Calculate coördinate indexes
 	k.state.walk.indexPrev = 0 + k.settings.debug.PATHHISTORY;
 	k.state.walk.indexNow = 1 + k.settings.debug.PATHHISTORY;
@@ -481,6 +469,12 @@ k.operations.startEngine = function() {
 	k.state.walk.maxQueue = k.settings.walk.MAXQUEUE + k.state.walk.indexNow;
 
 	k.operations.load.getHud();
+	
+	if ("WebSocket" in window){
+		result = result + ' - Websockets found';
+	} else {
+		result = result + ' - Websockets NOT found';
+	}
 
     // Connect to a server if it's required
     if(k.settings.server.CONNECT == true) {
@@ -489,7 +483,7 @@ k.operations.startEngine = function() {
 
 		// When it's not required, we must load all the maps and huds already
 		// defined. Otherwise we'd get them from the server
-		k.operations.load.getMaps();
+		k.operations.load.getMaps(loadMaps);
 		k.operations.load.getHud();
 
 		k.operations.startLoop();
@@ -500,6 +494,8 @@ k.operations.startEngine = function() {
 
     // Set focus to the dummyInput!
     $("#dummyinput").focus();
+	
+	return result;
 
 }
 
@@ -531,7 +527,7 @@ k.operations.load.getMaps = function(loadMaps){
 
         $.ajax({
             type: "GET",
-            url: currentMap,
+            url: k.settings.engine.BASEURL + currentMap,
             dataType: "xml",
             async: false, // Important: when this is turned on it will let the loop continue and change the currentMap. Causing every map to be stored under the same name
             success: function(xml, textStatus, error){
@@ -845,7 +841,7 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth, im
     });
 
     // Start downloading the source.
-    img.src = source
+    img.src = k.settings.engine.BASEURL + source
 
     debugEcho('tileset "' + source + '" has been loaded as "' + storeAsName + '"', false);
 }

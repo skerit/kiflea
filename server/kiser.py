@@ -185,6 +185,9 @@ class Client(threading.Thread):
                 key1 = elem[20:]  # Sec-WebSocket-Key1: is 20 chars
             elif elem.startswith("Sec-WebSocket-Key2:"):
                 key2 = elem[20:]
+            elif elem.startswith("Origin:"):
+                origin = elem[8:]
+                print "Client coming from " + origin
             else:
                 continue
             
@@ -216,6 +219,7 @@ class Client(threading.Thread):
         self.client.send("HTTP/1.1 101 WebSocket Protocol Handshake\r\n")
         self.client.send("Upgrade: WebSocket\r\n")
         self.client.send("Connection: Upgrade\r\n")
+        self.client.send("Sec-WebSocket-Origin: "+ origin +"\r\n")
         self.client.send("Sec-WebSocket-Origin: http://kipdola.be\r\n")
         self.client.send("Sec-WebSocket-Location: ws://kipdola.be:1234/\r\n")
         self.client.send("Sec-WebSocket-Protocol: chat\r\n")
@@ -364,6 +368,13 @@ class Client(threading.Thread):
                                 data['uid'] = self.uid
                                 
                                 isWalkable = globMaps[globUser[self.uid]['map']].isTileWalkable(int(data['x']), int(data['y']))
+                                
+                                if isWalkable == True:
+                                    del globUser[self.uid]['path'][0]
+                                    globUser[self.uid]['path'].append(data)
+                                    globUser[self.uid]['position']['x'] = int(data['x'])
+                                    globUser[self.uid]['position']['y'] = int(data['y'])
+                                
                                 data['walkable'] = isWalkable
                                 data['terrainSpeed'] = globMaps[globUser[self.uid]['map']].getTerrainSpeed(int(data['x']), int(data['y']))
                                 self.updateWorld(data)

@@ -21,7 +21,7 @@
  *Start rendering the scene 'till infinity
  */
 function renderLoop(){
-    
+
     // If we haven't loaded everything yet don't continue
     if(loaded<toLoad) return;
 
@@ -48,7 +48,7 @@ function renderLoop(){
     }
 
     // Start the fake ms counter
-    msfTimer = (new Date()).getTime();
+    msfTimer = now();
     
     // If this map has a backgroundcolor set, use it.
     if(maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'] !== undefined){
@@ -103,11 +103,7 @@ function renderLoop(){
     msrTimer = now();
 
     // Draw the HUD
-    drawHud();
-
-	//drawDialog('bordersmall', 0, 0, k.links.canvas.width, k.links.canvas.height);
-//	drawDialog('bordersmall', dtest.x, dtest.y, dtest.width, dtest.height);
-	//k.operations.interface.openDialog('bordersmall', dtest.x, dtest.y, dtest.width, dtest.height);
+    //drawHud();
 
 	// Now flush the canvas buffer to the real canvas
 	k.links.canvas.flush();
@@ -476,7 +472,28 @@ function drawDebugFps(){
     k.links.canvas.ctx.fillRect (2, k.links.canvas.height-33, k.links.canvas.width-4, 20);
     k.links.canvas.ctx.strokeStyle = "white";  
     k.links.canvas.ctx.font = "12px monospace";
-    k.links.canvas.ctx.strokeText('Fake ms: ' + msf.toPrecision(4) + ' - Real ms: ' + msr.toPrecision(4)  + ' - Fake fps: ' + Math.round(fpsf).toPrecision(3) + ' - Real fps: ' + Math.round(fpsr).toPrecision(3), 5, k.links.canvas.height-20);
+    k.links.canvas.ctx.strokeText('Fake ms: ' + precise(msf.toPrecision(4)) + ' - Real ms: ' + precise(msr.toPrecision(4))  + ' - Fake fps: ' + precise(Math.round(fpsf).toPrecision(4)) + ' - Real fps: ' + precise(Math.round(fpsr).toPrecision(4)), 5, k.links.canvas.height-20);
+
+}
+
+/**
+ * Precise
+ */
+function precise(text){
+
+	text = String(text);
+
+	if(text.indexOf('.00') > 0) {
+		text = text.replace('.00', '');
+		text = '00' + text;
+	}
+
+	if(text.indexOf('.0') > 0) {
+		text = text.replace('.0', '');
+		text = '0' + text;
+	}
+
+	return text;
 
 }
 

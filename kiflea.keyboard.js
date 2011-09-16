@@ -195,6 +195,24 @@ function keyFinish(keypress) {
     // In a long time. It's best to reset it.
     if(debugCounter > 1000) debugCounterReset();
 
+	// See what has focus
+	if(k.links.canvas.mouse.focus){
+
+		var focus = k.state.hud.openedDialogs[k.links.canvas.mouse.focus.dialogindex];
+
+		if(k.links.canvas.mouse.focus.type == "widget") {
+
+			var fw = focus.content[k.links.canvas.mouse.focus.dialog.index];
+
+			if(keypress.keyCode == key.Backspace) {
+				fw.value = fw.value.substring(0, fw.value.length-1);
+			} else {
+				fw.value += String.fromCharCode(keypress.keyCode);
+			}
+
+		}
+	}
+
     // Select the correct key and execute its functions
     switch (keypress.keyCode) {
 
@@ -301,12 +319,10 @@ function getEvents(mapName, x, y){
  */
 k.operations.interface.mouseUp = function(x, y){
 
-    var clickedLayer = k.operations.interface.getClicked(x,y);
+    var clickedLayer = k.operations.interface.getHudItem(x,y);
     
     // If we've clicked a HUD layer, do something
     if(typeof(clickedLayer) == 'object') {
-
-	    debugArray(clickedLayer);
         
         if(clickedLayer['action'] !== undefined) queueAction(clickedLayer['action']['what'], getSelectedObject(), clickedLayer['action']['value']);
         
@@ -315,7 +331,7 @@ k.operations.interface.mouseUp = function(x, y){
         var clickCoordinates = getClickedTile(x, y);
         
         var events = getEvents(animatedObjects[userPosition.uid]['map'], clickCoordinates.x, clickCoordinates.y);
-        debugArray(events);
+
         // If we have an event in the array, we'll only take the first one for now.
         if(events.length > 0) {
             animatedObjects[userPosition.uid]['selection'] = events[0];
@@ -323,17 +339,7 @@ k.operations.interface.mouseUp = function(x, y){
             animatedObjects[userPosition.uid]['selection'] = 0;
         }
     }
-    // Send the data to the server
-    //if(connectToServer == true) wsend(JSON.stringify(animatedObjects[userPosition.uid]));
 
-	/*
-	var downLayer = k.operations.interface.getClicked(k.links.canvas.mouse.downx, k.links.canvas.mouse.downx);
-
-	if(typeof(downLayer) == 'object') {
-		if(downLayer.type == "dialog") k.state.hud.openedDialogs[downLayer.index].x = x - downLayer.clickedX;
-		if(downLayer.type == "dialog") k.state.hud.openedDialogs[downLayer.index].y = y - downLayer.clickedY;
-	}
-	*/
 }
 
 /**
@@ -361,9 +367,6 @@ function getClickedTile(x, y){
     x = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
     y = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
     
-    //testPath = findPath(animatedObjects['U00002']['x'], animatedObjects['U00002']['y'], x, y);
-    //animatedObjects['U00002']['path'] = deepCopy(testPath);
-    debugEcho('x' + x +  ' - y' + y);
     return {'x': x, 'y': y};
 }
 

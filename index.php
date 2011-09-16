@@ -25,18 +25,36 @@
 		#container {height: 95%};
 	</style>
 	<!--[if IE]><script type="text/javascript" src="excanvas.compiled.js"></script><![endif]-->
+    <!--<script type="text/javascript" src="objSort.js"></script>-->
+    <script type="text/javascript">
+    /* <![CDATA[ */
+        (function() {
+            var s = document.createElement('script'), t = document.getElementsByTagName('script')[0];
+            s.type = 'text/javascript';
+            s.async = true;
+            s.src = 'http://api.flattr.com/js/0.6/load.js?mode=auto';
+            t.parentNode.insertBefore(s, t);
+        })();
+    /* ]]> */
+    </script>
 	<script type="text/javascript" src="json.js"></script>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 	<script type="text/javascript" src="kiflea.rendering.js"></script>
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
 	<script type="text/javascript" src="kiflea.sercon.js"></script>
-	<script type="text/javascript" src="kiflea.misc.js"></script>
+    <script type="text/javascript" src="kiflea.misc.js"></script>
 		<script type="text/javascript" src="kiflea.js"></script>
     	<script type="text/javascript" src="kiflea.hud.js"></script>
     <script type="text/javascript" src="kiflea.keyboard.js"></script>
 	<script type="text/javascript" src="kiflea.pathfinding.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
+			k.settings.server.CONNECT = true;
+			k.settings.server.ADDRESS = 'ws://kipdola.be';
+			k.settings.server.PORT = 1234;
+			k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea-working/';
+			k.settings.debug.DEBUG = false;
+			
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
 			defaultTilesPerRow = 30;
@@ -55,9 +73,7 @@
 			backgroundColor = "rgb(255,255,255)";
 			defaultSprites = 'default.tmx.xml';
 			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites
-			connectToServer = true;
-			conAddress = "ws://kipdola.be";
-			conPort = 1234;
+
 			animatedObjects = {	// Test data for objects
 				"U00002":{
 					"uid": "U00002",
@@ -80,7 +96,8 @@
 					"path": [],
 					"wander": {"x": 35, "y": 35, "xw": 5, "yw": 5, "basePause": 5000},
 					"actionsreceived": [{"action": "wander", "active": 1}],
-					"finishedEvents": {}
+					"finishedEvents": {},
+					"position": {}
 				},
 				"U00003":{
 					"uid": "U00003",
@@ -103,7 +120,8 @@
 					"path": [],
 					"wander": {"x": 25, "y": 25, "xw": 15, "yw": 15, "basePause": 9000},
 					"actionsreceived": [{"action": "wander", "active": 1}],
-					"finishedEvents": {}
+					"finishedEvents": {},
+					"position": {}
 				}
 			}
 
@@ -128,7 +146,8 @@
                 "position": {'x': 35, 'y': 17},
 				"path": [{x: 33, y: 17}, {x: 34, y: 17}, {x: 35, y: 17}],
 				"actionsreceived": [],
-				"finishedEvents": {}
+				"finishedEvents": {},
+				"position": {}
 			};
 
 			k.operations.startEngine();
@@ -173,14 +192,16 @@
 			<input id="dummyinput" style="margin-bottom:150px;">
 		</div>
 		<div id="info">
-			<p>The Kiflea engine aims to bring fun 2D on-line gaming to your browser.<br/><br/>
+            <a class="FlattrButton" style="display:none;"
+            href="http://www.kipdola.be/en/blog/skerit/126-presenting-kiflea-canvas-game-engine-html5"></a>
+			<p style="float:right;font-size:13px;">The Kiflea engine aims to bring fun 2D on-line gaming to your browser.<br/><br/>
 			
 			I set up a repository for the code, more information through the trac link at the bottom of the page.<br/>
 			This is my very first time programming something in javascript, optimalization wasn't always the first thing on my mind.<br/>
 			Any tips, bugs, patches, ... are very, very welcome!
-			</p>
+			</p><div style="clear:right"></div>
 			
-			<p class="cc"><br/>Example tiles where downloaded from
+			<p class="cc" style="display:none;"><br/>Example tiles where downloaded from
 				<a href="http://www.opengameart.org">OpenGameArt.org</a>. I included:
 				<table class="cleartable">
 					<tr><td>

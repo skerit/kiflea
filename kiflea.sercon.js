@@ -27,12 +27,16 @@ var vdata;
 function getConnection(){
         
     // Create the connection
-    ws = new WebSocket(conAddress + ':' + conPort + '/');
+	try {
+		ws = new WebSocket(k.settings.server.ADDRESS + ':' + k.settings.server.PORT + '/');
+	} catch(error) {
+		
+	}
 
     // Setup a few event handlers
     ws.onopen = function(e) {
-     console.log('Made connection to ' + conAddress + ':' + conPort + '/');
-     out('Opened connection to the server at <b>' + conAddress + ':' + conPort + '/</b>');
+     console.log('Made connection to ' + k.settings.server.ADDRESS + ':' + k.settings.server.PORT + '/');
+     out('Opened connection to the server at <b>' + k.settings.server.ADDRESS + ':' + k.settings.server.PORT + '/</b>');
      k.state.server.connected = true;
      // Send our users info
      wsend(animatedObjects[userPosition.uid]);
@@ -45,6 +49,10 @@ function getConnection(){
      wsend({'action': 'quit'});
 	 k.state.server.connected = false;
      //wsend({"uid": userPosition.uid, "map":"close"});
+	 
+	 // We didn't connect, restart in offline mode
+	 k.settings.server.CONNECT = false;
+	 k.operations.startEngine();
     }
     
     // Bij het ontvangen van data ...
@@ -104,9 +112,9 @@ function getConnection(){
                     animatedObjects = verwerk['userlist'];
                     break;
                                     
-                                    case 'logoff':
-                                            delete animatedObjects[verwerk['from']];
-                                            break;
+				case 'logoff':
+						delete animatedObjects[verwerk['from']];
+						break;
 
             }
             
