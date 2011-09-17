@@ -177,7 +177,7 @@ function getConnection(){
 function wsend(message){
     message = JSON.stringify(message)
     
-    header = "--KOP:" + (message.length + 1) + ":POK--";
+    header = "--KOP:" + (message.length) + ":POK--";
     
     ws.send(header+message);
 
