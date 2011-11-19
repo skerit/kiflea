@@ -1,3 +1,13 @@
+
+--- Wednesday 2011-09-21 ---
+* Clean up the sercon file, modify functions and add them to the namespace.
+* Added a "types" file, which is useful for development.
+* Removed dialog code from keyboard file.
+
+--- Tuesday 2011-09-20 ---
+* Added a shim javascript file. It takes care of fallback functions (like
+  websockets, requestAnimationFrame, ...)
+
 --- Saturday 2011-09-17 ---
 * Huge changes to the server, mostly due to the new websocket protocol (another
   one) Lots of new code was worked into the server. Code cleanup is also busy.

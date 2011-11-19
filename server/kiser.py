@@ -76,12 +76,14 @@ loadMaps = ['grassland.tmx.xml', 'default.tmx.xml']
 rootFolder = '/home/skerit/www/subdomain/kiflea/';
 globMaps = {}
 
-rwQ = rwlock.ReadWriteLock()       # The r/w-lock for the globQueue
-rwU = rwlock.ReadWriteLock()       # The r/w-lock for the globUser
+rwQ = rwlock.ReadWriteLock()        # The r/w-lock for the globQueue
+rwU = rwlock.ReadWriteLock()        # The r/w-lock for the globUser
+rwG = rwlock.ReadWriteLock()        # The r/w-lock for the globGuest
 
 serverQueue = Queue.Queue()	    # A general queue for all threads
 globQueue = []			    # An array to store every queue in
 globUser = {}			    # An object to store all the on-line users in
+globGuest = 0;
 
 loadMaps = ['grassland.tmx.xml', 'default.tmx.xml']
 rootFolder = '/home/skerit/www/subdomain/kiflea/';
@@ -190,13 +192,11 @@ class Server:
 
     def msg(self, msg):
         """ Output message with handler_id prefix. """
-        if not self.daemon:
-            print("% 3d: %s" % (self.handler_id, msg))
+        verbose(msg, 0, 1)
 
     def vmsg(self, msg):
         """ Same as msg() but only if verbose. """
-        if self.verbose:
-            self.msg(msg)
+        verbose(msg, 0, 1)
 
     def start_server(self):
         """
@@ -271,7 +271,7 @@ class Server:
                     globQueueIndex = len(globQueue) - 1
                     
                     # Create a new client
-                    c = Client(startsock, address, globQueue[globQueueIndex], globQueueIndex, serverQueue )
+                    c = Client(startsock, address, globQueue[globQueueIndex], globQueueIndex, serverQueue)
                     
                     verbose("New thread started. Queueindex: " + str(globQueueIndex), 2, 3)
                     
@@ -292,14 +292,12 @@ class Server:
                 except Exception:
                     _, exc, _ = sys.exc_info()
                     self.msg("handler exception: %s" % str(exc))
-                    if self.verbose:
-                        self.msg(traceback.format_exc())
+                    verbose(traceback.format_exc(), 0, 1)
                         
             except Exception:
                 _, exc, _ = sys.exc_info()
                 self.msg("handler exception: %s" % str(exc))
-                if self.verbose:
-                    self.msg(traceback.format_exc())
+                verbose(traceback.format_exc(), 0, 1)
         
         verbose("\r\nServer is shutting down", 0, 1)
         
@@ -332,6 +330,7 @@ class Server:
 class Client(threading.Thread):
     
     buffer_size = 65536
+    framed = False
 
     server_handshake_hixie = """HTTP/1.1 101 Web Socket Protocol Handshake\r
 Upgrade: WebSocket\r
@@ -411,6 +410,8 @@ Sec-WebSocket-Accept: %s\r
             if self.client and self.client != self.startsock:
                 verbose("Closing client", 0, 3)
                 self.client.close()
+        
+        verbose("Client init finished", 2, 4)
         
                 
     def msg(self, message):
@@ -535,12 +536,14 @@ Sec-WebSocket-Accept: %s\r
             #    response += "Sec-WebSocket-Protocol: binary\r\n"
             response += "Sec-WebSocket-Protocol: chat\r\n"
             response += "\r\n"
+            
+            self.framed = True
 
         else:
             # Hixie version of the protocol (75 or 76)
 
             if h.get('key3'):
-                trailer = self.gen_md5(h)
+                trailer = gen_md5(h)
                 pre = "Sec-"
                 self.version = "hixie-76"
             else:
@@ -560,6 +563,8 @@ Sec-WebSocket-Accept: %s\r
             #    self.msg("Warning: client does not report 'base64' protocol support")
             response += "%sWebSocket-Protocol: chat\r\n" % pre
             response += "\r\n" + trailer
+            
+            self.framed = False
 
         retsock.send(s2b(response))
 
@@ -629,7 +634,8 @@ Sec-WebSocket-Accept: %s\r
     
     def closeClient(self):
         
-        self.updateWorld({'action': 'logoff'})
+        if(self.uid):
+            self.updateWorld({'action': 'logoff'})
         
         self.running = 0
         
@@ -652,17 +658,20 @@ Sec-WebSocket-Accept: %s\r
             rwQ.release()
             
         # Delete our user from the dictionary
-        rwU.acquireRead()
-        try:
-            rwU.acquireWrite()
+        if(self.uid):
+            rwU.acquireRead()
             try:
-                del globUser[self.uid]
+                rwU.acquireWrite()
+                try:
+                    del globUser[self.uid]
+                finally:
+                    rwU.release()
             finally:
                 rwU.release()
-        finally:
-            rwU.release()
             
         self.client.close()
+        
+        verbose("Client disconnected", 0, 5)
 
     
 
@@ -681,43 +690,55 @@ Sec-WebSocket-Accept: %s\r
             # Receive data
             data = self.wget(self.client.recv(self.size))
             
-            # If data equals false after running through wget, continue to the next iteration
+            # If data equals false after running through wget,
+            # close the client and skip the rest of the code (by continuing)
             if data == False:
                 self.closeClient()
                 continue
             
-            #Try to parse the JSON data
             try:
-                # No longer needed in hybi10
-                #data = data[0:-1]           # Cut off the ending byte
-                data = json.loads(data)     # Parse the JSON
+                # Try to parse the JSON data
+                data = json.loads(data)
             except ValueError:
-                print 'This is not a JSON object: "' + data + '" -- end data;'
+                verbose('This is not a JSON object: "' + data + '" -- end data;', 0, 2)
                 error += 1
                 data = None
                 if error > 50:
-                    print "This thread is being shut down: 50 errors"
+                    verbose("This thread is being shut down: 50 errors", 0, 2)
                     running = 0
             
             # Only continue if there actually is data
             if data:
                 # Initiate the user if it hasn't happened yet
                 if self.initiated == False:
-                    print 'Initializing user: ' + data['uid']
-                    self.initiateUser(data)
+                    if data['action'] == 'logon':
+                        verbose('Initializing user: ' + data['username'], 0, 3)
+                        self.loginUser(data)
                 else:
                     # Here we decide what to do with the information received
                     try:
+                        
                         for case in switch(data['action']):
+                            
+                            # Timesync: sync the time between client and server
                             if case('timesync'):
                                 t = datetime.datetime.now()
                                 self.queue.put({'action': 'timesync', 'time': int(time.time()*1000)})
                                 del t
                                 break
+                            
+                            # Quit: start closing the connection
                             if case('quit'):
-                                print "User is quitting"
+                                verbose("User " + self.uid + " is quitting", 0, 2)
+                                self.closeClient()
                                 break
+                            
+                            # Move: The player has moved
+                            # {"action":"move","added":1316437492646,"x":34,"y":17,"moveRequested":1316437492646} <-- old
+                            # {"action":"move","timeRequested":1316437492646,"x":34,"y":17, "targetid": "U1"} <-- new
                             if case('move'):
+                                
+                                # Target ID should not be used, could be spoofed.
                                 data['uid'] = self.uid
                                 
                                 isWalkable = globMaps[globUser[self.uid]['map']].isTileWalkable(int(data['x']), int(data['y']))
@@ -730,6 +751,8 @@ Sec-WebSocket-Accept: %s\r
                                 
                                 data['walkable'] = isWalkable
                                 data['terrainSpeed'] = globMaps[globUser[self.uid]['map']].getTerrainSpeed(int(data['x']), int(data['y']))
+                                
+                                # Send the data to everyone
                                 self.updateWorld(data)
                                 
                                 # Update the globuser var if it's walkable
@@ -738,24 +761,29 @@ Sec-WebSocket-Accept: %s\r
                                     globUser[self.uid]['y'] = int(data['y'])
                                 
                                 break
+                            
+                            # Iniuser: The client does not know a specific user, send him the required data
                             if case('iniuser'):
                                 data = globUser[data['who']]
                                 data['action'] = 'initiation'
                                 self.queue.put(data)
                                 break
-                            if case(): # default, could also just omit condition or 'if True'
-                                print "something else!"
+                            
+                            # Unknown command received
+                            if case():
+                                verbose("Unknown command received from " + self.uid, 0, 2)
                                 # No need to break here, it'll stop anyway
         
                     except KeyError:
                         # Key is not present
-                        print "No action key found, ignoring"
+                        verbose("No action key found, ignoring", 0, 3)
                         pass
-                        
-        # Send the curent time to the client, to sync clocks
-        #self.wsend(json.dumps(dict({'time': time.mktime(t.timetuple()))));
         
     def updateWorld(self, data):
+        """
+        Sends the command to *every* user connected to the server.
+        That's a bit overkill at this time, but we'll take it.
+        """
         
         data['from'] = self.uid
         
@@ -766,6 +794,28 @@ Sec-WebSocket-Accept: %s\r
                 globQueue[index].put(data)
         finally:
             rwQ.release()
+
+    def loginUser(self, data):
+        global globGuest
+        
+        # Get our login username
+        username = data['username']
+        
+        if(username == 'guest'):
+            
+            rwG.acquireRead()
+            try:
+                rwG.acquireWrite()
+                try:
+                    globGuest += 1
+                    guestid = globGuest
+                    userinfo = {"uid":"U" + str(guestid),"x":30,"y":31,"moveToX":30,"moveToY":31,"fromX":30,"fromY":31,"msMoved":100,"lastMoved":1000,"map":"grassland.tmx.xml","sprites":[1,21],"spritesToDraw":[1,21],"currentSprite":1,"effects":[],"selection":0,"currenthealth":55,"fullhealth":100,"position":{},"path":[{"x":33,"y":17},{"x":34,"y":17},{"x":35,"y":17}],"actionsreceived":[],"finishedEvents":{}}
+                finally:
+                    rwG.release()
+            finally:
+                rwG.release()
+        
+        self.initiateUser(userinfo)
 
     def initiateUser(self, data):
         
@@ -796,13 +846,11 @@ Sec-WebSocket-Accept: %s\r
         self.updateWorld(data)
         
         # Create a new thread that sends data to the client through its own queue
-        m=UpdateClient(data['uid'], self.queue, self.client)
+        m=UpdateClient(data, self.queue, self.client, self.framed)
         
         # Start the thread and actually thread it
         m.start()
         self.threads.append(m)
-        
-        
         
 # This class listens to its own queue
 # and sends the information as-is to the client
@@ -810,17 +858,18 @@ class UpdateClient(threading.Thread):
     x = 0
     y = 0
 
-    def __init__(self, uid, queue, client):
+    def __init__(self, userinfo, queue, client, framed):
         threading.Thread.__init__(self)
-        self.uid = uid
+        self.uid = userinfo['uid']
+        self.userinfo = userinfo
         self.queue = queue
         self.client = client
         self.running = True
+        self.framed = framed
         global globUser
 
         # Tell the client its initiated, and tell him what maps to load
-        self.wsend({'action': 'initiated', 'loadMaps': loadMaps})
-        print 'UpdateClient thread started!'
+        self.wsend({'action': 'initiated', 'loadMaps': loadMaps, 'userinfo': userinfo})
 
     def run(self):
         
@@ -841,8 +890,6 @@ class UpdateClient(threading.Thread):
             #self.wsend(self.getClosebyUsers(self.x, self.y, 8, 8));
             
             #time.sleep(0.20) # 0.20 = 5 fps
-
-        print 'Updateclient has stopped'
     
     def join(self):
         self.running = False
@@ -867,7 +914,10 @@ class UpdateClient(threading.Thread):
         try:
             # Send the message
             #self.client.send('\x00' + header + message + '\xff');
-            self.client.send(encode_hybi(header + message, 0x1));
+            if(self.framed):
+                self.client.send(encode_hybi(header + message, 0x1));
+            else:
+                self.client.send(header + message);
         except socket.error, e:
             print "Socket error!"
         except IOError, e:
@@ -875,9 +925,6 @@ class UpdateClient(threading.Thread):
                 print "Pipe error (32?) " + str(e.errno)
             else:
                 print "Other error: " + str(e.errno)
-
-
-
 
 # The EventHandler is the only thread that is allowed to write to
 # the global variables like globUser
@@ -898,7 +945,6 @@ class EventHandler(threading.Thread):
             
             # And put that message in the desired destination
             globUser[qget['uid']] = qget
-
 
 ## {{{ http://code.activestate.com/recipes/410692/ (r8)
 # This class provides the functionality we want. You only need to look at
@@ -923,7 +969,6 @@ class switch(object):
             return True
         else:
             return False
-
 
 def encode_hybi(buf, opcode, base64=False):
     """ Encode a HyBi style WebSocket frame.
@@ -1031,8 +1076,10 @@ def decode_hybi(buf, base64=False):
             c = numpy.bitwise_xor(data, mask).tostring()
         f['payload'] = b + c
     else:
-        print("Unmasked frame: %s" % repr(buf))
-        f['payload'] = buf[(f['hlen'] + has_mask * 4):full_len]
+        verbose("Unmasked frame: %s" % repr(buf), 0, 2)
+        #f['payload'] = buf[(f['hlen'] + has_mask * 4):full_len]
+        print buf[1:len(buf)-1]
+        f['payload'] = buf[1:len(buf)-1]
 
     if base64 and f['opcode'] in [1, 2]:
         try:
@@ -1049,6 +1096,19 @@ def decode_hybi(buf, base64=False):
             f['close_reason'] = f['payload'][2:]
 
     return f
+
+def gen_md5(keys):
+    """ Generate hash value for WebSockets hixie-76. """
+    key1 = keys['Sec-WebSocket-Key1']
+    key2 = keys['Sec-WebSocket-Key2']
+    key3 = keys['key3']
+    spaces1 = key1.count(" ")
+    spaces2 = key2.count(" ")
+    num1 = int("".join([c for c in key1 if c.isdigit()])) / spaces1
+    num2 = int("".join([c for c in key2 if c.isdigit()])) / spaces2
+
+    return b2s(md5(struct.pack('>II8s',
+        int(num1), int(num2), key3)).digest())
 
 # HTTP handler with WebSocket upgrade support
 class WSRequestHandler(SimpleHTTPRequestHandler):

@@ -27,7 +27,9 @@ k = {settings:{debug:{}, server:{}, ids:{}, engine:{}, walk:{}},
    collections:{},
    classes:{},
    links:{},
-   operations:{load:{}, walk:{}, interface:{}}};
+   operations:{server:{}, load:{}, walk:{}, interface:{}},
+   events: {},
+   actions: {}};
 
 /**
  * Do we want to enable debugging?
@@ -175,6 +177,8 @@ k.state.loopinterval = 0;		// The loopinterval for renderLoop()
 k.state.hud.layers = {};        // Layers that are currently DRAWN (This frame)
 
 k.state.hud.openedDialogs = []; // Dialogs that are currently OPEN (Until closed)
+
+k.state.server.completeget = 0;	// Have we gotten the entire message?
 
 
 /**
@@ -478,7 +482,7 @@ k.operations.startEngine = function() {
 
     // Connect to a server if it's required
     if(k.settings.server.CONNECT == true) {
-		getConnection();
+		k.operations.getConnection();
     } else {
 
 		// When it's not required, we must load all the maps and huds already
@@ -503,6 +507,7 @@ k.operations.startEngine = function() {
  * Start the renderloop
  */
 k.operations.startLoop = function(){
+	//k.state.loopinterval = window.requestAnimFrame('renderLoop');
     k.state.loopinterval = window.setInterval("renderLoop()", 1000 / k.settings.engine.fps );
 }
 

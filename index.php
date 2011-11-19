@@ -1,5 +1,6 @@
 <head>
 	<title>Kiflea Engine</title>
+	
 	<style type="text/css">
 		.title, h1, h2, h3 {font-family: sans-serif;}
 		.ms {color: #EE0000;font-family: monospace;}
@@ -37,20 +38,26 @@
         })();
     /* ]]> */
     </script>
+	<script type="text/javascript" src="kiflea.shim.js"></script>
 	<script type="text/javascript" src="json.js"></script>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 	<script type="text/javascript" src="kiflea.rendering.js"></script>
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
-	<script type="text/javascript" src="kiflea.sercon.js"></script>
     <script type="text/javascript" src="kiflea.misc.js"></script>
-		<script type="text/javascript" src="kiflea.js"></script>
-    	<script type="text/javascript" src="kiflea.hud.js"></script>
+	<script type="text/javascript" src="kiflea.js"></script>
+	<script type="text/javascript" src="kiflea.sercon.js"></script>
+	<script type="text/javascript" src="kiflea.hud.js"></script>
     <script type="text/javascript" src="kiflea.keyboard.js"></script>
 	<script type="text/javascript" src="kiflea.pathfinding.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
 			k.settings.server.CONNECT = true;
 			k.settings.server.ADDRESS = 'ws://kipdola.be';
+			<?php
+			if($_GET['server'] == 'localhost'){
+				echo 'k.settings.server.ADDRESS = "ws://localhost";' . "\n";
+			}
+			?>
 			k.settings.server.PORT = 1234;
 			k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea-working/';
 			k.settings.debug.DEBUG = false;
@@ -201,7 +208,7 @@
 			Any tips, bugs, patches, ... are very, very welcome!
 			</p><div style="clear:right"></div>
 			
-			<p class="cc" style="display:none;"><br/>Example tiles where downloaded from
+			<p class="cc" style=""><br/>Example tiles where downloaded from
 				<a href="http://www.opengameart.org">OpenGameArt.org</a>. I included:
 				<table class="cleartable">
 					<tr><td>

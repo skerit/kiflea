@@ -195,41 +195,23 @@ function keyFinish(keypress) {
     // In a long time. It's best to reset it.
     if(debugCounter > 1000) debugCounterReset();
 
-	// See what has focus
-	if(k.links.canvas.mouse.focus){
-
-		var focus = k.state.hud.openedDialogs[k.links.canvas.mouse.focus.dialogindex];
-
-		if(k.links.canvas.mouse.focus.type == "widget") {
-
-			var fw = focus.content[k.links.canvas.mouse.focus.dialog.index];
-
-			if(keypress.keyCode == key.Backspace) {
-				fw.value = fw.value.substring(0, fw.value.length-1);
-			} else {
-				fw.value += String.fromCharCode(keypress.keyCode);
-			}
-
-		}
-	}
-
     // Select the correct key and execute its functions
     switch (keypress.keyCode) {
 
         case key.Uparrow: // Arrow up
-            addPath(0,-1);
+			k.actions.moveRequest(0, -1);
             break
 
         case key.Rightarrow: // Arrow right
-            addPath(1,0);
+            k.actions.moveRequest(1, 0);
             break
 
         case key.Downarrow: // Arrow down
-            addPath(0,1);
+            k.actions.moveRequest(0, 1);
             break
         
         case key.Leftarrow: // Arrow left
-            addPath(-1,0);
+            k.actions.moveRequest(-1, 0);
             break
         
         case key.Enter:
@@ -241,10 +223,6 @@ function keyFinish(keypress) {
             queueAction('attack', animatedObjects[userPosition.uid]['selection'], 1, userPosition.uid);
             break;
     }
-    
-    // Send the data to the server
-    //if(connectToServer == true) wsend(JSON.stringify(animatedObjects[userPosition.uid]));
-
 }
 
 /**

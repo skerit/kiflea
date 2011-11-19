@@ -316,37 +316,51 @@ function addFinishedEvent(objectId, eventname){
 }
 
 /**
- *Add a path, meant for keyboard
- *@param 	x	{integer}	Move X? (Should be 1, -1 or 0)
- *@param	y	{integer}	Move Y? (Should be 1, -1 or 0)
- *@param	objectid {string}	The id of the object to move
- *@param	checkfull {boolean}	Enabled by default, only add paths if the array isn't full?
+ * Request a move
+ * @param 	x	{integer}	Move X? (Should be 1, -1 or 0)
+ * @param	y	{integer}	Move Y? (Should be 1, -1 or 0)
+ * @param	objectid {string}	The id of the object to move
+ * @param	checkfull {boolean}	Enabled by default, only add paths if the array isn't full?
  */
-function addPath(x, y, objectid, checkfull) {
+k.actions.moveRequest = function(x, y, objectid, checkfull) {
 
 	// If there isn't an objectid, use our own user
 	if(objectid === undefined) objectid = userPosition.uid;
 
 	var arraySize = animatedObjects[objectid]['path'].length;
 
-	//debugArray(animatedObjects[objectid]);
-	// Checkfull makes us check if the array is full. If it's not, add the path.
-	// This variable is enabled by default.
-	if((checkfull === undefined || checkfull == true) && arraySize > k.state.walk.maxQueue)return;
+	/**
+	 * Checkfull makes us check if the array is full. If it's not, add the path.
+	 * This variable is enabled by default.
+	 */
+	if((checkfull === undefined || checkfull == true) && arraySize > k.state.walk.maxQueue) return false;
 
 	// Take the last x & y value from our path
 	var prevX = animatedObjects[objectid]['path'][arraySize - 1]['x'];
 	var prevY = animatedObjects[objectid]['path'][arraySize - 1]['y'];
 
-	// Add the new path directly if we're not connected to a server
+	var move = {'action': 'move', 'timeRequested': now(), 'x': prevX + x, 'y': prevY + y, 'targetid': objectid};
+
+	// If we're not connected to the server, accept the move directly
 	if(!k.state.server.connected) {
-		animatedObjects[objectid]['path'].push({'added': now(), 'x': prevX + x, 'y': prevY + y, 'moveRequested': now()});
+		k.actions.moveAccept(move);
 	} else {
-		wsend({'action': 'move', 'added': now(), 'x': prevX + x, 'y': prevY + y, 'moveRequested': now()});
+		// If we are, send it to the server first
+		k.send(move);
 	}
 
 	return false;
 
+}
+
+/**
+ * Add a move to the object's path
+ * @param	move	{k.Types.EventMoveAccept}
+ */
+k.actions.moveAccept = function(move){
+	
+	animatedObjects[move.targetid]['path'].push(move);
+	
 }
 
 /**
@@ -397,20 +411,35 @@ function walkPath(objectId) {
 	var keepWalking = false;
 
 	do {
-		// Benchmarking
-		//var benchMe = new benchTime();
-		//benchMe.end(objectId + '\'s walkpath')
-
-		// Store our previous, current and next step
+		
+		// Store our previous, current and future steps
+		
+		/**
+		 * @type	{k.Types.EventMoveRequest}
+		 */
 		var stepPrev = animatedObjects[objectId]['path'][k.state.walk.indexPrev];
+		
+		/**
+		 * @type	{k.Types.EventMoveRequest}
+		 */
 		var stepNow = animatedObjects[objectId]['path'][k.state.walk.indexNow];
+		
+		/**
+		 * @type	{k.Types.EventMoveRequest}
+		 */
 		var stepNext = animatedObjects[objectId]['path'][k.state.walk.indexNext];
+		
+		/**
+		 * @type	{k.Types.EventMoveRequest}
+		 */
 		var stepFut = animatedObjects[objectId]['path'][k.state.walk.indexNext+1];
+		
+		
 		var futRequestTime;
 
 		// Calculate the waiting time for the future step, if there is one
 		if(stepFut) {
-			futRequestTime = (stepFut.moveRequested - stepNext.moveRequested)
+			futRequestTime = (stepFut.timeRequested - stepNext.timeRequested)
 		}
 		else {
 			futRequestTime = 9999;
@@ -418,11 +447,17 @@ function walkPath(objectId) {
 
 		keepWalking = k.operations.walk.step(objectId, stepNow, stepNext, futRequestTime, keepWalking);
 
-		if(keepWalking) debugEcho('<b>Its true!</b>', false);
-
 	} while(keepWalking == true);
 }
 
+/**
+ * Execute a step in the path
+ * @param	objectId	{Number}	The objectId we're changing
+ * @param	stepNow		{k.Types.EventMoveAccept}
+ * @param	stepNext	{k.Types.EventMoveAccept}
+ * @param	futRequestTime
+ * @param	keepWalking
+ */
 k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, keepWalking){
 
 	// Our basic return value to determine if we need to walk another step
@@ -445,10 +480,10 @@ k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, k
 
 		// Calculate the waiting times
 		// The wait time between the request and the beginning of the next step
-		stepNext.moveWait = stepNext.moveBegin - stepNext.moveRequested;
+		stepNext.moveWait = stepNext.moveBegin - stepNext.timeRequested;
 
 		// How fast we requested this move after the previous one (Pressing down generates a keypress around every 68ms)
-		stepNext.moveRequestTime = stepNext.moveRequested - stepNow.moveRequested;
+		stepNext.moveRequestTime = stepNext.timeRequested - stepNow.timeRequested;
 
 		// The gap between the current (next) and the previous (now) step.
 		stepNext.moveGap = stepNext.moveBegin - stepNow.moveEnd;
