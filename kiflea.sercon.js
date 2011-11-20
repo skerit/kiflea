@@ -61,6 +61,7 @@ k.operations.getConnection = function() {
 		console.log("The connection to the server has been closed");
 
 		k.state.server.connected = false;
+		k.state.server.initiated = false;
 		
     }
     
@@ -85,13 +86,17 @@ k.operations.getConnection = function() {
 					
 					// The server is letting us now we have been initiated
 					case 'initiated':
+						
+						// Indicate the server has initiated us
+						k.state.server.initiated = true;
+						
 						debugEcho('Server has initiated us! Asking for timesync, started downloading maps');
 						
 						userPosition.uid = receivedData['userinfo']['uid'];
 						animatedObjects[userPosition.uid] = receivedData['userinfo'];
 						
 						k.operations.load.getMaps(receivedData['loadMaps']);
-						k.operations.startLoop();
+						
 						
 						k.send({'action': 'timesync'});
 						

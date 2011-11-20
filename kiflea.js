@@ -27,7 +27,7 @@ k = {settings:{debug:{}, server:{}, ids:{}, engine:{}, walk:{}},
    collections:{},
    classes:{},
    links:{},
-   operations:{server:{}, load:{}, walk:{}, interface:{}},
+   operations:{server:{}, load:{}, walk:{}, interface:{}, keyboard:{}},
    events: {},
    actions: {}};
 
@@ -103,7 +103,7 @@ k.settings.server.PORT = 1234;
  */
 k.settings.server.ADDRESS = "ws://kipdola.be";
 
-k.settings.engine.fps = 20; 				// The default desired Frames Per Second
+k.settings.engine.fps = 50; 				// The default desired Frames Per Second
 k.settings.engine.background = 'rgb(255,255,255)' 	// The default background color
 k.settings.engine.drawextras = 5;
 
@@ -116,6 +116,11 @@ k.settings.walk.msPerTile = 200;    // The time it takes to move one tile (at no
  *  @define {string}
  */
 k.settings.engine.DEFAULTSPRITES = 'default.tmx.xml';
+
+/**
+ * All the mapfiles that need to be loaded when no server is required
+ */
+k.settings.engine.MAPS = ['map.tmx.xml', k.settings.engine.DEFAULTSPRITES];
 
 /**
  * The url from where we'll be downloading the files
@@ -143,7 +148,16 @@ k.settings.ids.DEBUG = 'debug';
 /**
  * These values change during runtime
  */
-k.state.connected = false;
+
+/**
+ * Are we connected to the server?
+ */
+k.state.server.connected = false;
+
+/**
+ * Are we initiated?
+ */
+k.state.server.initiated = false;
 
 k.state.recording = false;
 
@@ -154,8 +168,8 @@ k.state.load.loadedMap = false;	// If the map has been loaded
 
 k.state.engine.mappOffsetX = 0;		// The current offset of the map in relation to our user
 k.state.engine.mappOffsetY = 0;
-k.state.engine.msf = 0;			// The fake ms time (time it takes to start and end a draw)
-k.state.engine.msr = 0;			// The real ms time (fake ms + time between draws)
+k.state.engine.msf = false;		// The fake ms time (time it takes to start and end a draw)
+k.state.engine.msr = false;		// The real ms time (fake ms + time between draws)
 k.state.engine.fpsf = 0;		// The fake fps (1000 / msf)
 k.state.engine.fpsr = 0;		// The real fps (1000 / msf)
 
@@ -172,7 +186,6 @@ k.links.debug;		// The debug div will be stored here as a jquery element
 k.links.canvas;		// The canvas reference will be made here
 
 k.state.counter = 0;			// Every echoDebug() called will also print this time.
-k.state.loopinterval = 0;		// The loopinterval for renderLoop()
 
 k.state.hud.layers = {};        // Layers that are currently DRAWN (This frame)
 
@@ -191,18 +204,12 @@ k.collections.maps = {};
 k.collections.objects = {}		// The variable that will contain all the objects, including the user's data
 k.collections.hudLayers = {};
 
-var fps = 30;
+var fps = 10;
 
 
 var mappOffsetX = 0;		// The current offset of the map in relation to our user
 var mappOffsetY = 0;
-var canvasId = 'flatearth';
-var echoId = 'echo';            // The default id of the echo div
-var debugId = 'debug';          // The default id of the debug div (for framerates)
 
-var echoOutput;                 // The echo div will be stored here as a jquery element
-var debugOutput;                // The debug div will be stored here as a jquery element
-var debugOn = false;            // Enable or disable debugging
 var msfTimer = 'N/A';   // When the last draw started
 var msrTimer = 'N/A';   // When the last draw ended
 var msf;                // The fake ms time (time it takes to start and end a draw)
@@ -219,7 +226,7 @@ var loaded = 0;
 var backgroundColor = "rgb(255,255,255)";   // The colour outside of the map. Should be moved to the map itself.
 var defaultSprites = 'default.tmx.xml';	    // The map which holds the tiles for the objects and users and such.
 					    // This map isn't actually useable, but this way we can use tiled to quickly edit tile preferences.
-var loadMaps = ['map.tmx.xml', defaultSprites];             // All the mapfiles that need to be loaded (tilesets are defined in the map files)
+
 var maps = {};          // An array that stores the data of all the maps
 var visibleTilesX;      // The ammount of tiles visible per row (should be deprecated)
 var visibleTilesY;      // The ammount of tiles visible per col (should be deprecated)
@@ -294,26 +301,6 @@ var font = {"size": 20,		    // Size in pixels
 var movie;
 
 /**
- * Enables or disables the engine
- */
-k.operations.toggleEngine = function(){
-
-	if(loopInterval === undefined){
-
-		k.links.echo.empty();           // Clear the echo div
-		k.operations.startEngine();     // Start the engine
-
-	}else {
-
-		// Output a stopping message
-		debugEcho('<h2 style="color:red;">The engine has stopped!</h2><hr>');
-
-		// Clear the timer
-		k.state.loopinterval = window.clearInterval(k.state.loopinterval);
-	}
-}
-
-/**
  * Initialize a canvas element
  * @classDescription  This class creates a new canvas.
  * @param  {string}   canvasId  The id of the canvas to load
@@ -331,6 +318,14 @@ k.classes.Canvas = function(canvasId){
 	// Get the width and height of the element
 	this.width = document.getElementById(canvasId).width;
 	this.height = document.getElementById(canvasId).height;
+	
+	// Should we draw the world or not this render?
+	this.drawWorld = true;
+	
+	// Store things we do only one time per render
+	this.once = {};
+	this.once.clear = false;
+	this.once.messages = [];
 
 	// If the RECORD var is true, create a movie object
 	if(k.settings.debug.RECORD) this.movie = new CanvasReplay(this.width,  this.height);
@@ -369,7 +364,68 @@ k.classes.Canvas = function(canvasId){
 		if(k.settings.debug.RECORD) this.movie.addImage(document.getElementById(this.canvasId));
 	}
 	
+	/**
+	 * Queue loading message
+	 */
+	this.addLoadingMessage = function(text){
+		
+		// Add the message to the queue
+		that.once.messages.push(text);
+		
+		// Since we've added a loading message, indicate we'll skip
+		// the rest of the world render
+		that.skipWorldRender();
+	}
+	
+	/**
+	 * Draw load messages
+	 */
+	this.drawLoadingMessages = function(){
+		
+		that.clear("rgba(200,200,200,0.9)");
+		that.buffer.fillStyle = "rgba(255,255,255,1)";
+		that.buffer.font = "20pt Arial";
+		
+		var messages = that.once.messages.length;
+		var lines = messages * 70;
 
+		for(var count in that.once.messages){
+			
+			// Temporarily store the message
+			var loadMessage = that.once.messages[count];
+			
+			// Calculate the width of the message
+			var loadWidth = that.buffer.measureText(loadMessage);
+			
+			// Calculate the x and y coordinates
+			var drawX = (that.width-loadWidth.width)/2;
+			var drawY = (that.height-(lines - (70 * count+1))) / 2;
+			
+			// Draw the text to the buffer
+			that.buffer.fillText(loadMessage, drawX, drawY);
+		}
+		
+		// Flush the buffer
+		that.flush();
+		
+	}
+	
+	/**
+	 * Indicate we've finished a render
+	 */
+	this.finishedRender = function(){
+		that.once.clear = false;
+		that.once.messages = [];
+		that.drawWorld = true;
+	}
+	
+	/**
+	 * Indicate we do not want to draw the world this render
+	 */
+	this.skipWorldRender = function(){
+		this.drawWorld = false
+	}
+	
 	/**
 	 *  Calculate the visibletiles per row
 	 *  @param		{integer}	tilewidth	The width of a tiles
@@ -400,6 +456,15 @@ k.classes.Canvas = function(canvasId){
 		// Draw the rectangle
 		this.buffer.fillStyle = backgroundColor;
 		this.buffer.fillRect(0, 0, this.width, this.height);
+	}
+	
+	/**
+	 * Clear the canvas once during this draw
+	 * @param		{string=}	backgroundColor 	The color to draw
+	 */
+	this.clearonce = function(backgroundColor){
+		if(!this.once.clear) this.clear(backgroundColor);
+		this.once.clear = true;
 	}
 
 	// Disable "selecting" the canvas when clicked.
@@ -448,12 +513,14 @@ k.classes.Canvas = function(canvasId){
  */
 k.operations.startEngine = function() {
 	
-	// The return variable
-	result = '';
-
-    // Setup the output divs as referrable jquery items
-    k.links.debug = $('#' + k.settings.ids.DEBUG);
-    k.links.echo = $('#' + k.settings.ids.ECHO);
+    // Link these output debug variables to the innerHTML content
+    if (document.getElementById(k.settings.ids.DEBUG)) {
+		k.links.debug = document.getElementById(k.settings.ids.DEBUG).innerHTML;
+	}
+	
+    if (document.getElementById(k.settings.ids.ECHO)) {
+		k.links.echo = document.getElementById(k.settings.ids.ECHO).innerHTML;
+	}
 
     // Start the debug counter
     k.state.counter = now();
@@ -461,25 +528,26 @@ k.operations.startEngine = function() {
     // Create a new canvas object
     k.links.canvas = new k.classes.Canvas(k.settings.ids.CANVAS);
 
-    // Output an error if canvas hasn't loaded
-    if (!k.links.canvas.loaded) {
-        echo('Canvas is not available in this browser!');
-    }
+	// Check for websocket
+	if (!("WebSocket" in window)){
+		echo('This browser does not support the HTML5 <b>WebSocket</b> protocol');
+	}
 
+    // Output an error if canvas hasn't loaded and exit
+    if (!k.links.canvas.loaded) {
+		echo('This browser does not support the HTML5 <b>Canvas</b> element');
+		return;
+	}
+	
+	// Already start the renderLoop for loading screens
+	k.operations.renderLoop();
+	
 	// Calculate coördinate indexes
 	k.state.walk.indexPrev = 0 + k.settings.debug.PATHHISTORY;
 	k.state.walk.indexNow = 1 + k.settings.debug.PATHHISTORY;
 	k.state.walk.indexNext = 2 + k.settings.debug.PATHHISTORY;
 	k.state.walk.maxQueue = k.settings.walk.MAXQUEUE + k.state.walk.indexNow;
-
-	k.operations.load.getHud();
 	
-	if ("WebSocket" in window){
-		result = result + ' - Websockets found';
-	} else {
-		result = result + ' - Websockets NOT found';
-	}
-
     // Connect to a server if it's required
     if(k.settings.server.CONNECT == true) {
 		k.operations.getConnection();
@@ -487,28 +555,27 @@ k.operations.startEngine = function() {
 
 		// When it's not required, we must load all the maps and huds already
 		// defined. Otherwise we'd get them from the server
-		k.operations.load.getMaps(loadMaps);
-		k.operations.load.getHud();
+		k.operations.load.getMaps(k.settings.engine.MAPS);
 
-		k.operations.startLoop();
     }
 
-    window.onkeydown = onKeyDown;
-    window.onkeyup = onKeyUp;
-
-    // Set focus to the dummyInput!
-    $("#dummyinput").focus();
+    window.onkeydown = k.operations.keyboard.onKeyDown;
+    window.onkeyup = k.operations.keyboard.onKeyUp;
 	
-	return result;
+	
 
 }
 
 /**
  * Start the renderloop
  */
-k.operations.startLoop = function(){
-	//k.state.loopinterval = window.requestAnimFrame('renderLoop');
-    k.state.loopinterval = window.setInterval("renderLoop()", 1000 / k.settings.engine.fps );
+k.operations.renderLoop = function(){
+	
+	// Put another iteration of k.operations.renderLoop in the animation queue
+	window.requestAnimFrame(k.operations.renderLoop);
+	
+	// Actually calculate and draw a frame
+	k.operations.renderFrame();
 }
 
 /**
@@ -534,9 +601,9 @@ k.operations.load.getMaps = function(loadMaps){
             type: "GET",
             url: k.settings.engine.BASEURL + currentMap,
             dataType: "xml",
-            async: false, // Important: when this is turned on it will let the loop continue and change the currentMap. Causing every map to be stored under the same name
-            success: function(xml, textStatus, error){
-		k.operations.load.processMap(xml, currentMap)
+            async: true,
+            success: function(xml, textStatus, jqXHR){
+				k.operations.load.processMap(xml, right(jqXHR['responseXML']['URL'], "/"))
           }
         });
     }
@@ -728,7 +795,7 @@ k.operations.load.processMap = function(xml, sourcename) {
 	// Now store this map in the global maps variable
         maps[sourcename] = oneMap;
 
-        loaded++;
+        k.state.load.loaded++;
 
     });
 

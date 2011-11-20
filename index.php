@@ -41,10 +41,11 @@
 	<script type="text/javascript" src="kiflea.shim.js"></script>
 	<script type="text/javascript" src="json.js"></script>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-	<script type="text/javascript" src="kiflea.rendering.js"></script>
+	
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
     <script type="text/javascript" src="kiflea.misc.js"></script>
 	<script type="text/javascript" src="kiflea.js"></script>
+	<script type="text/javascript" src="kiflea.rendering.js"></script>
 	<script type="text/javascript" src="kiflea.sercon.js"></script>
 	<script type="text/javascript" src="kiflea.hud.js"></script>
     <script type="text/javascript" src="kiflea.keyboard.js"></script>
@@ -60,15 +61,12 @@
 			?>
 			k.settings.server.PORT = 1234;
 			k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea-working/';
-			k.settings.debug.DEBUG = false;
+			k.settings.debug.DEBUG = true;
 			
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
 			defaultTilesPerRow = 30;
-			canvasId = 'flatearth';
-			echoId = 'echo';
-			debugId = 'debug';
-			debugOn = true;
+
 			userMoveTilePerSecond = 10;
 			userMoveMsPerTile = 200;
 			userMoveSmoothness = 5;
@@ -154,7 +152,7 @@
 				"path": [{x: 33, y: 17}, {x: 34, y: 17}, {x: 35, y: 17}],
 				"actionsreceived": [],
 				"finishedEvents": {},
-				"position": {}
+				"position": {"x": 30, "y": 31}
 			};
 
 			k.operations.startEngine();
@@ -187,7 +185,7 @@
 			<button id="clearecho" onclick="k.links.echo.empty();">Clear echo div</button>
 			<button id="toggleengine" onclick="k.operations.toggleEngine();">Toggle engine</button>
 			<button id="togglegrid" onclick="debugGrid=!debugGrid;">Toggle grid</button>
-			<button id="togglefps" onclick="debugOn=!debugOn;">Toggle debug</button><br/>
+			<button id="togglefps" onclick="k.settings.debug.DEBUG=!k.settings.debug.DEBUG;">Toggle debug</button><br/>
 			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['currenthealth']--;">Detract life</button>
 			<button id="testjson" onclick="sendTestJson()">Send JSON Test</button><br/>
             <button id="previousFrame" onclick="movie.previousFrame()">previousFrame</button>
@@ -228,7 +226,12 @@
 			</p>
 			<hr>
 		</div>
+		<div id="counters">
+			Count 1: <span id="count1"></span><br/>
+			Count 2: <span id="count2"></span>
+		</div>
 		<div id="echo"></div>
+		<div id="debug"></div>
 		<div id="footer">
 			<a href="http://kipdola.be/trac/repos/" style="padding: 0pt; border: medium none;">
 			<img title="Trac" alt="trac_logo_mini.png" src="http://kipdola.be/trac/repos/chrome/common/trac_logo_mini.png"></a>

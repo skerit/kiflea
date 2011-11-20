@@ -809,7 +809,7 @@ Sec-WebSocket-Accept: %s\r
                 try:
                     globGuest += 1
                     guestid = globGuest
-                    userinfo = {"uid":"U" + str(guestid),"x":30,"y":31,"moveToX":30,"moveToY":31,"fromX":30,"fromY":31,"msMoved":100,"lastMoved":1000,"map":"grassland.tmx.xml","sprites":[1,21],"spritesToDraw":[1,21],"currentSprite":1,"effects":[],"selection":0,"currenthealth":55,"fullhealth":100,"position":{},"path":[{"x":33,"y":17},{"x":34,"y":17},{"x":35,"y":17}],"actionsreceived":[],"finishedEvents":{}}
+                    userinfo = {"uid":"U" + str(guestid),"x":30,"y":31,"moveToX":30,"moveToY":31,"fromX":30,"fromY":31,"msMoved":100,"lastMoved":1000,"map":"grassland.tmx.xml","sprites":[1,21],"spritesToDraw":[1,21],"currentSprite":1,"effects":[],"selection":0,"currenthealth":55,"fullhealth":100,"position":{"x": 30, "y": 31},"path":[{"x":30,"y":31},{"x":30,"y":31},{"x":30,"y":31}],"actionsreceived":[],"finishedEvents":{}}
                 finally:
                     rwG.release()
             finally:

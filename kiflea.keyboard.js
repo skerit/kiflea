@@ -128,9 +128,9 @@ function fakePress() {
 }
 
 /**
- *Handle keypresses
+ * Handle keypresses
  */
-function onKeyDown(keypress) {
+k.operations.keyboard.onKeyDown = function(keypress) {
 
     // Select the correct key and execute its functions
     switch (keypress.keyCode) {
@@ -161,7 +161,7 @@ function onKeyDown(keypress) {
 /**
  *Handle the releasing of a key
  */
-function onKeyUp(keypress) {
+k.operations.keyboard.onKeyUp = function(keypress) {
 
     // Select the correct key and release it
     switch (keypress.keyCode) {

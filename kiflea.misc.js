@@ -325,7 +325,7 @@ function dump(arr,level) {
 }
 
 /**
- *Output a message to the echo div if the debugOn variable is true
+ *Output a message to the echo div if the k.settings.debug.DEBUG variable is true
  *@param message {string} The string you want to show
  *@param counter {bool}   Show how much time has passed since the last debugEcho
  *                        (with counter enabled). Defaults to true.
@@ -339,7 +339,7 @@ function debugEcho(message, counter){
 }
 
 /**
- *Output a message to the echo div if the debugOn variable is true
+ *Output a message to the echo div if the k.settings.debug.DEBUG variable is true
  *AND we're using a low fps (smaller than 5)
  *@param message {string} The string you want to show
  *@param counter {bool}   Show how much time has passed since the last debugEcho
@@ -377,7 +377,7 @@ function debugHud(message, counter){
     
     if(counter === undefined || counter === true) counter = true;
     
-    if(debugOn==true && debugHudOn == true) echo(message, counter);
+    if(k.settings.debug.DEBUG==true && debugHudOn == true) echo(message, counter);
 
 }
 
@@ -391,7 +391,7 @@ function debugPath(message, counter){
 
     if(counter === undefined || counter === true) counter = true;
 
-    if(debugOn==true && debugPathOn == true) echo(message, counter);
+    if(k.settings.debug.DEBUG==true && debugPathOn == true) echo(message, counter);
 
 }
 
@@ -407,11 +407,11 @@ function echo(message, counter){
 
     if(counter === undefined || counter === false) {
 	    text = '<p>[<span class="msi">--INFO--</span>] ' + message + '</p>';
-        k.links.echo.append(text);
+		k.links.echo += text;
     } else {
         msPassed = (new Date()).getTime() - debugCounter;
 	    text='<p>[<span class="ms">'+msPassed.toPrecision(5)+'ms</span>] ' + message + '</p>';
-        k.links.echo.append(text);
+        k.links.echo += text;
     
         // Reset debugcounter
         debugCounterReset();
@@ -505,4 +505,11 @@ merge = function(obj1, obj2) {
   }
 
   return obj1;
+}
+
+/**
+ * Get the right part of a string delimited by delim
+ */
+right = function(string, delim) {
+	return string.substr(string.lastIndexOf(delim) + 1);
 }
