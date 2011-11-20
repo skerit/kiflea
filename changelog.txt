@@ -11,6 +11,11 @@
     set an animated tile as *always* dirty, for its entire width.
   - It affects server connections for some reason... Users are unable to move if
     someone else logs off or logs on.
+* Created a "drawFades" function, which will draw a translucent color over tiles
+  that have been dirty.
+* Found out the hard way: chrome's console.log() is ASYNCHRONOUS.
+* The dirty rectangles still need lots of work for moving objects!
+* Began work on restoring the off-line operation.
 
 --- Saturday 2011-11-19 ---
 * Cleaned up the code a bit more

@@ -387,6 +387,7 @@ k.classes.Canvas = function(canvasId){
 			
 			// Set every tile as dirty
 			that.setAllDirty();
+			
 		}
 	}
 	
@@ -418,14 +419,27 @@ k.classes.Canvas = function(canvasId){
 		
 		// If it doesn't even exist (which shouldn't happen, but still) return true
 		if(that.dirtyRectangles[canvasX] === undefined) {
+			that.setDirtyByCanvas(canvasX, canvasY, true);
 			return true;
 		} else {
 			if(that.dirtyRectangles[canvasX][canvasY] === undefined){
+				that.setDirtyByCanvas(canvasX, canvasY, true);
 				return true;
 			} else {
-				return that.dirtyRectangles[canvasX][canvasY];
+				return that.dirtyRectangles[canvasX][canvasY]['dirty'];
 			}
 		}
+	}
+	
+	/**
+	 * Is this tile dirty?
+	 */
+	this.isDirtyByAbsolute = function(absX, absY){
+		
+		var coord = k.operations.coord.getByMouse(Math.floor(absX), Math.floor(absY));
+		var isdirty = that.isDirtyByCanvas(coord.canvasX, coord.canvasY);
+		
+		return isdirty;
 	}
 	
 	/**
@@ -435,18 +449,62 @@ k.classes.Canvas = function(canvasId){
 	 * @param   {number} mapY	The map-y
 	 * @param	{bool}	 dirty		Wether it's dirty or not (default true)
 	 */
-	this.setDirtyByMap = function(mapX, mapY, dirty){
+	this.setDirtyByMap = function(mapX, mapY, dirty, sprite){
 		
 		if(dirty === undefined) dirty = true;
 		
+		// Certain sprites are higher than others, we need to flag those
+		// positions as dirty, too.
+		if(sprite !== undefined){
+			
+			// Get the tielset info of the sprite, needed for its tile dimensions
+			var tileSet = getTileSetInfo(k.settings.engine.DEFAULTSPRITES, sprite);
+			
+			// The extra x
+			var xex = 1;
+			
+			// Do this for every tile this sprite is wider
+			for(var width = that.map.tileWidth; width < tileSet.tileWidth; width = parseInt(width) + parseInt(that.map.tileWidth)){
+				that.setDirtyByMap(mapX+xex, mapY, dirty);
+				xex++;
+			}
+			
+			// The extra y
+			var yex = 1;
+			
+			// Do this for every tile this sprite is higher
+			for(var height = that.map.tileHeight; height < tileSet.tileHeight; height = parseInt(height) + parseInt(that.map.tileHeight)){
+				that.setDirtyByMap(mapX, mapY-yex, dirty);
+				yex++;
+			}
+			
+		}
+
 		// Get the other coordinates based on the map coordinates
 		var coord = k.operations.coord.getByMap(mapX, mapY);
 		
 		// Make sure the required objects exist
 		if(that.dirtyRectangles[coord.canvasX] === undefined) that.dirtyRectangles[coord.canvasX] = {};
+		if(that.dirtyRectangles[coord.canvasX][coord.canvasY] === undefined) that.dirtyRectangles[coord.canvasX][coord.canvasY] = {};
 		
 		// Set it as dirty
-		that.dirtyRectangles[coord.canvasX][coord.canvasY] = dirty;	
+		that.dirtyRectangles[coord.canvasX][coord.canvasY]['dirty'] = dirty;
+		
+		// Set the fadeness for debuging reasons
+		if(dirty){
+			if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] > 0){
+				if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] < 89){
+					that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] = that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] + 10;
+				}
+			} else {
+				that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] = 20;
+			}
+		} else {
+			if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] > 0){
+				that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade']--;
+			}
+		}
+		
 	}
 	
 	/**
@@ -462,9 +520,25 @@ k.classes.Canvas = function(canvasId){
 		
 		// Make sure the required objects exist
 		if(that.dirtyRectangles[canvasX] === undefined) that.dirtyRectangles[canvasX] = {};
+		if(that.dirtyRectangles[canvasX][canvasY] === undefined) that.dirtyRectangles[canvasX][canvasY] = {};
 		
 		// Set it as dirty
-		that.dirtyRectangles[canvasX][canvasY] = dirty;	
+		that.dirtyRectangles[canvasX][canvasY]['dirty'] = dirty;
+		
+		// Set the fadeness for debuging reasons
+		if(dirty){
+			if(that.dirtyRectangles[canvasX][canvasY]['fade'] > 0){
+				if(that.dirtyRectangles[canvasX][canvasY]['fade'] < 89){
+					that.dirtyRectangles[canvasX][canvasY]['fade'] = that.dirtyRectangles[canvasX][canvasY]['fade'] + 5;
+				}
+			} else {
+				that.dirtyRectangles[canvasX][canvasY]['fade'] = 20;
+			}
+		} else {
+			if(that.dirtyRectangles[canvasX][canvasY]['fade'] > 0){
+				that.dirtyRectangles[canvasX][canvasY]['fade']--;
+			}
+		}
 	}
 	
 	/**
@@ -582,6 +656,22 @@ k.classes.Canvas = function(canvasId){
 		// Draw the rectangle
 		this.buffer.fillStyle = backgroundColor;
 		this.buffer.fillRect(coord.absX, coord.absY, that.map.tileWidth, that.map.tileHeight);
+		
+	}
+	
+	that.drawFadeness = function(){
+		
+		for(var x in that.dirtyRectangles){
+			for(var y in that.dirtyRectangles[x]){
+				
+				var fade = that.dirtyRectangles[x][y]['fade']/100;
+				
+				var coord = k.operations.coord.getByCanvas(x, y);
+				
+				that.ctx.fillStyle = "rgba(0,150,150," + fade + ")";
+				that.ctx.fillRect(coord.absX, coord.absY, that.map.tileWidth, that.map.tileHeight);
+			}
+		}
 		
 	}
 	
@@ -703,10 +793,39 @@ k.operations.startEngine = function() {
     if(k.settings.server.CONNECT == true) {
 		k.operations.getConnection();
     } else {
-
 		// When it's not required, we must load all the maps and huds already
 		// defined. Otherwise we'd get them from the server
 		k.operations.load.getMaps(k.settings.engine.MAPS);
+		
+		userPosition.uid = "U00001";
+		
+		animatedObjects[userPosition.uid] = {
+				"uid": userPosition.uid,
+				"x": 30,
+				"y": 31,
+				"moveToX": 30,
+				"moveToY": 31,
+				"fromX": 30,
+				"fromY": 31,
+				"msMoved": 100,
+				"lastMoved": 1000,
+				"map": "grassland.tmx.xml",
+				"sprites": [1, 21],
+				"spritesToDraw": [1, 21], 
+				"currentSprite": 1,
+				"effects": [],
+				"selection": 0,
+				"currenthealth": 55,
+				"fullhealth": 100,
+                "position": {'x': 35, 'y': 17},
+				"path": [{moveBegin: 100, moveEnd: 200, walkable: true, terrainSpeed: 1, timeRequested: 100, x: 33, y: 17},
+						 {moveBegin: now()-200, moveEnd: now()-100, walkable: true, terrainSpeed: 1, timeRequested: 100, x: 34, y: 17},
+						 {moveBegin: now()-100, moveEnd: now(), walkable: true, terrainSpeed: 1, timeRequested: 100, x: 30, y: 31}],
+				"actionsreceived": [],
+				"finishedEvents": {},
+				"position": {"x": 30, "y": 31}
+			};
+		
     }
 }
 
@@ -717,6 +836,15 @@ k.operations.startEngine = function() {
  */
 k.links.getMap = function(mapname){
 	return k.collections.maps[mapname];
+}
+
+/**
+ * Get an animated object
+ * @param	{string}	objectId	The id of the object
+ * @returns	{k.Types.Object}		The object
+ */
+k.links.getObject = function(objectId){
+	return animatedObjects[objectId];
 }
 
 /**
@@ -752,9 +880,10 @@ k.operations.load.getMaps = function(loadMaps){
             type: "GET",
             url: k.settings.engine.BASEURL + currentMap,
             dataType: "xml",
-            async: true,
+            async: false,
             success: function(xml, textStatus, jqXHR){
-				k.operations.load.processMap(xml, right(jqXHR['responseXML']['URL'], "/"));
+				//k.operations.load.processMap(xml, right(jqXHR['responseXML']['URL'], "/"));
+				k.operations.load.processMap(xml, currentMap);
           }
         });
     }
@@ -778,10 +907,10 @@ k.operations.load.processMap = function(xml, sourcename) {
     $(xml).find('map').each(function(){
 
 		//Save the attributes of the map element
-		oneMap['width'] = $(this).attr('width');
-		oneMap['height'] = $(this).attr('height');
-		oneMap['tileWidth'] = $(this).attr('tilewidth');
-		oneMap['tileHeight'] = $(this).attr('tileheight');
+		oneMap['width'] = parseInt($(this).attr('width'));
+		oneMap['height'] = parseInt($(this).attr('height'));
+		oneMap['tileWidth'] = parseInt($(this).attr('tilewidth'));
+		oneMap['tileHeight'] = parseInt($(this).attr('tileheight'));
 	
 		debugEcho('Create an array for all the layers', false);
 	

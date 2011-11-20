@@ -60,8 +60,10 @@
 			}
 			?>
 			k.settings.server.PORT = 1234;
-			k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea-working/';
+			k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea/';
 			k.settings.debug.DEBUG = true;
+			k.settings.engine.DEFAULTSPRITES = 'default.tmx.xml';
+			k.settings.engine.MAPS = ['grassland.tmx.xml', k.settings.engine.DEFAULTSPRITES];
 			
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
@@ -76,8 +78,6 @@
 			debugMovement = false;
                         debugPathOn = false;
 			backgroundColor = "rgb(255,255,255)";
-			defaultSprites = 'default.tmx.xml';
-			loadMaps = ['grassland.tmx.xml', defaultSprites]; // Always load defaultSprites
 
 			animatedObjects = {	// Test data for objects
 				"U00002":{
@@ -102,7 +102,7 @@
 					"wander": {"x": 35, "y": 35, "xw": 5, "yw": 5, "basePause": 5000},
 					"actionsreceived": [{"action": "wander", "active": 1}],
 					"finishedEvents": {},
-					"position": {}
+					"position": {'x': 35, 'y': 35}
 				},
 				"U00003":{
 					"uid": "U00003",
@@ -126,10 +126,10 @@
 					"wander": {"x": 25, "y": 25, "xw": 15, "yw": 15, "basePause": 9000},
 					"actionsreceived": [{"action": "wander", "active": 1}],
 					"finishedEvents": {},
-					"position": {}
+					"position": {'x': 25, 'y': 25}
 				}
 			}
-
+			
 			animatedObjects[userPosition.uid] = {
 				"uid": userPosition.uid,
 				"x": 30,

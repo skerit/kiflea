@@ -279,3 +279,100 @@ k.Types.Map = {
 	 */
 	walkabletiles: {}
 }
+
+/**
+ * The tileSetInfo object
+ * @typedef {Object}
+ */
+k.Types.tileSetInfo = {
+	
+	/**
+	 * The name of the tileset
+	 * @type {String}
+	 */
+	tileSetName: "",
+	
+	/**
+	 * The width of a single tile
+	 * @type {Number}
+	 */
+	tileWidth: 0,
+	
+	/**
+	 * The height of a single tile
+	 * @type {Number}
+	 */
+	tileHeight: 0,
+	
+	/**
+	 * The tiles per row
+	 * @type {Number}
+	 */
+	tpr: 0,
+	
+	/**
+	 * The tiles per column
+	 * @type {Number}
+	 */
+	tpc: 0,
+	
+	/**
+	 * The total amount of tiles
+	 * @type {Number}
+	 */
+	total: 0,
+	
+	/**
+	 * The id of the first tile
+	 * @type {Number}
+	 */
+	firstgid: 0
+}
+
+/**
+ * The object object
+ * @typedef {Object}
+ */
+k.Types.Object = {
+	
+	/**
+	 * What action we last received
+	 * @type	{String}
+	 */
+	action: "",
+	
+	actionsreceived: [],
+	
+	/**
+	 * Our current sprite
+	 * @type	{Number}
+	 */
+	currentSprite: 0,
+	
+	currenthealth: 0,
+	effects: [],
+	finishedEvents: {},
+	from: "",
+	fromX: 0,
+	fromY: 0,
+	fullhealth: 0,
+	lastMoved: 0,
+	map: "",
+	moveToX: 0,
+	moveToY: 0,
+	msMoved: 0,
+	path: [],
+	position: {
+		
+		x: 0,
+		
+		y: 0
+		
+		},
+	selection: 0,
+	sprites: [],
+	spritesToDraw: [],
+	uid: "",
+	x: 0,
+	y: 0
+}

@@ -326,8 +326,10 @@ k.actions.moveRequest = function(x, y, objectid, checkfull) {
 
 	// If there isn't an objectid, use our own user
 	if(objectid === undefined) objectid = userPosition.uid;
+	
+	var object = k.links.getObject(objectid);
 
-	var arraySize = animatedObjects[objectid]['path'].length;
+	var arraySize = object.path.length;
 
 	/**
 	 * Checkfull makes us check if the array is full. If it's not, add the path.
@@ -336,13 +338,16 @@ k.actions.moveRequest = function(x, y, objectid, checkfull) {
 	if((checkfull === undefined || checkfull == true) && arraySize > k.state.walk.maxQueue) return false;
 
 	// Take the last x & y value from our path
-	var prevX = animatedObjects[objectid]['path'][arraySize - 1]['x'];
-	var prevY = animatedObjects[objectid]['path'][arraySize - 1]['y'];
+	var prevX = object.path[arraySize - 1]['x'];
+	var prevY = object.path[arraySize - 1]['y'];
 
 	var move = {'action': 'move', 'timeRequested': now(), 'x': prevX + x, 'y': prevY + y, 'targetid': objectid};
 
 	// If we're not connected to the server, accept the move directly
 	if(!k.state.server.connected) {
+		
+		// Is the tile walkable?
+		move.walkable = k.operations.isTileWalkable(object.map, move.x, move.y);
 		k.actions.moveAccept(move);
 	} else {
 		// If we are, send it to the server first
@@ -358,8 +363,9 @@ k.actions.moveRequest = function(x, y, objectid, checkfull) {
  * @param	move	{k.Types.EventMoveAccept}
  */
 k.actions.moveAccept = function(move){
-	
+	console.log(move);
 	animatedObjects[move.targetid]['path'].push(move);
+	console.log(animatedObjects[move.targetid]);
 	
 }
 
@@ -519,11 +525,6 @@ k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, k
 			
 		}
 		
-		// Add these coordinates to our dirty rectangles var
-		k.links.canvas.setDirtyByMap(stepNow.x, stepNow.y);
-		
-		console.log('Setting dirty: ' + stepNow.x + ',' + stepNow.y);
-
 	}
 
 	// If the axes of the move is found and the tile is walkable
@@ -584,8 +585,11 @@ k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, k
 			position[stepNext.moveAxis] = stepNow[stepNext.moveAxis] + ((stepNext[stepNext.moveAxis] - stepNow[stepNext.moveAxis]) * stepNext.moveProgress);
 		}
 		
+		var object = k.links.getObject(objectId);
+		
 		// Add these coordinates to our dirty rectangles var
-		k.links.canvas.setDirtyByMap(stepNext.x, stepNext.y);
+		k.links.canvas.setDirtyByMap(stepNow.x, stepNow.y, true, object.currentSprite);
+		k.links.canvas.setDirtyByMap(stepNext.x, stepNext.y, true, object.currentSprite);
 
 	}
 	

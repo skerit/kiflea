@@ -102,6 +102,8 @@ k.operations.renderFrame = function(){
 
 	// Now flush the canvas buffer to the real canvas
 	k.links.canvas.flush();
+
+	k.links.canvas.drawFadeness();
 	
 	// Indicate we've finished this render
 	k.links.canvas.finishedRender();
@@ -301,32 +303,48 @@ function renderObjects(){
     
     // Loop through every object
     for (var objectId in animatedObjects){
+		
+		var object = k.links.getObject(objectId);
+		var user = k.links.getObject(userPosition.uid);
+		var map = k.links.getMap(object.map);
         
-        // If this object isn't on the same map as our user, continue to the next object
-        if(animatedObjects[objectId]['map'] != animatedObjects[userPosition.uid]['map']) continue;
+        // If this object isn't on the same map as our user,
+		// continue to the next object
+        if(object.map != user.map) continue;
         
-        
-			// Get this object's coordinates on the map
-			var tx = animatedObjects[objectId]['position']['x'];
-			var ty = animatedObjects[objectId]['position']['y'];
-			
-			// Get all the coordinates
-			var objC = k.operations.coord.getByMap(tx, ty);
-			
-			var objX = objC.absX;
-			var objY = objC.absY;
-
+		// Get all the coordinates
+		var objC = k.operations.coord.getByMap
+				   (object.position.x, object.position.y);
         
         // Loop through all the layers of this object
-        for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['spritesToDraw'].length; spriteNr++){
+        for (var spriteNr = 0;
+			spriteNr < object.spritesToDraw.length;
+			spriteNr++){
             
             if(objectId == userPosition.uid){
-                debugEchoLfps('Drawing own user ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
+                debugEchoLfps('Drawing own user ' + objectId + ' layer nr ' +
+							  spriteNr + ' - namely: ' +
+							  object.spritesToDraw[spriteNr] );
             }
 			
-			if(k.links.canvas.isDirtyByCanvas(objC.canvasX, objC.canvasY)){
+			if(objectId == userPosition.uid){
+				var objX = objC.absX;
+				var objY = objC.absY + map.tileHeight;
+			} else {
+				var coord = getRealCoordinates(objectId);
+				var objX = coord.x;
+				var objY = coord.y;
+			}
+			
+			// To draw the tile we need to add the tileheight (which we already
+			// did) But to get the coordinates, we need to subtract it again
+			if(k.links.canvas.isDirtyByAbsolute(objX, objY - map.tileHeight)){
 				
-				drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr], objX, objY, null, objectId);
+				//console.log('Is dirty:' + objX + ',' + objY);
+				
+				drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr],
+						 objX, objY, null, objectId);
+				
 			}
         }
         
@@ -740,15 +758,6 @@ function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
         // If it is an object we have to get the tilesets from the default "map". Hackish, but it works
         sourceMap = defaultSprites;
 
-	    /*
-        // We also have to determine if the object is moving.
-        if(animatedObjects[objectId]['path'][k.state.walk.indexNow]['x'] != animatedObjects[objectId]['position']['x']
-           || animatedObjects[objectId]['path'][k.state.walk.indexNow]['y'] != animatedObjects[objectId]['position']['y']
-           || animatedObjects[objectId]['path'].length > (k.state.walk.indexNext + 1)
-           || (now() - animatedObjects[objectId]['path'][k.state.walk.indexNow]['moveChange']) < 300){
-            var movingObject = true; // Is this object moving?
-        }*/
-
 	    if(animatedObjects[objectId]['path'].length > (k.state.walk.indexNow + 1)) movingObject = true;
     }
     //if(objectId == userPosition.uid) debugEcho(now() - animatedObjects[objectId]['lastMoved']);
@@ -861,9 +870,10 @@ function getLayerTile(mapname, layername, x, y) {
 }
 
 /**
- *Get the info of a tileset knowing only the map it's from and a tilenumber it has
- *@param mapname    {string}    The name of the map
- *@param tilenumer  {int}       The number of the tile in the tileset
+ * Get the info of a tileset knowing only the map it's from and a tilenumber it has
+ * @param mapname    {string}    The name of the map
+ * @param tilenumer  {int}       The number of the tile in the tileset
+ * @returns	 {k.Types.tileSetInfo} TileSetInfo object
  */
 function getTileSetInfo(sourceMap, tileNumber){
     

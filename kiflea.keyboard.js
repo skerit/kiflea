@@ -356,11 +356,11 @@ function getClickedTile(mouseX, mouseY){
  */
 k.operations.coord.getByCanvas = function(tileX, tileY){
 	
-	var mouseX = tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'];
-	var mouseY = tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'];
+	var mouseX = Math.floor(tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+	var mouseY = Math.floor(tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
 	
-	var mapX = animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
-    var mapY = animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+	var mapX = Math.floor(animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']));
+    var mapY = Math.floor(animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']));
     
     return {'mapX': mapX, 'mapY': mapY, 'mouseX': mouseX, 'mouseY': mouseY, 'canvasX': tileX, 'canvasY': tileY, 'absX': mouseX, 'absY': mouseY};
 }
@@ -373,8 +373,8 @@ k.operations.coord.getByCanvas = function(tileX, tileY){
  */
 k.operations.coord.getByMap = function(mapX, mapY){
 	
-	var tileX = (mapX - animatedObjects[userPosition.uid]['position']['x']) + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2));
-	var tileY = (mapY - animatedObjects[userPosition.uid]['position']['y']) + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2));
+	var tileX = Math.floor((mapX - animatedObjects[userPosition.uid]['position']['x']) + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)));
+	var tileY = Math.floor((mapY - animatedObjects[userPosition.uid]['position']['y']) + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))) -1;
 	
 	var mouseX = tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'];
 	var mouseY = tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'];
@@ -390,14 +390,14 @@ k.operations.coord.getByMap = function(mapX, mapY){
  */
 k.operations.coord.getByMouse = function(mouseX, mouseY){
 	
-    var tileX = Math.floor(mouseX / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
-    var tileY = Math.floor(mouseY / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    var tileX = Math.floor(Math.floor(mouseX / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']));
+    var tileY = Math.floor(Math.floor(mouseY / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']));
     
-    var mapX = animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
-    var mapY = animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    var mapX = Math.floor(animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']));
+    var mapY = Math.floor(animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']));
     
-	var absX = tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'];
-	var absY = tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'];
+	var absX = Math.floor(tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+	var absY = Math.floor(tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
 	
     return {'mapX': mapX, 'mapY': mapY, 'mouseX': mouseX, 'mouseY': mouseY, 'canvasX': tileX, 'canvasY': tileY, 'absX': absX, 'absY': absY};
 }
