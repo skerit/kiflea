@@ -16,11 +16,14 @@ if (window.WebSocket) {
 // shim layer with setTimeout fallback
 window.requestAnimFrame = (function(){
   return  window.requestAnimationFrame       || 
-		  window.webkitRequestAnimationFrame || 
+		  window.webkitRequestAnimationFrame ||
 		  window.mozRequestAnimationFrame    || 
 		  window.oRequestAnimationFrame      || 
 		  window.msRequestAnimationFrame     || 
 		  function(/* function */ callback, /* DOMElement */ element){
-			window.setTimeout(callback, 1000 / 60);
+			
+			// Since our requestAnimFrame is already in a loop in order to
+			// control the preferred FPS, just call callback, not an interval
+			callback();
 		  };
 })();

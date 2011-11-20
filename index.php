@@ -184,7 +184,7 @@
 			<br/>
 			<button id="clearecho" onclick="k.links.echo.empty();">Clear echo div</button>
 			<button id="toggleengine" onclick="k.operations.toggleEngine();">Toggle engine</button>
-			<button id="togglegrid" onclick="debugGrid=!debugGrid;">Toggle grid</button>
+			<button id="togglegrid" onclick="k.settings.debug.GRID=!k.settings.debug.GRID;">Toggle grid</button>
 			<button id="togglefps" onclick="k.settings.debug.DEBUG=!k.settings.debug.DEBUG;">Toggle debug</button><br/>
 			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['currenthealth']--;">Detract life</button>
 			<button id="testjson" onclick="sendTestJson()">Send JSON Test</button><br/>

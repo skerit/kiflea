@@ -160,6 +160,122 @@ k.Types.EventMoveAccept = {
 	 * @type	{Bool}
 	 */
 	walkable: 1
+
+}
+
+/**
+ * The object we get upon a click
+ * @typedef {Object}
+ */
+k.Types.CoordinatesClick = {
 	
+	/**
+	 * The x on the map
+	 * @type	{Number}
+	 */
+	mapX: 0,
 	
+	/**
+	 * The y on the map
+	 * @type	{Number}
+	 */
+	mapY: 0,
+	
+	/**
+	 * The x on the canvas
+	 * @type	{Number}
+	 */
+	canvasX: 0,
+	
+	/**
+	 * The y on the canvas
+	 * @type	{Number}
+	 */
+	canvasY: 0,
+	
+	/**
+	 * The x of the mouse
+	 * @type	{Number}
+	 */
+	mouseX: 0,
+	
+	/**
+	 * The y of the mouse
+	 * @type	{Number}
+	 */
+	mouseY: 0,
+	
+		/**
+	 * The absolute X
+	 * @type	{Number}
+	 */
+	absX: 0,
+	
+	/**
+	 * The absolute Y
+	 * @type	{Number}
+	 */
+	absY: 0
+	
+}
+
+/**
+ * A map object
+ * @typedef {Object}
+ */
+k.Types.Map = {
+	
+	/**
+	 * The height of the map
+	 * @type	{Number}
+	 */
+	height: 0,
+	
+	/**
+	 * The width of a map
+	 * @type	{Number}
+	 */
+	width: 0,
+	
+	/**
+	 * The tileHeight of a map
+	 * @type	{Number}
+	 */
+	tileHeight: 0,
+	
+	/**
+	 * The tileWidth of a map
+	 * @type	{Number}
+	 */
+	tileWidth: 0,
+	
+	/**
+	 * Events on a map
+	 * @type	{Object}
+	 */
+	events: {},
+	
+	/**
+	 * Layers on a map
+	 * @type	{Object}
+	 */
+	layers: {},
+	
+	/**
+	 * Properties on a map
+	 * @type	{Object}
+	 */
+	properties: {},
+	
+	/**
+	 * Tilesets on a map
+	 * @type	{Object}
+	 */
+	tilesets: {},
+	
+	/**
+	 * Walkabletiles on a map
+	 * @type	{Array}
+	 */
+	walkabletiles: {}
 }

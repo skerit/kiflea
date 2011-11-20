@@ -23,11 +23,12 @@
 var k = {};
 
 k = {settings:{debug:{}, server:{}, ids:{}, engine:{}, walk:{}},
-   state:{engine:{}, load:{}, animation:{}, server:{}, output:{}, walk:{}, hud:{}},
+   state:{engine:{}, load:{}, animation:{}, server:{}, output:{}, walk:{},
+		  hud:{}, dirty:{x: {}}},
    collections:{},
    classes:{},
    links:{},
-   operations:{server:{}, load:{}, walk:{}, interface:{}, keyboard:{}},
+   operations:{server:{}, load:{}, walk:{}, interface:{}, keyboard:{}, coord:{}},
    events: {},
    actions: {}};
 
@@ -103,7 +104,7 @@ k.settings.server.PORT = 1234;
  */
 k.settings.server.ADDRESS = "ws://kipdola.be";
 
-k.settings.engine.fps = 50; 				// The default desired Frames Per Second
+k.settings.engine.fps = 25; 						// The default desired Frames Per Second
 k.settings.engine.background = 'rgb(255,255,255)' 	// The default background color
 k.settings.engine.drawextras = 5;
 
@@ -166,12 +167,20 @@ k.state.load.loaded = 0;		// Increases with each loaded map/tileset. Game will o
 k.state.load.loadedHud = false;	// If the hud has been loaded
 k.state.load.loadedMap = false;	// If the map has been loaded
 
+
+k.state.engine.prevMappOffsetX = 0;		// The previous offset of the map in relation to our user
+k.state.engine.prevMappOffsetY = 0;
+
 k.state.engine.mappOffsetX = 0;		// The current offset of the map in relation to our user
 k.state.engine.mappOffsetY = 0;
+
+k.state.engine.msfTimer = 0;
+k.state.engine.msrTimer = 0;
 k.state.engine.msf = false;		// The fake ms time (time it takes to start and end a draw)
 k.state.engine.msr = false;		// The real ms time (fake ms + time between draws)
 k.state.engine.fpsf = 0;		// The fake fps (1000 / msf)
 k.state.engine.fpsr = 0;		// The real fps (1000 / msf)
+k.state.engine.loop = 0;		// The loop to redraw the screen
 
 k.state.walk.indexPrev = 0;		// The position of our previous coördinates in our user object. Recalculated at startEngine
 k.state.walk.indexNow = 1;		// The position of our current coördinates in our user object. Recalculated at startEngine
@@ -210,12 +219,6 @@ var fps = 10;
 var mappOffsetX = 0;		// The current offset of the map in relation to our user
 var mappOffsetY = 0;
 
-var msfTimer = 'N/A';   // When the last draw started
-var msrTimer = 'N/A';   // When the last draw ended
-var msf;                // The fake ms time (time it takes to start and end a draw)
-var msr;
-var fpsf;
-var fpsr;
 var tileSet = [];       // All the tilesets are stored in this array
 var animation = [];
 var animatedTiles = {}; // This array keeps a progress of animated tiles. The first level of tilesetnames are defined at loading
@@ -227,7 +230,6 @@ var backgroundColor = "rgb(255,255,255)";   // The colour outside of the map. Sh
 var defaultSprites = 'default.tmx.xml';	    // The map which holds the tiles for the objects and users and such.
 					    // This map isn't actually useable, but this way we can use tiled to quickly edit tile preferences.
 
-var maps = {};          // An array that stores the data of all the maps
 var visibleTilesX;      // The ammount of tiles visible per row (should be deprecated)
 var visibleTilesY;      // The ammount of tiles visible per col (should be deprecated)
 var loopInterval = 0;
@@ -326,6 +328,16 @@ k.classes.Canvas = function(canvasId){
 	this.once = {};
 	this.once.clear = false;
 	this.once.messages = [];
+	
+	// Dirty rectangles
+	this.dirtyRectangles = {};
+	
+	// Cleaned rectangles
+	this.cleanedRectangles = {};
+	
+	// The current map we're working on
+	this.mapName = "";
+	this.map = {};
 
 	// If the RECORD var is true, create a movie object
 	if(k.settings.debug.RECORD) this.movie = new CanvasReplay(this.width,  this.height);
@@ -362,6 +374,97 @@ k.classes.Canvas = function(canvasId){
 
 		// If the RECORD variable is true, add the current frame to the movie
 		if(k.settings.debug.RECORD) this.movie.addImage(document.getElementById(this.canvasId));
+	}
+	
+	/**
+	 * Prepare a certain map
+	 */
+	this.prepareMap = function(mapname){
+		
+		if(that.mapName != mapname){
+			that.mapName = mapname;
+			that.map = k.links.getMap(mapname);
+			
+			// Set every tile as dirty
+			that.setAllDirty();
+		}
+	}
+	
+	/**
+	 * Set every tile as dirty
+	 */
+	this.setAllDirty = function(dirty){
+		if(dirty === undefined) dirty = true;
+		
+		var cx = -3;
+			
+		for(var x = 0 - (that.map.tileWidth*3); x <= that.width + (that.map.tileWidth*3); x = x + parseInt(that.map.tileWidth)){
+			cy = -3;
+			for(var y = 0 - (that.map.tileHeight*3); y <= that.height  + (that.map.tileHeight*3); y = y + parseInt(that.map.tileHeight)){
+				
+				that.setDirtyByCanvas(cx, cy, dirty);
+				
+				cy++;
+			}
+			cx++;
+		}
+		
+	}
+	
+	/**
+	 * Is this tile dirty?
+	 */
+	this.isDirtyByCanvas = function(canvasX, canvasY){
+		
+		// If it doesn't even exist (which shouldn't happen, but still) return true
+		if(that.dirtyRectangles[canvasX] === undefined) {
+			return true;
+		} else {
+			if(that.dirtyRectangles[canvasX][canvasY] === undefined){
+				return true;
+			} else {
+				return that.dirtyRectangles[canvasX][canvasY];
+			}
+		}
+	}
+	
+	/**
+	 * Flag a tile as dirty by its map coordinates
+	 * 
+	 * @param   {number} mapX   The map-x
+	 * @param   {number} mapY	The map-y
+	 * @param	{bool}	 dirty		Wether it's dirty or not (default true)
+	 */
+	this.setDirtyByMap = function(mapX, mapY, dirty){
+		
+		if(dirty === undefined) dirty = true;
+		
+		// Get the other coordinates based on the map coordinates
+		var coord = k.operations.coord.getByMap(mapX, mapY);
+		
+		// Make sure the required objects exist
+		if(that.dirtyRectangles[coord.canvasX] === undefined) that.dirtyRectangles[coord.canvasX] = {};
+		
+		// Set it as dirty
+		that.dirtyRectangles[coord.canvasX][coord.canvasY] = dirty;	
+	}
+	
+	/**
+	 * Flag a tile as dirty by its canvas coordinates
+	 * 
+	 * @param   {number} canvasX    The canvas-x
+	 * @param   {number} canvasY	The canvas-y
+	 * @param	{bool}	 dirty		Wether it's dirty or not (default true)
+	 */
+	this.setDirtyByCanvas = function(canvasX, canvasY, dirty){
+		
+		if(dirty === undefined) dirty = true;
+		
+		// Make sure the required objects exist
+		if(that.dirtyRectangles[canvasX] === undefined) that.dirtyRectangles[canvasX] = {};
+		
+		// Set it as dirty
+		that.dirtyRectangles[canvasX][canvasY] = dirty;	
 	}
 	
 	/**
@@ -417,6 +520,12 @@ k.classes.Canvas = function(canvasId){
 		that.once.clear = false;
 		that.once.messages = [];
 		that.drawWorld = true;
+		
+		// Reset the cleanedRectangles object
+		that.cleanedRectangles = {};
+		
+		// Set every tile as clean
+		that.setAllDirty(false);
 	}
 	
 	/**
@@ -459,6 +568,43 @@ k.classes.Canvas = function(canvasId){
 	}
 	
 	/**
+	 * Clear a certain tile on the canvas
+	 * 
+	 */
+	this.clearTile = function(canvasX, canvasY){
+		
+		// Get the absolute coordinates
+		var coord = k.operations.coord.getByCanvas(canvasX, canvasY);
+		
+		// Use the default color if none is provided
+		if(backgroundColor === undefined) backgroundColor = k.settings.engine.background;
+		
+		// Draw the rectangle
+		this.buffer.fillStyle = backgroundColor;
+		this.buffer.fillRect(coord.absX, coord.absY, that.map.tileWidth, that.map.tileHeight);
+		
+	}
+	
+	/**
+	 * Clear a certain tile on the canvas only once per render
+	 * 
+	 */
+	this.clearTileOnce = function(canvasX, canvasY){
+		
+		// Create the object if it doesn't exist
+		if(that.cleanedRectangles[canvasX] === undefined) that.cleanedRectangles[canvasX] = {};
+		
+		// If the Y doesn't exist, we can clean it
+		if(that.cleanedRectangles[canvasY] === undefined){
+			that.clearTile(canvasX, canvasY);
+			
+			// And create it
+			that.cleanedRectangles[canvasY] = true;
+		}
+		
+	}
+	
+	/**
 	 * Clear the canvas once during this draw
 	 * @param		{string=}	backgroundColor 	The color to draw
 	 */
@@ -492,6 +638,8 @@ k.classes.Canvas = function(canvasId){
 
 		that.mouse.upx = e.pageX-this.offsetLeft;
 		that.mouse.upy = e.pageY-this.offsetTop;
+		
+		console.log(getClickedTile(that.mouse.upx, that.mouse.upy));
 
 	});
 
@@ -539,14 +687,17 @@ k.operations.startEngine = function() {
 		return;
 	}
 	
-	// Already start the renderLoop for loading screens
-	k.operations.renderLoop();
-	
 	// Calculate coördinate indexes
 	k.state.walk.indexPrev = 0 + k.settings.debug.PATHHISTORY;
 	k.state.walk.indexNow = 1 + k.settings.debug.PATHHISTORY;
 	k.state.walk.indexNext = 2 + k.settings.debug.PATHHISTORY;
 	k.state.walk.maxQueue = k.settings.walk.MAXQUEUE + k.state.walk.indexNow;
+	
+	window.onkeydown = k.operations.keyboard.onKeyDown;
+    window.onkeyup = k.operations.keyboard.onKeyUp;
+
+	// Already start the renderLoop for loading screens
+	k.operations.renderLoop();
 	
     // Connect to a server if it's required
     if(k.settings.server.CONNECT == true) {
@@ -556,14 +707,16 @@ k.operations.startEngine = function() {
 		// When it's not required, we must load all the maps and huds already
 		// defined. Otherwise we'd get them from the server
 		k.operations.load.getMaps(k.settings.engine.MAPS);
-
     }
+}
 
-    window.onkeydown = k.operations.keyboard.onKeyDown;
-    window.onkeyup = k.operations.keyboard.onKeyUp;
-	
-	
-
+/**
+ * Get a map object
+ * @param	{string}	mapname		The name of the map
+ * @returns {k.Types.Map}			A map object
+ */
+k.links.getMap = function(mapname){
+	return k.collections.maps[mapname];
 }
 
 /**
@@ -571,11 +724,9 @@ k.operations.startEngine = function() {
  */
 k.operations.renderLoop = function(){
 	
-	// Put another iteration of k.operations.renderLoop in the animation queue
-	window.requestAnimFrame(k.operations.renderLoop);
-	
-	// Actually calculate and draw a frame
-	k.operations.renderFrame();
+	// Combine setInterval and requestAnimationFrame in order to get a desired fps
+	k.state.engine.loop = setInterval("window.requestAnimFrame(k.operations.renderFrame)", 1000 / k.settings.engine.fps);
+
 }
 
 /**
@@ -603,7 +754,7 @@ k.operations.load.getMaps = function(loadMaps){
             dataType: "xml",
             async: true,
             success: function(xml, textStatus, jqXHR){
-				k.operations.load.processMap(xml, right(jqXHR['responseXML']['URL'], "/"))
+				k.operations.load.processMap(xml, right(jqXHR['responseXML']['URL'], "/"));
           }
         });
     }
@@ -626,176 +777,179 @@ k.operations.load.processMap = function(xml, sourcename) {
     // Now iterate every map element (should only be one in every file)
     $(xml).find('map').each(function(){
 
-	//Save the attributes of the map element
-        oneMap['width'] = $(this).attr('width');
-        oneMap['height'] = $(this).attr('height');
-        oneMap['tileWidth'] = $(this).attr('tilewidth');
-        oneMap['tileHeight'] = $(this).attr('tileheight');
-
-        debugEcho('Create an array for all the layers', false);
-
-	// Create an array to store all the events in
-	oneMap['events'] = {};
-	oneMap['properties'] = {};
-
-	// Itterate through all the properties of this MAP
-	$(this).find('properties').find('property').each(function(){
-	    oneMap['properties'][$(this).attr('name')] = $(this).attr('value');
-	});
-
-        // Iterate through every objectgroup
-        $(this).find('objectgroup').each(function(){
-
-	    // Now iterate through all the objects.
-	    $(this).find('object').each(function(){
-
-		var beginX = Math.floor($(this).attr('x') / oneMap['tileWidth']);
-		var beginY = Math.floor($(this).attr('y') / oneMap['tileHeight']);
-		var endX = beginX + Math.floor($(this).attr('width') / oneMap['tileWidth']);
-		var endY = beginY + Math.floor($(this).attr('height') / oneMap['tileHeight']);
-		var eventName = $(this).attr('name');
-		var eventType = $(this).attr('type');
-		var eventProperties = {};
-
-		eventProperties['name'] = eventName;
-		eventProperties['type'] = eventType;
-		eventProperties['action'] = eventType;
-
-		// Now iterate through all the properties.
+		//Save the attributes of the map element
+		oneMap['width'] = $(this).attr('width');
+		oneMap['height'] = $(this).attr('height');
+		oneMap['tileWidth'] = $(this).attr('tilewidth');
+		oneMap['tileHeight'] = $(this).attr('tileheight');
+	
+		debugEcho('Create an array for all the layers', false);
+	
+		// Create an array to store all the events in
+		oneMap['events'] = {};
+		oneMap['properties'] = {};
+	
+		// Itterate through all the properties of this MAP
 		$(this).find('properties').find('property').each(function(){
-		    eventProperties[$(this).attr('name')] = $(this).attr('value');
+			oneMap['properties'][$(this).attr('name')] = $(this).attr('value');
 		});
-
-		// Store these events in every tile it's on.
-		for(var countY = beginY; countY < endY; countY++){
-		    for(var countX = beginX; countX < endX; countX++){
-			var currentTile = ((countY+1) * oneMap['width']) + countX+1;
-
-			if(oneMap['events'][currentTile] === undefined){
-			    oneMap['events'][currentTile] = [];
+	
+		// Iterate through every objectgroup
+		$(this).find('objectgroup').each(function(){
+	
+			// Now iterate through all the objects.
+			$(this).find('object').each(function(){
+	
+				var beginX = Math.floor($(this).attr('x') / oneMap['tileWidth']);
+				var beginY = Math.floor($(this).attr('y') / oneMap['tileHeight']);
+				var endX = beginX + Math.floor($(this).attr('width') / oneMap['tileWidth']);
+				var endY = beginY + Math.floor($(this).attr('height') / oneMap['tileHeight']);
+				var eventName = $(this).attr('name');
+				var eventType = $(this).attr('type');
+				var eventProperties = {};
+		
+				eventProperties['name'] = eventName;
+				eventProperties['type'] = eventType;
+				eventProperties['action'] = eventType;
+		
+				// Now iterate through all the properties.
+				$(this).find('properties').find('property').each(function(){
+					eventProperties[$(this).attr('name')] = $(this).attr('value');
+				});
+		
+				// Store these events in every tile it's on.
+				for(var countY = beginY; countY < endY; countY++){
+					for(var countX = beginX; countX < endX; countX++){
+					var currentTile = ((countY+1) * oneMap['width']) + countX+1;
+		
+					if(oneMap['events'][currentTile] === undefined){
+						oneMap['events'][currentTile] = [];
+					};
+		
+					// Store the event in the array
+					oneMap['events'][currentTile].push(eventProperties);
+		
+					}
+				}
+	
+			});
+	
+		});
+	
+		// Create an array to store all this world's layers in
+		oneMap['layers'] = {};
+	
+		// Iterate through every layer
+		$(this).find('layer').each(function(){
+	
+			// The content of the <data> element is base64 encoded
+			// This modified function will decode it and return a proper array
+			mapData = base64_decode_map($(this).find('data').text());
+		
+			// Certain layers have properties. Create another temporary array
+			// to store them in.
+			var properties = {};
+		
+			// Now iterate through all the properties of this layer.
+			$(this).find('properties').find('property').each(function(){
+				properties[$(this).attr('name')] = $(this).attr('value');
+			});
+		
+			oneMap['layers'][$(this).attr('name')] = {
+				'data': mapData,
+				'name': $(this).attr('name'),
+				'width': $(this).attr('width'),
+				'height': $(this).attr('height'),
+				'opacity': $(this).attr('opacity'),
+				'properties': properties
 			};
-
-			// Store the event in the array
-			oneMap['events'][currentTile].push(eventProperties);
-
-		    }
-		}
-
-	    });
-
-	});
-
-        // Create an array to store all this world's layers in
-        oneMap['layers'] = {};
-
-        // Iterate through every layer
-        $(this).find('layer').each(function(){
-
-	    // The content of the <data> element is base64 encoded
-	    // This modified function will decode it and return a proper array
-	    mapData = base64_decode_map($(this).find('data').text());
-
-	    // Certain layers have properties. Create another temporary array
-	    // to store them in.
-	    var properties = {};
-
-	    // Now iterate through all the properties of this layer.
-	    $(this).find('properties').find('property').each(function(){
-		properties[$(this).attr('name')] = $(this).attr('value');
-	    });
-
-	    oneMap['layers'][$(this).attr('name')] = {
-		'data': mapData,
-		'name': $(this).attr('name'),
-		'width': $(this).attr('width'),
-		'height': $(this).attr('height'),
-		'opacity': $(this).attr('opacity'),
-		'properties': properties
-	    };
-
-        });
-
-        // Create an array for all the tilesets
-        oneMap['tilesets'] = {};
-
-        debugEcho('Map "<b>' + sourcename + '</b>" has been processed');
-        debugEcho('Loading "<b>' + sourcename + '</b>" tilesets', false);
-
-        // Load all the tilesets
-        $(this).find('tileset').each(function(){
-
-	    var tileSetName = $(this).attr('name');
-	    var firstGid = $(this).attr('firstgid');
-
-	    // Store the tileset info in the temporary oneMap variable
-            oneMap['tilesets'][tileSetName] = {
-		'name': tileSetName,
-		'source': $(this).find('image').attr('source'),
-		'tileWidth': $(this).attr('tilewidth'),
-		'tileHeight': $(this).attr('tileheight'),
-		'firstgid': firstGid
-	    };
-
-            k.operations.load.loadTileSet(
-			$(this).find('image').attr('source'),	// The url of the tileset (the source in the xml)
-			tileSetName, 			// The name of the tileset
-			$(this).attr('tilewidth'),	// The width of one tile
-			$(this).attr('tileheight'),	// The height of one tile
-			firstGid	// The beginning id of the tileset
-	    );
-
-	    // Add new tileSet to the tileProperties array
-	    tileProperties[tileSetName] = {};
-
-	    // Add new tileset to the animatedTiles array
-	    animatedTiles[tileSetName] = {};
-
-	    // Create a temporary array to store this tileset's properties in
-	    var tempProperties = {};
-
-	    // Load through every tile that has a special property
-	    $(this).find('tile').each(function(){
-
-		// Calculate the ID of this tile (they're stored starting with 0, not with their firstgid)
-		var tileGid = parseInt(firstGid) + parseInt($(this).attr('id'));
-
-		// Loop through each property and save it in the temporary array
-		$(this).find('property').each(function(){
-
-		    // Save the name and value in a variable, to make our code prettier to read
-		    var propertyName = $(this).attr('name');
-		    var propertyValue = $(this).attr('value');
-
-		    // Look at the name of the given property, and do things accordingly
-		    switch(propertyName) {
-			// We define nextframes in tiled according to their order in THAT tileset
-			// We don't use tilegids there because these can change as new tilesets are
-			// added or removed.
-			case 'nextframe':
-			  tempProperties[propertyName] = parseInt(propertyValue) + parseInt(firstGid-1);
-			  break;
-
-			// If it's none of the above, just save the value as is
-			default:
-			  tempProperties[propertyName] = propertyValue;
-		    }
-
+	
 		});
+	
+		// Create an array for all the tilesets
+		oneMap['tilesets'] = {};
+	
+		debugEcho('Map "<b>' + sourcename + '</b>" has been processed');
+		debugEcho('Loading "<b>' + sourcename + '</b>" tilesets', false);
+	
+		// Load all the tilesets
+		$(this).find('tileset').each(function(){
+	
+			var tileSetName = $(this).attr('name');
+			var firstGid = $(this).attr('firstgid');
+	
+			// Store the tileset info in the temporary oneMap variable
+				oneMap['tilesets'][tileSetName] = {
+			'name': tileSetName,
+			'source': $(this).find('image').attr('source'),
+			'tileWidth': $(this).attr('tilewidth'),
+			'tileHeight': $(this).attr('tileheight'),
+			'firstgid': firstGid
+			};
+	
+				k.operations.load.loadTileSet(
+				$(this).find('image').attr('source'),	// The url of the tileset (the source in the xml)
+				tileSetName, 			// The name of the tileset
+				$(this).attr('tilewidth'),	// The width of one tile
+				$(this).attr('tileheight'),	// The height of one tile
+				firstGid	// The beginning id of the tileset
+			);
+	
+			// Add new tileSet to the tileProperties array
+			tileProperties[tileSetName] = {};
+	
+			// Add new tileset to the animatedTiles array
+			animatedTiles[tileSetName] = {};
+	
+			// Create a temporary array to store this tileset's properties in
+			var tempProperties = {};
+	
+			// Load through every tile that has a special property
+			$(this).find('tile').each(function(){
+	
+			// Calculate the ID of this tile (they're stored starting with 0, not with their firstgid)
+			var tileGid = parseInt(firstGid) + parseInt($(this).attr('id'));
+	
+			// Loop through each property and save it in the temporary array
+			$(this).find('property').each(function(){
+	
+				// Save the name and value in a variable, to make our code prettier to read
+				var propertyName = $(this).attr('name');
+				var propertyValue = $(this).attr('value');
+	
+				// Look at the name of the given property, and do things accordingly
+				switch(propertyName) {
+				// We define nextframes in tiled according to their order in THAT tileset
+				// We don't use tilegids there because these can change as new tilesets are
+				// added or removed.
+				case 'nextframe':
+				  tempProperties[propertyName] = parseInt(propertyValue) + parseInt(firstGid-1);
+				  break;
+	
+				// If it's none of the above, just save the value as is
+				default:
+				  tempProperties[propertyName] = propertyValue;
+				}
+	
+			});
+	
+			// Store all the properties of this tile in tileProperties array
+			tileProperties[tileSetName][tileGid] = tempProperties;
+			tempProperties = {};
+			});
+	
+		});
+	
+		// Initiate the walkableTiles object, filled later (after tilesets have loaded)
+		oneMap['walkableTiles'] = [];
+	
+		// Now store this map in the global maps variable
+		k.collections.maps[sourcename] = oneMap;
+		
+		// Process the walkable tiles for this map
+		k.collections.maps[sourcename]['walkableTiles'] = k.operations.load.getWalkableTiles(sourcename);
 
-		// Store all the properties of this tile in tileProperties array
-		tileProperties[tileSetName][tileGid] = tempProperties;
-		tempProperties = {};
-	    });
-
-        });
-
-	// Initiate the walkableTiles object, filled later (after tilesets have loaded)
-	oneMap['walkableTiles'] = [];
-
-	// Now store this map in the global maps variable
-        maps[sourcename] = oneMap;
-
-        k.state.load.loaded++;
+		k.state.load.loaded++;
 
     });
 
@@ -807,7 +961,7 @@ k.operations.load.processMap = function(xml, sourcename) {
  */
 k.operations.load.getWalkableTiles = function(sourcename){
 
-    var oneMap = maps[sourcename];
+    var oneMap = k.collections.maps[sourcename];
 
     // Create an array we'll fill up and return later
     var walkableTiles = [];
@@ -860,12 +1014,13 @@ k.operations.load.getWalkableTiles = function(sourcename){
 k.operations.isTileWalkable = function(mapName, x, y){
 
 	// If the x and y is beyond the bounds of the map, return false
-	if(y < 0 || y >= maps[animatedObjects[userPosition.uid]['map']]['height'] || x < 0 || x >= maps[animatedObjects[userPosition.uid]['map']]['width']) return false;
+	if(y < 0 || y >= k.collections.maps[animatedObjects[userPosition.uid]['map']]['height'] ||
+	   x < 0 || x >= k.collections.maps[animatedObjects[userPosition.uid]['map']]['width']) return false;
 
-	wantedTile = y * maps[mapName]['width'] + x;
+	wantedTile = y * k.collections.maps[mapName]['width'] + x;
 
 	// If the wantedtile is defined in the walkableTiles array it isn't walkable: return false.
-	if(maps[mapName]['walkableTiles'][wantedTile] !== undefined){
+	if(k.collections.maps[mapName]['walkableTiles'][wantedTile] !== undefined){
 		return false;
 	}else {
 		return true;

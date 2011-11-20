@@ -332,20 +332,74 @@ k.operations.interface.mouseDown = function(x, y){
 }
 
 /**
- *Get the clicked tile number, providing absolute x-y coordinates
- *@param    x   {integer}   The X coordinate of the mouseclick
- *@param    y   {integer}   The Y coordinate of the mouseclick
- *@returns      {object}    The X and Y tile
+ * Get the clicked tile number, providing absolute x-y coordinates
+ * @param    x   {integer}   The X coordinate of the mouseclick
+ * @param    y   {integer}   The Y coordinate of the mouseclick
+ * @returns      {k.Types.CoordinatesClick}
  */
-function getClickedTile(x, y){
+function getClickedTile(mouseX, mouseY){
     
-    tileX = Math.floor(x / maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
-    tileY = Math.floor(y / maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    var tileX = Math.floor(mouseX / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    var tileY = Math.floor(mouseY / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
     
-    x = animatedObjects[userPosition.uid]['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
-    y = animatedObjects[userPosition.uid]['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    var x = animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    var y = animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
     
-    return {'x': x, 'y': y};
+    return {'x': x, 'y': y, 'mouseX': mouseX, 'mouseY': mouseY, 'canvasX': tileX, 'canvasY': tileY};
+}
+
+/**
+ * Get the tilenumber based on the canvas tile numbers
+ * @param    x   {integer}   The x-tile number on the canvas
+ * @param    y   {integer}   The y-tile number on the canvas
+ * @returns      {k.Types.CoordinatesClick}
+ */
+k.operations.coord.getByCanvas = function(tileX, tileY){
+	
+	var mouseX = tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'];
+	var mouseY = tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'];
+	
+	var mapX = animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    var mapY = animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    
+    return {'mapX': mapX, 'mapY': mapY, 'mouseX': mouseX, 'mouseY': mouseY, 'canvasX': tileX, 'canvasY': tileY, 'absX': mouseX, 'absY': mouseY};
+}
+
+/**
+ * Get the tilenumber based on the canvas tile numbers
+ * @param    x   {integer}   The x-tile number on the canvas
+ * @param    y   {integer}   The y-tile number on the canvas
+ * @returns      {k.Types.CoordinatesClick}
+ */
+k.operations.coord.getByMap = function(mapX, mapY){
+	
+	var tileX = (mapX - animatedObjects[userPosition.uid]['position']['x']) + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2));
+	var tileY = (mapY - animatedObjects[userPosition.uid]['position']['y']) + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2));
+	
+	var mouseX = tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'];
+	var mouseY = tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'];
+	   
+    return {'mapX': mapX, 'mapY': mapY, 'mouseX': mouseX, 'mouseY': mouseY, 'canvasX': tileX, 'canvasY': tileY, 'absX': mouseX, 'absY': mouseY};
+}
+
+/**
+ * Get the tilenumber based on the clicked mouse coordinates
+ * @param    x   {integer}   The X coordinate of the mouseclick
+ * @param    y   {integer}   The Y coordinate of the mouseclick
+ * @returns      {k.Types.CoordinatesClick}
+ */
+k.operations.coord.getByMouse = function(mouseX, mouseY){
+	
+    var tileX = Math.floor(mouseX / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    var tileY = Math.floor(mouseY / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    
+    var mapX = animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+    var mapY = animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+    
+	var absX = tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'];
+	var absY = tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'];
+	
+    return {'mapX': mapX, 'mapY': mapY, 'mouseX': mouseX, 'mouseY': mouseY, 'canvasX': tileX, 'canvasY': tileY, 'absX': absX, 'absY': absY};
 }
 
 /**

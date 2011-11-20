@@ -402,7 +402,7 @@ function teleport(objectid, x, y, map){
  * executed properly.
  * @param       objectId    {string}    The ID of the object
  */
-function walkPath(objectId) {
+k.operations.walkPath = function(objectId) {
 
 	// When there are no steps queued exit the function
 	if(animatedObjects[objectId]['path'].length < (k.state.walk.indexNext + 1)) return;
@@ -516,8 +516,13 @@ k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, k
 
 			position['x'] = stepNow['x'];
 			position['y'] = stepNow['y'];
-
+			
 		}
+		
+		// Add these coordinates to our dirty rectangles var
+		k.links.canvas.setDirtyByMap(stepNow.x, stepNow.y);
+		
+		console.log('Setting dirty: ' + stepNow.x + ',' + stepNow.y);
 
 	}
 
@@ -578,9 +583,12 @@ k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, k
 
 			position[stepNext.moveAxis] = stepNow[stepNext.moveAxis] + ((stepNext[stepNext.moveAxis] - stepNow[stepNext.moveAxis]) * stepNext.moveProgress);
 		}
+		
+		// Add these coordinates to our dirty rectangles var
+		k.links.canvas.setDirtyByMap(stepNext.x, stepNext.y);
 
 	}
-
+	
 	return walkAnotherStep;
 
 }

@@ -431,15 +431,15 @@ function getMapEvent(objectId, x, y){
       
     var mapname = animatedObjects[objectId]['map'];
     
-    var currentTile = (y * maps[mapname]['width']) + x;
+    var currentTile = (y * k.collections.maps[mapname]['width']) + x;
     
-    if(maps[mapname]['events'][currentTile] !== undefined){
+    if(k.collections.maps[mapname]['events'][currentTile] !== undefined){
 	
 	// Loop through every event
-	for(var eventNr = 0; eventNr < maps[mapname]['events'][currentTile].length; eventNr++){
+	for(var eventNr = 0; eventNr < k.collections.maps[mapname]['events'][currentTile].length; eventNr++){
 	    
 	    // And add it to the actionsreceived of this user
-	    queueAction(maps[mapname]['events'][currentTile][eventNr], objectId);
+	    queueAction(k.collections.maps[mapname]['events'][currentTile][eventNr], objectId);
 
 	}
 	

@@ -18,23 +18,22 @@
 */
 
 /**
- *Start rendering the scene 'till infinity
+ * Calculate and render a single frame
  */
 k.operations.renderFrame = function(){
 	
+	// Start counters
+	k.state.engine.msfTimer = now();
+	
     // Loading screen: wait for maps to load
 	if (k.state.load.toload > k.state.load.loaded){
-		
 		k.links.canvas.addLoadingMessage("Loading ...");
 		k.links.canvas.addLoadingMessage(k.state.load.loaded + " out of " + k.state.load.toload);
-		
 	}
 	
 	// Loading screen: wait for a connection to the server
 	if (!k.state.server.connected && k.settings.server.CONNECT){
-		
 		k.links.canvas.addLoadingMessage("Connecting ...");
-		
 	}
 	
 	// Loading screen: wait for server initiation
@@ -43,59 +42,36 @@ k.operations.renderFrame = function(){
 		k.links.canvas.addLoadingMessage("Waiting for server initiation ...");
 	}
 	
+	// When messages have been added (or for some other reason) the drawWorld
+	// variable will be false. Draw the loading messages then.
+	// Else: just draw the world
 	if(!k.links.canvas.drawWorld) {
 		k.links.canvas.drawLoadingMessages();
 	} else {
-	
-		// If msf isn't defined this is the actual beginning and everything has loaded
-		// We still need those walkable tiles, though.
-		if(k.state.engine.msf === false) {
-	
-			debugEcho('Fetching walkable tiles');
-			toLoad++;
-			//Loop through every map and fetch the walkable tiles
-			for(map in maps) maps[map]['walkableTiles'] = k.operations.load.getWalkableTiles(map);
-			
-			// We can finally start
-			debugEcho('The engine has started');
-			loaded++;
-			
-			// Just for debugging the effects!
-			for (var objectId in animatedObjects){
-				for(var effectNr = 0; effectNr < animatedObjects[objectId]['effects'].length; effectNr++){   
-					animatedObjects[objectId]['effects'][effectNr]['started'] = now();
-				}
-			}
-			
-		}
-	
-		// Start the fake ms counter
-		msfTimer = now();
+		
+		k.links.canvas.prepareMap(animatedObjects[userPosition.uid]['map']);
 		
 		// If this map has a backgroundcolor set, use it.
-		if(maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'] !== undefined){
-			backgroundColor = maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'];
+		if(k.collections.maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'] !== undefined){
+			backgroundColor = k.collections.maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'];
 		}
 		
 		fakePress(); // Simulate autorepeating keypresses
 		
 		doActionsReceived(); // Do the actions every object has received
 		
-		prerenderMoveObjects(); // Calculate every objects next xy coordinates
+		k.operations.prerenderMoveObjects(); // Calculate every objects next xy coordinates
 	
 		prerenderMapOffset(); // Calculate the map offset
-		
-		// Clear the canvas after we've calculated everything and are ready to draw
-		k.links.canvas.clear();
 	
 		// Loop through the layers and render them
-		for(var layerName in maps[animatedObjects[userPosition.uid]['map']]['layers']) {
+		for(var layerName in k.collections.maps[animatedObjects[userPosition.uid]['map']]['layers']) {
 	
-			renderLayer(layerName); // Render this layer
+			k.operations.renderLayer(layerName); // Render this layer
 	
 			// If this layer has the "drawUsers" property set to "1"
 			// We draw all the objects on top of it.
-			if(maps[animatedObjects[userPosition.uid]['map']]['layers'][layerName]['properties']['drawUsers']==1){
+			if(k.collections.maps[animatedObjects[userPosition.uid]['map']]['layers'][layerName]['properties']['drawUsers']==1){
 				
 				highlightSelectedObject(); // Draw a circle underneath our selection
 				
@@ -108,21 +84,21 @@ k.operations.renderFrame = function(){
 	}
 
     // Calculate fake ms & fps (time it took to draw this loop)
-    msf = (now() - msfTimer);
-    fpsf = (1000/msf);
+    k.state.engine.msf = (now() - k.state.engine.msfTimer);
+    k.state.engine.fpsf = (1000/k.state.engine.msf);
     
     // Calculate real ms & fps (time it took to draw this loop + gap between loop)
-    msr = (now() - msrTimer);
-    fpsr = (1000/msr);
+    k.state.engine.msr = (now() - k.state.engine.msrTimer);
+    k.state.engine.fpsr = (1000/k.state.engine.msr);
     
     // Draw a grid over the screen.
-    if(debugGrid == true) drawDebugGrid();
+    if(k.settings.debug.GRID == true) drawDebugGrid();
 
     // Clear the sameFrame variable, used by animated tiles
     sameFrame = {};
 
     // Start the real fps counter
-    msrTimer = now();
+    k.state.engine.msrTimer = now();
 
 	// Now flush the canvas buffer to the real canvas
 	k.links.canvas.flush();
@@ -162,7 +138,7 @@ function highlightSelectedObject(){
         k.links.canvas.ctx.beginPath();
         k.links.canvas.ctx.fillStyle = "rgba(0,0,255,0.3)";
         k.links.canvas.ctx.strokeStyle = "rgba(0,0,0,0.8)";
-        k.links.canvas.ctx.arc(selectionC['x']+(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2),selectionC['y']-(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']/2),maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2,0,Math.PI*2,true);
+        k.links.canvas.ctx.arc(selectionC['x']+(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2),selectionC['y']-(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']/2),k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']/2,0,Math.PI*2,true);
         k.links.canvas.ctx.fill();
         k.links.canvas.ctx.stroke();
         k.links.canvas.ctx.closePath();
@@ -329,36 +305,29 @@ function renderObjects(){
         // If this object isn't on the same map as our user, continue to the next object
         if(animatedObjects[objectId]['map'] != animatedObjects[userPosition.uid]['map']) continue;
         
-        // If this is our own user, set the coordinates at the center of the screen.
-        if(objectId == userPosition.uid) {
-            var objX = (k.links.canvas.width - maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2;
-            var objY = (k.links.canvas.height - maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2;
-            
-            // When the screen is the correct multiple of the tilewidth, but half of it isn't an integer
-            // we need to take that into account.
-            if(objX % maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] != 0){
-                objX = objX - (objX % maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
-            }
-            if(objY % maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] != 0){
-                objY = objY - (objY % maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
-            }
-            
-        } else {
-            
-            // Get the real coördinates of the object (pixels on the canvas in relation to our user)
-            var objC = getRealCoordinates(objectId);
+        
+			// Get this object's coordinates on the map
+			var tx = animatedObjects[objectId]['position']['x'];
+			var ty = animatedObjects[objectId]['position']['y'];
+			
+			// Get all the coordinates
+			var objC = k.operations.coord.getByMap(tx, ty);
+			
+			var objX = objC.absX;
+			var objY = objC.absY;
 
-            var objX = objC['x'];
-            var objY = objC['y'];
-        }
+        
         // Loop through all the layers of this object
         for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['spritesToDraw'].length; spriteNr++){
             
             if(objectId == userPosition.uid){
                 debugEchoLfps('Drawing own user ' + objectId + ' layer nr ' + spriteNr + ' - namely: ' + animatedObjects[objectId]['spritesToDraw'][spriteNr] );
             }
-            
-            drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr], objX, objY, null, objectId);
+			
+			if(k.links.canvas.isDirtyByCanvas(objC.canvasX, objC.canvasY)){
+				
+				drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr], objX, objY, null, objectId);
+			}
         }
         
         // Draw the effects of this user
@@ -372,50 +341,56 @@ function renderObjects(){
  *Render a specific layer
  *@param    layerName   {string}    The name of the layer to draw of the current map
  */
-function renderLayer(layerName){
+k.operations.renderLayer = function(layerName){
     
     // For every visible row (+ the drawExtras row, needed for tiles that are bigger than the default map tile)
-    for (var tileY = 0; tileY <= k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight'])+drawExtras; tileY++) {
+    for (var tileY = 0; tileY <= k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'])+drawExtras; tileY++) {
         
         // And for every tile in that row (+ the drawExtras)
-        for (var tileX = (0-drawExtras); tileX <= k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']); tileX++) {
-            
-            // Calculate the coördinates of the tile we need, based on our current position
-            // (Example: The tile in row 10, column 5)
-            var rowTile = animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2))+1) - k.links.canvas.visibletilesx(maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
-            
-            // Do not continue if rowTile is negative or bigger than the width of the map
-            if(rowTile < 0 || rowTile >= maps[animatedObjects[userPosition.uid]['map']]['width']) continue;
-            
-            var colTile = animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+1) - k.links.canvas.visibletilesy(maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+        for (var tileX = (0-drawExtras); tileX <= k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']); tileX++) {
 
-            // Do not continue if colTile is negative or bigger than the height of the map
-            if(colTile < 0 || colTile >= maps[animatedObjects[userPosition.uid]['map']]['height']) continue;
-            
-            // Now that we know what piece of the map we need
-            // we need to get the corresponding tileset image
-            var tileNumber = getLayerTile(animatedObjects[userPosition.uid]['map'], layerName, Math.floor(rowTile), Math.floor(colTile));
-            
-            // When we get to an empty tile we can skip towards the next loop
-            if(tileNumber == 0 || tileNumber === undefined) continue;
-
-            // Now calculate where to draw this tile, based on the size of the tiles of the map, not the tileset
-            var destinationX = (tileX * maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - mappOffsetX;
-            var destinationY = (tileY * maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - mappOffsetY;
-            
-            // And now draw that tile!
-            try {
-                drawTile(tileNumber, destinationX, destinationY);
-
-            } catch(error) {
-                debugEchoLfps('[renderLoop] Error drawing tilenumber <b>"' + tileNumber +
-                              '"</b> from layer "<b>' + layerName + '</b>" - coordinates (<b>' + rowTile +
-                              '</b>,<b>' + colTile + '</b>) to (<b>' +
-                              destinationX + '</b>,<b>' + destinationY +
-                              '</b>)'
-                );
-
-            }
+			if(k.links.canvas.isDirtyByCanvas(tileX, tileY)){
+				
+				// Clear this tile only on the bottom layer
+				k.links.canvas.clearTileOnce(tileX, tileY);
+				
+				// Calculate the coördinates of the tile we need, based on our current position
+				// (Example: The tile in row 10, column 5)
+				var rowTile = animatedObjects[userPosition.uid]['position']['x'] + (tileX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2))+1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
+				
+				// Do not continue if rowTile is negative or bigger than the width of the map
+				if(rowTile < 0 || rowTile >= k.collections.maps[animatedObjects[userPosition.uid]['map']]['width']) continue;
+				
+				var colTile = animatedObjects[userPosition.uid]['position']['y'] + (tileY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+1) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
+	
+				// Do not continue if colTile is negative or bigger than the height of the map
+				if(colTile < 0 || colTile >= k.collections.maps[animatedObjects[userPosition.uid]['map']]['height']) continue;
+				
+				// Now that we know what piece of the map we need
+				// we need to get the corresponding tileset image
+				var tileNumber = getLayerTile(animatedObjects[userPosition.uid]['map'], layerName, Math.floor(rowTile), Math.floor(colTile));
+				
+				// When we get to an empty tile we can skip towards the next loop
+				if(tileNumber == 0 || tileNumber === undefined) continue;
+	
+				// Now calculate where to draw this tile, based on the size of the tiles of the map, not the tileset
+				var destinationX = (tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - mappOffsetX;
+				var destinationY = (tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - mappOffsetY;
+				
+				// And now draw that tile!
+				try {
+					drawTile(tileNumber, destinationX, destinationY);
+	
+				} catch(error) {
+					debugEchoLfps('[renderLoop] Error drawing tilenumber <b>"' + tileNumber +
+								  '"</b> from layer "<b>' + layerName + '</b>" - coordinates (<b>' + rowTile +
+								  '</b>,<b>' + colTile + '</b>) to (<b>' +
+								  destinationX + '</b>,<b>' + destinationY +
+								  '</b>)'
+					);
+	
+				}
+			}
         }
     }
 }
@@ -429,7 +404,7 @@ function drawDebugFps(){
     k.links.canvas.ctx.fillRect (2, k.links.canvas.height-33, k.links.canvas.width-4, 20);
     k.links.canvas.ctx.strokeStyle = "white";  
     k.links.canvas.ctx.font = "12px monospace";
-    k.links.canvas.ctx.strokeText('Fake ms: ' + precise(msf.toPrecision(4)) + ' - Real ms: ' + precise(msr.toPrecision(4))  + ' - Fake fps: ' + precise(Math.round(fpsf).toPrecision(4)) + ' - Real fps: ' + precise(Math.round(fpsr).toPrecision(4)), 5, k.links.canvas.height-20);
+    k.links.canvas.ctx.strokeText('Fake ms: ' + precise(k.state.engine.msf.toPrecision(4)) + ' - Real ms: ' + precise(k.state.engine.msr.toPrecision(4))  + ' - Fake fps: ' + precise(Math.round(k.state.engine.fpsf).toPrecision(4)) + ' - Real fps: ' + precise(Math.round(k.state.engine.fpsr).toPrecision(4)), 5, k.links.canvas.height-20);
 
 }
 
@@ -463,18 +438,18 @@ function drawDebugGrid(){
         
         // Draw horizontal lines
         for(var row = 0; row < (k.links.canvas.width/debugGridX); row++ ){
-            k.links.canvas.ctx.beginPath();
-            k.links.canvas.ctx.moveTo(0, row*debugGridX);  
-            k.links.canvas.ctx.lineTo(k.links.canvas.width, row*debugGridX);
-            k.links.canvas.ctx.stroke();
+            k.links.canvas.buffer.beginPath();
+            k.links.canvas.buffer.moveTo(0, row*debugGridX);  
+            k.links.canvas.buffer.lineTo(k.links.canvas.width, row*debugGridX);
+            k.links.canvas.buffer.stroke();
         }
         
         // Draw vertical lines
         for(var col = 0; col < (k.links.canvas.height/debugGridY); col++ ){
-            k.links.canvas.ctx.beginPath();
-            k.links.canvas.ctx.moveTo(col*debugGridY, 0);  
-            k.links.canvas.ctx.lineTo(col*debugGridY, k.links.canvas.height);
-            k.links.canvas.ctx.stroke();
+            k.links.canvas.buffer.beginPath();
+            k.links.canvas.buffer.moveTo(col*debugGridY, 0);  
+            k.links.canvas.buffer.lineTo(col*debugGridY, k.links.canvas.height);
+            k.links.canvas.buffer.stroke();
         }
         
 }
@@ -482,24 +457,33 @@ function drawDebugGrid(){
  *Calculate the "mapOffset" of the user if we're moving when the map is drawn
  */
 function prerenderMapOffset(){
-
+	
+	// Store the previous mapp offset
+	k.state.engine.prevMappOffsetX = mappOffsetX;
+	k.state.engine.prevMappOffsetY = mappOffsetY;
+	
 	//This has to be floored, because pixels can't have a decimal value
 	//And this would create 1 pixel spacing between the tiles while moving.
-	mappOffsetX = Math.floor((maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] * decimal(animatedObjects[userPosition.uid]['position']['x'])));
-	mappOffsetY = Math.floor((maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] * decimal(animatedObjects[userPosition.uid]['position']['y'])));
+	mappOffsetX = Math.floor((k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] * decimal(animatedObjects[userPosition.uid]['position']['x'])));
+	mappOffsetY = Math.floor((k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] * decimal(animatedObjects[userPosition.uid]['position']['y'])));
 
+	// If we're moving, redraw everything
+	if(mappOffsetX != k.state.engine.prevMappOffsetX ||
+	   mappOffsetY != k.state.engine.prevMappOffsetY){
+		k.links.canvas.setAllDirty(true);
+	}
 }
 
 /**
  *Every object has to be moved gradually. This function makes sure the coordinates
  *of the object are in the correct place before drawing them later on.
  */
-function prerenderMoveObjects(){
+k.operations.prerenderMoveObjects = function(){
 
     for (var objectId in animatedObjects){
         
         // Apply the path to walk and move the object
-        walkPath(objectId);
+        k.operations.walkPath(objectId);
     }
 }
 
@@ -514,6 +498,8 @@ function prerenderMoveObjects(){
  *@param    tileHeight  {integer}   Optional tileHeight
  */
 function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
+	
+	if(objectId === undefined || !objectId) objectId = userPosition.uid;
 
     var position = animatedObjects[objectId]['position'];
 
@@ -522,8 +508,8 @@ function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
     if(y === undefined) y = position.y;
     
     // Store the current map's tileWidth and Height, if it hasn't been given already
-    if(tileWidth === undefined) tileWidth = maps[animatedObjects[objectId]['map']]['tileWidth'];
-    if(tileHeight === undefined) tileHeight = maps[animatedObjects[objectId]['map']]['tileHeight'];
+    if(tileWidth === undefined) tileWidth = k.collections.maps[animatedObjects[objectId]['map']]['tileWidth'];
+    if(tileHeight === undefined) tileHeight = k.collections.maps[animatedObjects[objectId]['map']]['tileHeight'];
 
     // - a tilewidth and height to account for the 0,0 based positioning
     tempWidth = ((k.links.canvas.width - tileWidth) / 2);
@@ -531,11 +517,11 @@ function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
 
     // When the screen is the correct multiple of the tilewidth, but half of it isn't an integer
     // we need to take that into account.
-    if(tempWidth % maps[animatedObjects[objectId]['map']]['tileWidth'] != 0){
-        tempWidth = tempWidth - (tempWidth % maps[animatedObjects[objectId]['map']]['tileWidth']);
+    if(tempWidth % k.collections.maps[animatedObjects[objectId]['map']]['tileWidth'] != 0){
+        tempWidth = tempWidth - (tempWidth % k.collections.maps[animatedObjects[objectId]['map']]['tileWidth']);
     }
-    if(tempHeight % maps[animatedObjects[objectId]['map']]['tileHeight'] != 0){
-        tempHeight = tempHeight - (tempHeight % maps[animatedObjects[objectId]['map']]['tileHeight']);
+    if(tempHeight % k.collections.maps[animatedObjects[objectId]['map']]['tileHeight'] != 0){
+        tempHeight = tempHeight - (tempHeight % k.collections.maps[animatedObjects[objectId]['map']]['tileHeight']);
     }
 
     var objX = (tempWidth - (Math.floor(animatedObjects[userPosition.uid]['position']['x']) * tileWidth)) + (x * tileWidth) - mappOffsetX;
@@ -639,7 +625,7 @@ function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileGidOnMap, obj
     checkSameFrame(tileSetName, tileGidOnMap, animationId); // See if we've already drawn this animation during this frame
         
     // Count the ammount of frames that need to pass before showing the next one
-    frameWait = (fpsr / animatedTiles[tileSetName][animationId]["fps"]);
+    frameWait = (k.state.engine.fpsr / animatedTiles[tileSetName][animationId]["fps"]);
         
     // If there have been more frames than we should wait ...
     if(animatedTiles[tileSetName][animationId]["framessince"] >= frameWait){
@@ -780,7 +766,7 @@ function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
     // tileNumbers are fixed per MAP, not per tileset.(So a second tileset in a
     // map wouldn't start from 1 but from 21, for example.)
     // We still need to know which piece to get from the tileset, so this fixes that
-    tileNumber = tileNumber - (maps[sourceMap]['tilesets'][tileSetName]['firstgid']-1);
+    tileNumber = tileNumber - (k.collections.maps[sourceMap]['tilesets'][tileSetName]['firstgid']-1);
 
     if(tileProperties[tileSetName][tileGidOnMap] != undefined &&
        (tileProperties[tileSetName][tileGidOnMap]['beginanimation'] != undefined || movingObject == true)){
@@ -871,7 +857,7 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
  *@returns          {int}       The tile number
  */
 function getLayerTile(mapname, layername, x, y) {
-    return maps[mapname]['layers'][layername]['data'][y * maps[mapname]['width'] + x];
+    return k.collections.maps[mapname]['layers'][layername]['data'][y * k.collections.maps[mapname]['width'] + x];
 }
 
 /**
@@ -883,7 +869,7 @@ function getTileSetInfo(sourceMap, tileNumber){
     
     try{
         // Loop through all the tilesets in this map to determine which one we need
-        for (var name in maps[sourceMap]['tilesets']){
+        for (var name in k.collections.maps[sourceMap]['tilesets']){
             
             // Save the starting tile
             var tileStart = tileSet[name]['firstgid'] - 1;
@@ -944,8 +930,8 @@ function drawTestPath(){
     for(var node = 0; node < testPath.length; node++){
 
         // Calculate coordinates
-        var objX = (((canvasWidth - maps[userPosition.map]['tileWidth']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * maps[animatedObjects[userPosition.uid]['map']]['tileWidth'])) + (testPath[node]['x'] * maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - mappOffsetX;
-        var objY = (((canvasWidth - maps[userPosition.map]['tileHeight']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * maps[animatedObjects[userPosition.uid]['map']]['tileHeight'])) + (testPath[node]['y'] * maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - mappOffsetY;
+        var objX = (((canvasWidth - k.collections.maps[userPosition.map]['tileWidth']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'])) + (testPath[node]['x'] * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - mappOffsetX;
+        var objY = (((canvasWidth - k.collections.maps[userPosition.map]['tileHeight']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'])) + (testPath[node]['y'] * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - mappOffsetY;
 
 
         // Draw tile 309 (hardcoded, I know. It's in the grassland tileset

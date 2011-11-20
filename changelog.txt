@@ -1,3 +1,17 @@
+--- Sunday 2011-11-20 ---
+* Fixed a bug where the walkable tiles would be processed on every redraw.
+  This fixed the jittery movement while walking.
+* setInterval is back! Combine setInterval and requestAnimationFrame
+  in order to get a desired fps. Now evveryone is happy.
+  (Reason: we don't want 60 fps for our game. It flips out some stuff, like
+  walking around. 25 is more than enough)
+* Began implementation of dirty rectangles, which greatly improves execution
+  speed already. Still need to work out some bugs, though.
+  - It affects animations. They currently only work while moving. Solution is to
+    set an animated tile as *always* dirty, for its entire width.
+  - It affects server connections for some reason... Users are unable to move if
+    someone else logs off or logs on.
+
 --- Saturday 2011-11-19 ---
 * Cleaned up the code a bit more
 * Created an "oldcode" file, where some snippets can go that aren't currently
