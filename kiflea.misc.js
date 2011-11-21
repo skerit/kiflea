@@ -428,11 +428,11 @@ function echo(message, counter){
 
     if(counter === undefined || counter === false) {
 	    text = '<p>[<span class="msi">--INFO--</span>] ' + message + '</p>';
-		k.links.echo += text;
+		k.links.echo.innerHTML += text;
     } else {
         msPassed = (new Date()).getTime() - debugCounter;
 	    text='<p>[<span class="ms">'+msPassed.toPrecision(5)+'ms</span>] ' + message + '</p>';
-        k.links.echo += text;
+        k.links.echo.innerHTML += text;
     
         // Reset debugcounter
         debugCounterReset();

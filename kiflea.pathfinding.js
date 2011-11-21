@@ -363,9 +363,8 @@ k.actions.moveRequest = function(x, y, objectid, checkfull) {
  * @param	move	{k.Types.EventMoveAccept}
  */
 k.actions.moveAccept = function(move){
-	console.log(move);
+	
 	animatedObjects[move.targetid]['path'].push(move);
-	console.log(animatedObjects[move.targetid]);
 	
 }
 
@@ -584,14 +583,10 @@ k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, k
 
 			position[stepNext.moveAxis] = stepNow[stepNext.moveAxis] + ((stepNext[stepNext.moveAxis] - stepNow[stepNext.moveAxis]) * stepNext.moveProgress);
 		}
-		
-		var object = k.links.getObject(objectId);
-		
-		// Add these coordinates to our dirty rectangles var
-		k.links.canvas.setDirtyByMap(stepNow.x, stepNow.y, true, object.currentSprite);
-		k.links.canvas.setDirtyByMap(stepNext.x, stepNext.y, true, object.currentSprite);
-
 	}
+	
+	// Flag this object as dirty
+	k.links.canvas.dirty.set.byObject(objectId, 1);
 	
 	return walkAnotherStep;
 

@@ -22,9 +22,7 @@
  */
 k.operations.renderFrame = function(){
 	
-	// Start counters
-	k.state.engine.msfTimer = now();
-    
+	// Prepare the canvas for a render
     k.links.canvas.beginRender();
 	
     // Loading screen: wait for maps to load
@@ -85,25 +83,12 @@ k.operations.renderFrame = function(){
 		};
 	}
 
-    // Calculate fake ms & fps (time it took to draw this loop)
-    k.state.engine.msf = (now() - k.state.engine.msfTimer);
-    k.state.engine.fpsf = (1000/k.state.engine.msf);
-    
-    // Calculate real ms & fps (time it took to draw this loop + gap between loop)
-    k.state.engine.msr = (now() - k.state.engine.msrTimer);
-    k.state.engine.fpsr = (1000/k.state.engine.msr);
-
     // Clear the sameFrame variable, used by animated tiles
     sameFrame = {};
-
-    // Start the real fps counter
-    k.state.engine.msrTimer = now();
 
 	// Now flush the canvas buffer to the real canvas
 	k.links.canvas.flush();
     
-	k.links.canvas.drawFadeness();
-	
 	// Indicate we've finished this render
 	k.links.canvas.finishedRender();
     
@@ -333,10 +318,8 @@ function renderObjects(){
 			
 			// To draw the tile we need to add the tileheight (which we already
 			// did) But to get the coordinates, we need to subtract it again
-			if(k.links.canvas.isDirtyByAbsolute(objX, objY - map.tileHeight)){
-				
-				//console.log('Is dirty:' + objX + ',' + objY);
-				
+			if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
+
 				drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr],
 						 objX, objY, null, objectId);
 				
@@ -362,7 +345,7 @@ k.operations.renderLayer = function(layerName){
         // And for every tile in that row (+ the drawExtras)
         for (var tileX = (0-drawExtras); tileX <= k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']); tileX++) {
 
-			if(k.links.canvas.isDirtyByCanvas(tileX, tileY)){
+			if(k.links.canvas.dirty.get.byCanvas(tileX, tileY)){
 				
 				// Clear this tile only on the bottom layer
 				k.links.canvas.clearTileOnce(tileX, tileY);
@@ -425,7 +408,7 @@ function prerenderMapOffset(){
 	// If we're moving, redraw everything
 	if(mappOffsetX != k.state.engine.prevMappOffsetX ||
 	   mappOffsetY != k.state.engine.prevMappOffsetY){
-		k.links.canvas.setAllDirty(true);
+		k.links.canvas.dirty.set.all(1);
 	}
 }
 
@@ -515,13 +498,16 @@ function getTileProperty(tileSetName, tileNumber, propertyName){
  *@param string    objectId    If it's an object, give its ID.
  *@param    extraId     {integer}   If we need more of an ID
  */
-function drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileGidOnMap, objectId, extraId){
+function drawAnimated(tileSetName, tileNumber, dx, dy, opacity, tileGidOnMap, objectId, extraId){
     
     // World-animated tiles are identified by their tilenumber (so every instance
     // of one of these tiles has the same ID in the animation. That's what we want)
     // Object-animated tiles are identified by their objectId.
     // We need something to store one or the other in
     var animationId;
+	
+	// Flag this tile for dirtyness due to being animated
+	k.links.canvas.dirty.set.byAnimation(dx, dy, tileSetName);
     
     // Now let's decide which one it is
     if(objectId === undefined) {
@@ -804,6 +790,17 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
  */
 function getLayerTile(mapname, layername, x, y) {
     return k.collections.maps[mapname]['layers'][layername]['data'][y * k.collections.maps[mapname]['width'] + x];
+}
+
+/**
+ * Get the info of a tileset by its name
+ * @param	{string}	tileSetName		The name of the tileset
+ * @returns {k.Types.tileSetInfo} TileSetInfo object
+ */
+k.links.getTilesetByName = function(tileSetName){
+	
+	return tileSet[tileSetName];
+	
 }
 
 /**

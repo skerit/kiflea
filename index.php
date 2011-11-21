@@ -187,8 +187,11 @@
 			<button id="toggleengine" onclick="k.operations.toggleEngine();">Toggle engine</button>
 			<button id="togglegrid" onclick="k.settings.debug.GRID=!k.settings.debug.GRID;">Toggle grid</button>
 			<button id="togglefps" onclick="k.settings.debug.FPS=!k.settings.debug.FPS;">Toggle FPS</button><br/>
+			
+			<button id="togglegrid" onclick="k.settings.debug.DIRTY=!k.settings.debug.DIRTY;">Toggle dirty rectangles</button>
 			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['currenthealth']--;">Detract life</button>
 			<button id="testjson" onclick="sendTestJson()">Send JSON Test</button><br/>
+			
             <button id="previousFrame" onclick="movie.previousFrame()">previousFrame</button>
             <button id="nextFrame" onclick="movie.nextFrame()">nextFrame</button>
             <button id="next100" onclick="movie.nextFrame(100)">nextFrame 100</button>

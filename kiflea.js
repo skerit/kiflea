@@ -57,6 +57,12 @@ k.settings.debug.HUD = false;
 k.settings.debug.GRID = false;
 
 /**
+ * Draw dirty rectangle fadeness
+ * @define {boolean}
+ */
+k.settings.debug.DIRTY = true;
+
+/**
  * Draw debug FPS information
  * @define {boolean}
  */
@@ -322,11 +328,11 @@ k.operations.startEngine = function() {
 	
     // Link these output debug variables to the innerHTML content
     if (document.getElementById(k.settings.ids.DEBUG)) {
-		k.links.debug = document.getElementById(k.settings.ids.DEBUG).innerHTML;
+		k.links.debug = document.getElementById(k.settings.ids.DEBUG);
 	}
 	
     if (document.getElementById(k.settings.ids.ECHO)) {
-		k.links.echo = document.getElementById(k.settings.ids.ECHO).innerHTML;
+		k.links.echo = document.getElementById(k.settings.ids.ECHO);
 	}
 
     // Start the debug counter

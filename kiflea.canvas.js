@@ -26,7 +26,11 @@
  */
 k.classes.Canvas = function(canvasId){
 
+	/**
+	 * @type {k.classes.Canvas} A reference for inner functions to reach parent
+	 */
 	var that = this;
+	
 	this.canvasId = canvasId;
 
 	// Retrieve the canvas DOM node, this gives us access to its drawing functions
@@ -35,6 +39,11 @@ k.classes.Canvas = function(canvasId){
 	// Get the width and height of the element
 	this.width = document.getElementById(canvasId).width;
 	this.height = document.getElementById(canvasId).height;
+	
+	// How many tiles do we show on the canvas?
+	this.tpr = 0;
+	this.tpc = 0;
+	this.totaltiles = 0;
 	
 	// Should we draw the world or not this render?
 	this.drawWorld = true;
@@ -53,8 +62,13 @@ k.classes.Canvas = function(canvasId){
 	this.state.msfTimer = now();
 	this.state.msrTimer = now();
 	
-	// Dirty rectangles
-	this.dirtyRectangles = {};
+	// Variables containing dirty settings
+	this.dirty = {};
+	this.dirty.buffer = 3;	// Use a buffer of 3 tiles outside of the canvas
+	this.dirty.tiles = {};
+	this.dirty.cleaned = {};
+	this.dirty.get = {};
+	this.dirty.set = {};
 	
 	// Cleaned rectangles
 	this.cleanedRectangles = {};
@@ -98,6 +112,9 @@ k.classes.Canvas = function(canvasId){
 
 		// If the RECORD variable is true, add the current frame to the movie
 		if(k.settings.debug.RECORD) this.movie.addImage(document.getElementById(this.canvasId));
+		
+		// Draw the dirty rectangle fades if we want it
+		if(k.settings.debug.DIRTY) that.drawFadeness();
         
         // Draw the grid if we want it
         if(k.settings.debug.GRID == true) that.drawGrid();
@@ -142,8 +159,8 @@ k.classes.Canvas = function(canvasId){
        that.ctx.font = "12px monospace";
        that.ctx.strokeText('Fake ms: ' + precise(k.state.engine.msf.toPrecision(4)) + ' - ' +
 						   'Real ms: ' + precise(k.state.engine.msr.toPrecision(4))  + ' - ' +
-						   'Fake fps: ' + precise(Math.round(mean(that.state.fpsf)).toPrecision(4)) + ' - ' +
-						   'Real fps: ' + precise(Math.round(mean(that.state.fpsr)).toPrecision(4)), 5, that.height-20);
+						   'Fake fps: ' + precise(Math.round(k.state.engine.fpsf).toPrecision(4)) + ' - ' +
+						   'Real fps: ' + precise(Math.round(k.state.engine.fpsr).toPrecision(4)), 5, that.height-20);
     }
 	
 	/**
@@ -155,25 +172,40 @@ k.classes.Canvas = function(canvasId){
 			that.mapName = mapname;
 			that.map = k.links.getMap(mapname);
 			
-			// Set every tile as dirty
-			that.setAllDirty();
+			// Set the tile counts
+			that.tpr = Math.floor(that.width / that.map.tileWidth);
+			that.tpc = Math.floor(that.height / that.map.tileHeight);
+			that.totaltiles = that.tpr * that.tpc;
+			
+			// Recreate the dirty map
+			that.dirty.set.create();
 			
 		}
 	}
 	
 	/**
-	 * Set every tile as dirty
+	 * Create the dirty rectangles object
 	 */
-	this.setAllDirty = function(dirty){
-		if(dirty === undefined) dirty = true;
+	this.dirty.set.create = function(){
 		
-		var cx = -3;
+		// The starting x coordinates, from left to right
+		var cx = 0 - that.dirty.buffer;
+		
+		for(var x = 0 - (that.map.tileWidth*that.dirty.buffer);
+			x <= that.width + (that.map.tileWidth*that.dirty.buffer);
+			x = x + that.map.tileWidth){
 			
-		for(var x = 0 - (that.map.tileWidth*3); x <= that.width + (that.map.tileWidth*3); x = x + parseInt(that.map.tileWidth)){
-			cy = -3;
-			for(var y = 0 - (that.map.tileHeight*3); y <= that.height  + (that.map.tileHeight*3); y = y + parseInt(that.map.tileHeight)){
+			// Create the x-axis object
+			that.dirty.tiles[cx] = {};
+			
+			var cy = 0 - that.dirty.buffer;
+			
+			for(var y = 0 - (that.map.tileHeight*that.dirty.buffer);
+				y <= that.height  + (that.map.tileHeight*that.dirty.buffer);
+				y = y + that.map.tileHeight){
 				
-				that.setDirtyByCanvas(cx, cy, dirty);
+				// Create the y-axis object
+				that.dirty.tiles[cx][cy] = {dirty: 1, fade: 40}
 				
 				cy++;
 			}
@@ -183,132 +215,237 @@ k.classes.Canvas = function(canvasId){
 	}
 	
 	/**
-	 * Is this tile dirty?
-	 */
-	this.isDirtyByCanvas = function(canvasX, canvasY){
-		
-		// If it doesn't even exist (which shouldn't happen, but still) return true
-		if(that.dirtyRectangles[canvasX] === undefined) {
-			that.setDirtyByCanvas(canvasX, canvasY, true);
-			return true;
-		} else {
-			if(that.dirtyRectangles[canvasX][canvasY] === undefined){
-				that.setDirtyByCanvas(canvasX, canvasY, true);
-				return true;
-			} else {
-				return that.dirtyRectangles[canvasX][canvasY]['dirty'];
-			}
-		}
-	}
-	
-	/**
-	 * Is this tile dirty?
-	 */
-	this.isDirtyByAbsolute = function(absX, absY){
-		
-		var coord = k.operations.coord.getByMouse(Math.floor(absX), Math.floor(absY));
-		var isdirty = that.isDirtyByCanvas(coord.canvasX, coord.canvasY);
-		
-		return isdirty;
-	}
-	
-	/**
-	 * Flag a tile as dirty by its map coordinates
+	 * Set every tile as dirty
 	 * 
-	 * @param   {number} mapX   The map-x
-	 * @param   {number} mapY	The map-y
-	 * @param	{bool}	 dirty		Wether it's dirty or not (default true)
+	 * @param   {number} [duration] How long something is dirty. Default = 1
+	 * 
 	 */
-	this.setDirtyByMap = function(mapX, mapY, dirty, sprite){
+	this.dirty.set.all = function(duration){
 		
-		if(dirty === undefined) dirty = true;
+		// Set the default duration to 1 if none is supplied
+		if(duration === undefined) duration = 1;
 		
-		// Certain sprites are higher than others, we need to flag those
-		// positions as dirty, too.
-		if(sprite !== undefined){
+		// The starting x coordinates, from left to right
+		var cx = 0 - that.dirty.buffer;
+		
+		for(var x = 0 - (that.map.tileWidth*that.dirty.buffer);
+			x <= that.width + (that.map.tileWidth*that.dirty.buffer);
+			x = x + that.map.tileWidth){
 			
-			// Get the tielset info of the sprite, needed for its tile dimensions
-			var tileSet = getTileSetInfo(k.settings.engine.DEFAULTSPRITES, sprite);
+			var cy = 0 - that.dirty.buffer;
 			
-			// The extra x
-			var xex = 1;
-			
-			// Do this for every tile this sprite is wider
-			for(var width = that.map.tileWidth; width < tileSet.tileWidth; width = parseInt(width) + parseInt(that.map.tileWidth)){
-				that.setDirtyByMap(mapX+xex, mapY, dirty);
-				xex++;
+			for(var y = 0 - (that.map.tileHeight*that.dirty.buffer);
+				y <= that.height  + (that.map.tileHeight*that.dirty.buffer);
+				y = y + that.map.tileHeight){
+				
+				that.dirty.set.byCanvas(cx, cy, duration);
+				
+				cy++;
 			}
-			
-			// The extra y
-			var yex = 1;
-			
-			// Do this for every tile this sprite is higher
-			for(var height = that.map.tileHeight; height < tileSet.tileHeight; height = parseInt(height) + parseInt(that.map.tileHeight)){
-				that.setDirtyByMap(mapX, mapY-yex, dirty);
-				yex++;
-			}
-			
+			cx++;
 		}
+	}
+	
+	/**
+	 * Set a certain tile as dirty by its canvas coordinates
+	 */
+	this.dirty.set.byCanvas = function(canvasX, canvasY, duration){
 
-		// Get the other coordinates based on the map coordinates
+		// Set the default duration to 1 if none is supplied
+		if(duration === undefined) duration = 1;
+		
+		// Make sure this is not out of bounds:
+		if(that.dirty.tiles[canvasX] === undefined) return;
+		if(that.dirty.tiles[canvasX][canvasY] === undefined) return;
+		
+		// Increase or decrease the duration
+		// And set the fadeness (for debugging)
+		if(duration){
+			
+			// Set the fade
+			if(that.dirty.tiles[canvasX][canvasY]['fade'] > 0){
+				if(that.dirty.tiles[canvasX][canvasY]['fade'] < 89){
+					that.dirty.tiles[canvasX][canvasY]['fade'] += 5;
+				}
+			} else {
+				that.dirty.tiles[canvasX][canvasY]['fade'] = 20;
+			}
+			
+			// Set the dirty duration
+			if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0){
+				
+				// Let's keep it low, at about 4
+				if(that.dirty.tiles[canvasX][canvasY]['dirty'] < 5){
+					that.dirty.tiles[canvasX][canvasY]['dirty'] += duration;
+				}
+				
+			} else {
+				that.dirty.tiles[canvasX][canvasY]['dirty'] = duration;
+			}
+			
+		} else {
+			if(that.dirty.tiles[canvasX][canvasY]['fade'] > 0){
+				that.dirty.tiles[canvasX][canvasY]['fade']--;
+			}
+			
+			// Decrease the dirtyness if it's over 0
+			if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0){
+				that.dirty.tiles[canvasX][canvasY]['dirty']--;
+			}
+		}
+	}
+	
+	/**
+	 * Set a certain tile as dirty by its map coordinates
+	 * 
+	 * @param   {Integer} mapX     The x-coordinate on the entire map
+	 * @param   {Integer} mapY     The y-coordinate on the entire map
+	 * @param   {Integer} duration How many frames we want it to be dirty
+	 * 
+	 */
+	this.dirty.set.byMap = function(mapX, mapY, duration){
+		
+		// Get the canvas coordinates
 		var coord = k.operations.coord.getByMap(mapX, mapY);
 		
-		// Make sure the required objects exist
-		if(that.dirtyRectangles[coord.canvasX] === undefined) that.dirtyRectangles[coord.canvasX] = {};
-		if(that.dirtyRectangles[coord.canvasX][coord.canvasY] === undefined) that.dirtyRectangles[coord.canvasX][coord.canvasY] = {};
-		
-		// Set it as dirty
-		that.dirtyRectangles[coord.canvasX][coord.canvasY]['dirty'] = dirty;
-		
-		// Set the fadeness for debuging reasons
-		if(dirty){
-			if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] > 0){
-				if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] < 89){
-					that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] = that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] + 10;
-				}
-			} else {
-				that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] = 20;
-			}
-		} else {
-			if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] > 0){
-				that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade']--;
-			}
-		}
+		// Use the canvas coordinates to set the tile as dirty
+		that.dirty.set.byCanvas(coord.canvasX, coord.canvasY);
 		
 	}
 	
 	/**
-	 * Flag a tile as dirty by its canvas coordinates
+	 * Set a certain tile as dirty by its absolute canvas coordinates
 	 * 
-	 * @param   {number} canvasX    The canvas-x
-	 * @param   {number} canvasY	The canvas-y
-	 * @param	{bool}	 dirty		Wether it's dirty or not (default true)
+	 * @param   {Integer} absX     The x-coordinate on the entire map
+	 * @param   {Integer} absY     The y-coordinate on the entire map
+	 * @param   {Integer} duration How many frames we want it to be dirty
+	 * 
 	 */
-	this.setDirtyByCanvas = function(canvasX, canvasY, dirty){
+	this.dirty.set.byAbsolute = function(absX, absY, duration){
 		
-		if(dirty === undefined) dirty = true;
+		// Get the canvas coordinates
+		var coord = k.operations.coord.getByMouse(absX, absY);
 		
-		// Make sure the required objects exist
-		if(that.dirtyRectangles[canvasX] === undefined) that.dirtyRectangles[canvasX] = {};
-		if(that.dirtyRectangles[canvasX][canvasY] === undefined) that.dirtyRectangles[canvasX][canvasY] = {};
+		// Use the canvas coordinates to set the tile as dirty
+		that.dirty.set.byCanvas(coord.canvasX, coord.canvasY);
 		
-		// Set it as dirty
-		that.dirtyRectangles[canvasX][canvasY]['dirty'] = dirty;
+	}
+	
+	/**
+	 * Set an object as dirty
+	 */
+	this.dirty.set.byObject = function(objectId, duration){
 		
-		// Set the fadeness for debuging reasons
-		if(dirty){
-			if(that.dirtyRectangles[canvasX][canvasY]['fade'] > 0){
-				if(that.dirtyRectangles[canvasX][canvasY]['fade'] < 89){
-					that.dirtyRectangles[canvasX][canvasY]['fade'] = that.dirtyRectangles[canvasX][canvasY]['fade'] + 5;
+		// Set the default duration to 1 if none is supplied
+		if(duration === undefined) duration = 1;
+		
+		var object = k.links.getObject(objectId);
+		
+		// Get the tielset info of the sprite, needed for its tile dimensions
+		var tileSet = getTileSetInfo(k.settings.engine.DEFAULTSPRITES, object.currentSprite);
+		
+		// The steps of the object
+		var stepPrev = object.path[k.state.walk.indexPrev];
+		var stepNow = object.path[k.state.walk.indexNow];
+		var stepNext = object.path[k.state.walk.indexNext];
+		
+		// Do this for every tile this sprite is wide
+		for(var width = 0;
+			width < (tileSet.tileWidth/that.map.tileWidth);
+			width += 1){
+			
+			for(var height = 0;
+				height < (tileSet.tileHeight/that.map.tileHeight);
+				height += 1){
+				
+				that.dirty.set.byMap(stepPrev.x + width,
+									 stepPrev.y - height, duration);
+				
+				that.dirty.set.byMap(stepNow.x + width,
+									 stepNow.y - height, duration);
+				
+				if(stepNext) {
+					that.dirty.set.byMap(stepNext.x + width,
+										 stepNext.y - height, duration);
 				}
-			} else {
-				that.dirtyRectangles[canvasX][canvasY]['fade'] = 20;
-			}
-		} else {
-			if(that.dirtyRectangles[canvasX][canvasY]['fade'] > 0){
-				that.dirtyRectangles[canvasX][canvasY]['fade']--;
 			}
 		}
+	}
+	
+	/**
+	 * Flag an animated tile as dirty
+	 */
+	this.dirty.set.byAnimation = function(absX, absY, tileSetName){
+		
+		var ts = k.links.getTilesetByName(tileSetName);
+		
+		for(var x = 0; x < ts.tileWidth; x = x + that.map.tileWidth){
+			
+			for(var y = 0; y < ts.tileHeight; y = y + that.map.tileHeight){
+				
+				that.dirty.set.byAbsolute(absX + x, absY - y, 2);
+				
+			}
+		}
+	}
+	
+	/**
+	 * Is this tile dirty, by its canvas coordinates
+	 * 
+	 * @param   {Integer} canvasX    The x-tile number on the canvas
+	 * @param   {Integer} canvasY    The y-tile number on the canvas
+	 * 
+	 */
+	this.dirty.get.byCanvas = function(canvasX, canvasY){
+		
+		// FIXME: When out of bounds, these should return false, but that
+		// currently gives us empty tiles underneath objects.
+		
+		// Return false for anything out of bounds
+		if(that.dirty.tiles[canvasX] === undefined) {
+			//echo('X not found: ' + canvasX);
+			return true;
+		}
+		if(that.dirty.tiles[canvasX][canvasY] === undefined) {
+			//echo('Y not found: ' + canvasY);
+			return true;
+		}
+		
+		if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0){
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/**
+	 * Is this tile dirty, by its map coordinates
+	 * 
+	 * @param   {Integer} mapX    The x-tile number on the canvas
+	 * @param   {Integer} mapY    The y-tile number on the canvas
+	 * 
+	 */
+	this.dirty.get.byMap = function(mapX, mapY){
+		
+		// Get the canvas coordinates
+		var coord = k.operations.coord.getByMap(mapX, mapY);
+		
+		return that.dirty.get.byCanvas(coord.canvasX, coord.canvasY);
+	}
+	
+	/**
+	 * Is this tile dirty, by its absolute coordinates
+	 * 
+	 * @param   {Integer} absX    The absolute x coordinate on the canvas
+	 * @param   {Integer} absY    The absolute y coordinate on the canvas
+	 * 
+	 */
+	this.dirty.get.byAbsolute = function(absX, absY){
+		
+		// Get the canvas coordinates
+		var coord = k.operations.coord.getByMouse(absX, absY);
+		
+		return that.dirty.get.byCanvas(coord.canvasX, coord.canvasY);
 	}
 	
 	/**
@@ -376,7 +513,7 @@ k.classes.Canvas = function(canvasId){
 		that.cleanedRectangles = {};
 		
 		// Set every tile as clean
-		that.setAllDirty(false);
+		that.dirty.set.all(0);
 		
 		// If the array is getting too long, remove the first element
 		if(that.state.fpsf.length > 25) that.state.fpsf.shift();
@@ -389,6 +526,12 @@ k.classes.Canvas = function(canvasId){
 		// Calculate real ms & fps (time it took to draw this loop + gap between loop)
 		that.state.msr = (now() - that.state.msrTimer);
 		that.state.fpsr.push(1000/that.state.msr);
+		
+		// Save the average FPS and ms data
+		k.state.engine.msf = that.state.msf;
+		k.state.engine.msr = that.state.msr;
+		k.state.engine.fpsr = mean(that.state.fpsr);
+		k.state.engine.fpsf = mean(that.state.fpsf);
 		
 		// Start the real fps counter
 		that.state.msrTimer = now();
@@ -453,10 +596,10 @@ k.classes.Canvas = function(canvasId){
 	
 	that.drawFadeness = function(){
 		
-		for(var x in that.dirtyRectangles){
-			for(var y in that.dirtyRectangles[x]){
+		for(var x in that.dirty.tiles){
+			for(var y in that.dirty.tiles[x]){
 				
-				var fade = that.dirtyRectangles[x][y]['fade']/100;
+				var fade = that.dirty.tiles[x][y]['fade']/100;
 				
 				var coord = k.operations.coord.getByCanvas(x, y);
 				

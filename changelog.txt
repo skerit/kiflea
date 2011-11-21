@@ -6,9 +6,14 @@
   now happen after a flush)
 * Moved the canvas class to its own file (kiflea.canvas.js)
   It was getting too big.
-* Added FPS-measuring to the Canvas class. Code from the renderFrame function
-  should be removed to keep everything nice and tidy.
-  What shall I do with k.state.engine.fpsr?
+* Moved FPS-measuring to the Canvas class, and improved it:
+  FPS data are now calculated mean averages.
+* Improvements to the dirty rectangles code.
+* Found a bug (that still needs fixing): all objects on the current map are
+  drawn, no matter where they are. That needs to be fixed.
+* Fixed the echo functions. innerHTML is not passed by reference. Stupid mistake
+* Started very early work of the autotile feature: added a new tileset and
+  places a few tiles on the grassland map.
 
 --- Sunday 2011-11-20 ---
 * Fixed a bug where the walkable tiles would be processed on every redraw.
