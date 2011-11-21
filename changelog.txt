@@ -1,3 +1,15 @@
+--- Monday 2011-11-21 ---
+* Finally fixed "off-line" processing of walkable tiles. (This now gets done
+  after the last tileset image has been loaded.) This will also happen for
+  on-line clients, but it will have no effect on them.
+* Moved the drawing of the debug grid from the renderFrame to the canvas (will
+  now happen after a flush)
+* Moved the canvas class to its own file (kiflea.canvas.js)
+  It was getting too big.
+* Added FPS-measuring to the Canvas class. Code from the renderFrame function
+  should be removed to keep everything nice and tidy.
+  What shall I do with k.state.engine.fpsr?
+
 --- Sunday 2011-11-20 ---
 * Fixed a bug where the walkable tiles would be processed on every redraw.
   This fixed the jittery movement while walking.

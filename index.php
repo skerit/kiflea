@@ -45,6 +45,7 @@
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
     <script type="text/javascript" src="kiflea.misc.js"></script>
 	<script type="text/javascript" src="kiflea.js"></script>
+	<script type="text/javascript" src="kiflea.canvas.js"></script>
 	<script type="text/javascript" src="kiflea.rendering.js"></script>
 	<script type="text/javascript" src="kiflea.sercon.js"></script>
 	<script type="text/javascript" src="kiflea.hud.js"></script>
@@ -52,7 +53,7 @@
 	<script type="text/javascript" src="kiflea.pathfinding.js"></script>
 	<script type="text/javascript">
 		$(document).ready(function() {
-			k.settings.server.CONNECT = true;
+			k.settings.server.CONNECT = false;
 			k.settings.server.ADDRESS = 'ws://kipdola.be';
 			<?php
 			if($_GET['server'] == 'localhost'){
@@ -182,10 +183,10 @@
 			<h2 class="title">Kipdola's Flat Earth Engine</h2>
 			<canvas id="flatearth" width="480" height="480"></canvas>
 			<br/>
-			<button id="clearecho" onclick="k.links.echo.empty();">Clear echo div</button>
+			<button id="clearecho" onclick="k.links.echo = '';">Clear echo div</button>
 			<button id="toggleengine" onclick="k.operations.toggleEngine();">Toggle engine</button>
 			<button id="togglegrid" onclick="k.settings.debug.GRID=!k.settings.debug.GRID;">Toggle grid</button>
-			<button id="togglefps" onclick="k.settings.debug.DEBUG=!k.settings.debug.DEBUG;">Toggle debug</button><br/>
+			<button id="togglefps" onclick="k.settings.debug.FPS=!k.settings.debug.FPS;">Toggle FPS</button><br/>
 			<button id="detractlife" onclick="animatedObjects[userPosition.uid]['currenthealth']--;">Detract life</button>
 			<button id="testjson" onclick="sendTestJson()">Send JSON Test</button><br/>
             <button id="previousFrame" onclick="movie.previousFrame()">previousFrame</button>

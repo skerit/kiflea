@@ -24,6 +24,8 @@ k.operations.renderFrame = function(){
 	
 	// Start counters
 	k.state.engine.msfTimer = now();
+    
+    k.links.canvas.beginRender();
 	
     // Loading screen: wait for maps to load
 	if (k.state.load.toload > k.state.load.loaded){
@@ -90,9 +92,6 @@ k.operations.renderFrame = function(){
     // Calculate real ms & fps (time it took to draw this loop + gap between loop)
     k.state.engine.msr = (now() - k.state.engine.msrTimer);
     k.state.engine.fpsr = (1000/k.state.engine.msr);
-    
-    // Draw a grid over the screen.
-    if(k.settings.debug.GRID == true) drawDebugGrid();
 
     // Clear the sameFrame variable, used by animated tiles
     sameFrame = {};
@@ -102,15 +101,11 @@ k.operations.renderFrame = function(){
 
 	// Now flush the canvas buffer to the real canvas
 	k.links.canvas.flush();
-
+    
 	k.links.canvas.drawFadeness();
 	
 	// Indicate we've finished this render
 	k.links.canvas.finishedRender();
-
-    // If we've enabled debugging, we actually want the fps (bad name, I know)
-    // Draw it on the canvas for better framerates
-    if(k.settings.debug.DEBUG==true) drawDebugFps();
     
 }
 
@@ -413,64 +408,6 @@ k.operations.renderLayer = function(layerName){
     }
 }
 
-/**
- *Draw FPS information on the canvas
- */
-function drawDebugFps(){
-    
-    k.links.canvas.ctx.fillStyle = "rgba(20, 20, 20, 0.7)";  
-    k.links.canvas.ctx.fillRect (2, k.links.canvas.height-33, k.links.canvas.width-4, 20);
-    k.links.canvas.ctx.strokeStyle = "white";  
-    k.links.canvas.ctx.font = "12px monospace";
-    k.links.canvas.ctx.strokeText('Fake ms: ' + precise(k.state.engine.msf.toPrecision(4)) + ' - Real ms: ' + precise(k.state.engine.msr.toPrecision(4))  + ' - Fake fps: ' + precise(Math.round(k.state.engine.fpsf).toPrecision(4)) + ' - Real fps: ' + precise(Math.round(k.state.engine.fpsr).toPrecision(4)), 5, k.links.canvas.height-20);
-
-}
-
-/**
- * Precise
- */
-function precise(text){
-
-	text = String(text);
-
-	if(text.indexOf('.00') > 0) {
-		text = text.replace('.00', '');
-		text = '00' + text;
-	}
-
-	if(text.indexOf('.0') > 0) {
-		text = text.replace('.0', '');
-		text = '0' + text;
-	}
-
-	return text;
-
-}
-
-/**
- *Draw a grid on the canvas
- */
-function drawDebugGrid(){
-    
-        k.links.canvas.ctx.strokeStyle = "rgba(20, 20, 20, 0.7)";  
-        
-        // Draw horizontal lines
-        for(var row = 0; row < (k.links.canvas.width/debugGridX); row++ ){
-            k.links.canvas.buffer.beginPath();
-            k.links.canvas.buffer.moveTo(0, row*debugGridX);  
-            k.links.canvas.buffer.lineTo(k.links.canvas.width, row*debugGridX);
-            k.links.canvas.buffer.stroke();
-        }
-        
-        // Draw vertical lines
-        for(var col = 0; col < (k.links.canvas.height/debugGridY); col++ ){
-            k.links.canvas.buffer.beginPath();
-            k.links.canvas.buffer.moveTo(col*debugGridY, 0);  
-            k.links.canvas.buffer.lineTo(col*debugGridY, k.links.canvas.height);
-            k.links.canvas.buffer.stroke();
-        }
-        
-}
 /**
  *Calculate the "mapOffset" of the user if we're moving when the map is drawn
  */

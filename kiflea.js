@@ -57,22 +57,16 @@ k.settings.debug.HUD = false;
 k.settings.debug.GRID = false;
 
 /**
+ * Draw debug FPS information
+ * @define {boolean}
+ */
+k.settings.debug.FPS = true;
+
+/**
  * Show debug info on pathfinding
  * @define {boolean}
  */
 k.settings.debug.PATH = false;
-
-/**
- * Debug grid width
- * @define {integer}
- */
-k.settings.debug.GRIDWIDTH = 32;
-
-/**
- * Debug grid height
- * @define {integer}
- */
-k.settings.debug.GRIDHEIGHT = 32;
 
 /**
  * The ammount of extra previous paths to remember.
@@ -162,8 +156,30 @@ k.state.server.initiated = false;
 
 k.state.recording = false;
 
-k.state.load.toload = 0;		// Increases with each map/tileset that needs to be loaded
-k.state.load.loaded = 0;		// Increases with each loaded map/tileset. Game will only start if they're equal
+/**
+ * Total count of things that need to be loaded
+ * @type    {number}
+ */
+k.state.load.toload = 0;
+
+/**
+ * Total count of things that have been loaded
+ * @type    {number}
+ */
+k.state.load.loaded = 0;
+
+/**
+ * Total count of tilesets that need to be loaded
+ * @type    {number}
+ */
+k.state.load.toloadTilesets = 0;
+
+/**
+ * Total count of tilesets that have been loaded
+ * @type    {number}
+ */
+k.state.load.loadedTilesets = 0;
+
 k.state.load.loadedHud = false;	// If the hud has been loaded
 k.state.load.loadedMap = false;	// If the map has been loaded
 
@@ -176,8 +192,8 @@ k.state.engine.mappOffsetY = 0;
 
 k.state.engine.msfTimer = 0;
 k.state.engine.msrTimer = 0;
-k.state.engine.msf = false;		// The fake ms time (time it takes to start and end a draw)
-k.state.engine.msr = false;		// The real ms time (fake ms + time between draws)
+k.state.engine.msf = 0;		// The fake ms time (time it takes to start and end a draw)
+k.state.engine.msr = 0;		// The real ms time (fake ms + time between draws)
 k.state.engine.fpsf = 0;		// The fake fps (1000 / msf)
 k.state.engine.fpsr = 0;		// The real fps (1000 / msf)
 k.state.engine.loop = 0;		// The loop to redraw the screen
@@ -266,8 +282,6 @@ var userPosition = {
 var animatedObjects = {};	    // The variable that will contain all the objects, including the user's data
 var textObjects = [];		    // The variable that will store text messages
 var charsPerLine = 52;		    // The ammount of letters that fit on one line
-var userSpawnX = 10;                // The X position our user starts at
-var userSpawnY = 10;                // The Y position our user starts at
 var userMoveTilePerSecond = 10;     // Tile per second
 var userMoveMsPerTile = 100;        // MS per tile (one of these has to go)
 var userMoveSmoothness = 2;         // How smooth you want the character to move (0 - ?)
@@ -275,11 +289,8 @@ var userMoveQueue = 2;		    // How many moves we can queue up. Shouldn't be to m
 var debugCounter;                   // Every echoDebug() called will also print this time.
 var debugMovement = false;	    // output debug to the echo div on movement
 var debugHudOn = true;		    // output debug to the echo div on HUD
-var debugGrid = false;              // Do you want to draw a grid on the canvas?
 var debugPathOn = false;            // Debug the pathfinding code?
 var testPath = [];                  // An array with test pathfinding data
-var debugGridX = 32;
-var debugGridY = 32;
 
 var loadHud = 'hud.json'	    // The URL of the HUD file we'll be loading
 var hudLayers = {};		    // We'll store the HUD in here.
@@ -301,448 +312,6 @@ var font = {"size": 20,		    // Size in pixels
 
 /* @deprecated  */
 var movie;
-
-/**
- * Initialize a canvas element
- * @classDescription  This class creates a new canvas.
- * @param  {string}   canvasId  The id of the canvas to load
- * @return {object}   Return our own Canvas element
- * @constructor
- */
-k.classes.Canvas = function(canvasId){
-
-	var that = this;
-	this.canvasId = canvasId;
-
-	// Retrieve the canvas DOM node, this gives us access to its drawing functions
-	this.ctx = document.getElementById(canvasId).getContext('2d');
-
-	// Get the width and height of the element
-	this.width = document.getElementById(canvasId).width;
-	this.height = document.getElementById(canvasId).height;
-	
-	// Should we draw the world or not this render?
-	this.drawWorld = true;
-	
-	// Store things we do only one time per render
-	this.once = {};
-	this.once.clear = false;
-	this.once.messages = [];
-	
-	// Dirty rectangles
-	this.dirtyRectangles = {};
-	
-	// Cleaned rectangles
-	this.cleanedRectangles = {};
-	
-	// The current map we're working on
-	this.mapName = "";
-	this.map = {};
-
-	// If the RECORD var is true, create a movie object
-	if(k.settings.debug.RECORD) this.movie = new CanvasReplay(this.width,  this.height);
-
-	// Mouse settings
-	this.mouse = {};
-	this.mouse.x = 0;               // Where is the cursor now?
-	this.mouse.y = 0;               // Where is the cursor now?
-	this.mouse.down = false;        // Is the mouse pressed down?
-	this.mouse.downx = 0;           // Where was the mouse pressed down?
-	this.mouse.downy = 0;           // Where was the mouse pressed down?
-	this.mouse.upx = 0;             // Where was the mouse last released?
-	this.mouse.upy = 0;             // Where was the mouse last released?
-	this.mouse.dialogDown = false;  // The dialog window we have under our cursor when pressing down
-	this.mouse.dialogUp = false;    // The dialog window we have under our cursor when releasing the mouse button
-	this.mouse.underType;           // What is beneath the mouse now?
-	this.mouse.focus = false;       // What has focus right now?
-
-	// Create a buffer canvas. We'll draw everything to this first
-	this.bufferElement = document.createElement('canvas');
-
-	// Set the resolution of the buffer element
-	this.bufferElement.width = this.width;
-	this.bufferElement.height = this.height;
-
-	// Get the buffer context
-	this.buffer = this.bufferElement.getContext('2d');
-
-	/**
-	 * Copy the buffer over to the actual canvas
-	 */
-	this.flush = function(){
-		this.ctx.drawImage(this.bufferElement, 0 ,0);
-
-		// If the RECORD variable is true, add the current frame to the movie
-		if(k.settings.debug.RECORD) this.movie.addImage(document.getElementById(this.canvasId));
-	}
-	
-	/**
-	 * Prepare a certain map
-	 */
-	this.prepareMap = function(mapname){
-		
-		if(that.mapName != mapname){
-			that.mapName = mapname;
-			that.map = k.links.getMap(mapname);
-			
-			// Set every tile as dirty
-			that.setAllDirty();
-			
-		}
-	}
-	
-	/**
-	 * Set every tile as dirty
-	 */
-	this.setAllDirty = function(dirty){
-		if(dirty === undefined) dirty = true;
-		
-		var cx = -3;
-			
-		for(var x = 0 - (that.map.tileWidth*3); x <= that.width + (that.map.tileWidth*3); x = x + parseInt(that.map.tileWidth)){
-			cy = -3;
-			for(var y = 0 - (that.map.tileHeight*3); y <= that.height  + (that.map.tileHeight*3); y = y + parseInt(that.map.tileHeight)){
-				
-				that.setDirtyByCanvas(cx, cy, dirty);
-				
-				cy++;
-			}
-			cx++;
-		}
-		
-	}
-	
-	/**
-	 * Is this tile dirty?
-	 */
-	this.isDirtyByCanvas = function(canvasX, canvasY){
-		
-		// If it doesn't even exist (which shouldn't happen, but still) return true
-		if(that.dirtyRectangles[canvasX] === undefined) {
-			that.setDirtyByCanvas(canvasX, canvasY, true);
-			return true;
-		} else {
-			if(that.dirtyRectangles[canvasX][canvasY] === undefined){
-				that.setDirtyByCanvas(canvasX, canvasY, true);
-				return true;
-			} else {
-				return that.dirtyRectangles[canvasX][canvasY]['dirty'];
-			}
-		}
-	}
-	
-	/**
-	 * Is this tile dirty?
-	 */
-	this.isDirtyByAbsolute = function(absX, absY){
-		
-		var coord = k.operations.coord.getByMouse(Math.floor(absX), Math.floor(absY));
-		var isdirty = that.isDirtyByCanvas(coord.canvasX, coord.canvasY);
-		
-		return isdirty;
-	}
-	
-	/**
-	 * Flag a tile as dirty by its map coordinates
-	 * 
-	 * @param   {number} mapX   The map-x
-	 * @param   {number} mapY	The map-y
-	 * @param	{bool}	 dirty		Wether it's dirty or not (default true)
-	 */
-	this.setDirtyByMap = function(mapX, mapY, dirty, sprite){
-		
-		if(dirty === undefined) dirty = true;
-		
-		// Certain sprites are higher than others, we need to flag those
-		// positions as dirty, too.
-		if(sprite !== undefined){
-			
-			// Get the tielset info of the sprite, needed for its tile dimensions
-			var tileSet = getTileSetInfo(k.settings.engine.DEFAULTSPRITES, sprite);
-			
-			// The extra x
-			var xex = 1;
-			
-			// Do this for every tile this sprite is wider
-			for(var width = that.map.tileWidth; width < tileSet.tileWidth; width = parseInt(width) + parseInt(that.map.tileWidth)){
-				that.setDirtyByMap(mapX+xex, mapY, dirty);
-				xex++;
-			}
-			
-			// The extra y
-			var yex = 1;
-			
-			// Do this for every tile this sprite is higher
-			for(var height = that.map.tileHeight; height < tileSet.tileHeight; height = parseInt(height) + parseInt(that.map.tileHeight)){
-				that.setDirtyByMap(mapX, mapY-yex, dirty);
-				yex++;
-			}
-			
-		}
-
-		// Get the other coordinates based on the map coordinates
-		var coord = k.operations.coord.getByMap(mapX, mapY);
-		
-		// Make sure the required objects exist
-		if(that.dirtyRectangles[coord.canvasX] === undefined) that.dirtyRectangles[coord.canvasX] = {};
-		if(that.dirtyRectangles[coord.canvasX][coord.canvasY] === undefined) that.dirtyRectangles[coord.canvasX][coord.canvasY] = {};
-		
-		// Set it as dirty
-		that.dirtyRectangles[coord.canvasX][coord.canvasY]['dirty'] = dirty;
-		
-		// Set the fadeness for debuging reasons
-		if(dirty){
-			if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] > 0){
-				if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] < 89){
-					that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] = that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] + 10;
-				}
-			} else {
-				that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] = 20;
-			}
-		} else {
-			if(that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade'] > 0){
-				that.dirtyRectangles[coord.canvasX][coord.canvasY]['fade']--;
-			}
-		}
-		
-	}
-	
-	/**
-	 * Flag a tile as dirty by its canvas coordinates
-	 * 
-	 * @param   {number} canvasX    The canvas-x
-	 * @param   {number} canvasY	The canvas-y
-	 * @param	{bool}	 dirty		Wether it's dirty or not (default true)
-	 */
-	this.setDirtyByCanvas = function(canvasX, canvasY, dirty){
-		
-		if(dirty === undefined) dirty = true;
-		
-		// Make sure the required objects exist
-		if(that.dirtyRectangles[canvasX] === undefined) that.dirtyRectangles[canvasX] = {};
-		if(that.dirtyRectangles[canvasX][canvasY] === undefined) that.dirtyRectangles[canvasX][canvasY] = {};
-		
-		// Set it as dirty
-		that.dirtyRectangles[canvasX][canvasY]['dirty'] = dirty;
-		
-		// Set the fadeness for debuging reasons
-		if(dirty){
-			if(that.dirtyRectangles[canvasX][canvasY]['fade'] > 0){
-				if(that.dirtyRectangles[canvasX][canvasY]['fade'] < 89){
-					that.dirtyRectangles[canvasX][canvasY]['fade'] = that.dirtyRectangles[canvasX][canvasY]['fade'] + 5;
-				}
-			} else {
-				that.dirtyRectangles[canvasX][canvasY]['fade'] = 20;
-			}
-		} else {
-			if(that.dirtyRectangles[canvasX][canvasY]['fade'] > 0){
-				that.dirtyRectangles[canvasX][canvasY]['fade']--;
-			}
-		}
-	}
-	
-	/**
-	 * Queue loading message
-	 */
-	this.addLoadingMessage = function(text){
-		
-		// Add the message to the queue
-		that.once.messages.push(text);
-		
-		// Since we've added a loading message, indicate we'll skip
-		// the rest of the world render
-		that.skipWorldRender();
-	}
-	
-	/**
-	 * Draw load messages
-	 */
-	this.drawLoadingMessages = function(){
-		
-		that.clear("rgba(200,200,200,0.9)");
-		that.buffer.fillStyle = "rgba(255,255,255,1)";
-		that.buffer.font = "20pt Arial";
-		
-		var messages = that.once.messages.length;
-		var lines = messages * 70;
-
-		for(var count in that.once.messages){
-			
-			// Temporarily store the message
-			var loadMessage = that.once.messages[count];
-			
-			// Calculate the width of the message
-			var loadWidth = that.buffer.measureText(loadMessage);
-			
-			// Calculate the x and y coordinates
-			var drawX = (that.width-loadWidth.width)/2;
-			var drawY = (that.height-(lines - (70 * count+1))) / 2;
-			
-			// Draw the text to the buffer
-			that.buffer.fillText(loadMessage, drawX, drawY);
-		}
-		
-		// Flush the buffer
-		that.flush();
-		
-	}
-	
-	/**
-	 * Indicate we've finished a render
-	 */
-	this.finishedRender = function(){
-		that.once.clear = false;
-		that.once.messages = [];
-		that.drawWorld = true;
-		
-		// Reset the cleanedRectangles object
-		that.cleanedRectangles = {};
-		
-		// Set every tile as clean
-		that.setAllDirty(false);
-	}
-	
-	/**
-	 * Indicate we do not want to draw the world this render
-	 */
-	this.skipWorldRender = function(){
-		this.drawWorld = false
-	}
-	
-	/**
-	 *  Calculate the visibletiles per row
-	 *  @param		{integer}	tilewidth	The width of a tiles
-	 *  @returns 	{integer}	The ammount of tiles visible per row
-	 */
-	this.visibletilesx = function(tilewidth){
-		return this.width / tilewidth;
-	}
-
-	/**
-	 *  Calculate the visibletiles per column
-	 *  @param		{integer}	tileheight	The height of a tiles
-	 *  @returns 	{integer}	The ammount of tiles visible per column
-	 */
-	this.visibletilesy = function(tileheight){
-		return this.height / tileheight;
-	}
-
-	/**
-	 *  Clear the canvas
-	 *  @param		{string=}	backgroundColor 	The color to draw
-	 */
-	this.clear = function(backgroundColor){
-
-		// Use the default color if none is provided
-		if(backgroundColor === undefined) backgroundColor = k.settings.engine.background;
-
-		// Draw the rectangle
-		this.buffer.fillStyle = backgroundColor;
-		this.buffer.fillRect(0, 0, this.width, this.height);
-	}
-	
-	/**
-	 * Clear a certain tile on the canvas
-	 * 
-	 */
-	this.clearTile = function(canvasX, canvasY){
-		
-		// Get the absolute coordinates
-		var coord = k.operations.coord.getByCanvas(canvasX, canvasY);
-		
-		// Use the default color if none is provided
-		if(backgroundColor === undefined) backgroundColor = k.settings.engine.background;
-		
-		// Draw the rectangle
-		this.buffer.fillStyle = backgroundColor;
-		this.buffer.fillRect(coord.absX, coord.absY, that.map.tileWidth, that.map.tileHeight);
-		
-	}
-	
-	that.drawFadeness = function(){
-		
-		for(var x in that.dirtyRectangles){
-			for(var y in that.dirtyRectangles[x]){
-				
-				var fade = that.dirtyRectangles[x][y]['fade']/100;
-				
-				var coord = k.operations.coord.getByCanvas(x, y);
-				
-				that.ctx.fillStyle = "rgba(0,150,150," + fade + ")";
-				that.ctx.fillRect(coord.absX, coord.absY, that.map.tileWidth, that.map.tileHeight);
-			}
-		}
-		
-	}
-	
-	/**
-	 * Clear a certain tile on the canvas only once per render
-	 * 
-	 */
-	this.clearTileOnce = function(canvasX, canvasY){
-		
-		// Create the object if it doesn't exist
-		if(that.cleanedRectangles[canvasX] === undefined) that.cleanedRectangles[canvasX] = {};
-		
-		// If the Y doesn't exist, we can clean it
-		if(that.cleanedRectangles[canvasY] === undefined){
-			that.clearTile(canvasX, canvasY);
-			
-			// And create it
-			that.cleanedRectangles[canvasY] = true;
-		}
-		
-	}
-	
-	/**
-	 * Clear the canvas once during this draw
-	 * @param		{string=}	backgroundColor 	The color to draw
-	 */
-	this.clearonce = function(backgroundColor){
-		if(!this.once.clear) this.clear(backgroundColor);
-		this.once.clear = true;
-	}
-
-	// Disable "selecting" the canvas when clicked.
-	var element = document.getElementById(canvasId);
-	element.onselectstart = function () { return false; }
-
-	// What to do when the mouse moves over this canvas
-	$('#'+canvasId).mousemove( function(e) {
-
-		that.mouse.x = e.pageX-this.offsetLeft;
-		that.mouse.y = e.pageY-this.offsetTop;
-		
-	});
-
-	// Store the mouse position when pressing down a button
-	$('#'+canvasId).mousedown(function(e){
-
-		that.mouse.downx = e.pageX-this.offsetLeft;
-		that.mouse.downy = e.pageY-this.offsetTop;
-
-	});
-
-	// Store the mouse position when releasing (clicking) down a button
-	$('#'+canvasId).mouseup(function(e){
-
-		that.mouse.upx = e.pageX-this.offsetLeft;
-		that.mouse.upy = e.pageY-this.offsetTop;
-		
-		console.log(getClickedTile(that.mouse.upx, that.mouse.upy));
-
-	});
-
-	// Now check if we actually have a canvas object.
-	// If we don't, this browser doesn't support it
-	if(this.ctx) {
-		this.loaded = true;
-		debugEcho('Canvas has been initialized');
-	} else {
-		this.loaded = false;
-	}
-
-}
 
 /**
  * Start the engine!
@@ -1075,9 +644,6 @@ k.operations.load.processMap = function(xml, sourcename) {
 		// Now store this map in the global maps variable
 		k.collections.maps[sourcename] = oneMap;
 		
-		// Process the walkable tiles for this map
-		k.collections.maps[sourcename]['walkableTiles'] = k.operations.load.getWalkableTiles(sourcename);
-
 		k.state.load.loaded++;
 
     });
@@ -1085,48 +651,56 @@ k.operations.load.processMap = function(xml, sourcename) {
 }
 
 /**
- *Determine what tiles (coordinates) can be walked on in a map
- *@param 	sourcename		{string}	The name of the map
+ * Determine what tiles (coordinates) can be walked on in a map, and directly
+ * store it in that map
+ * @param 	sourcename		{string}	The name of the map
+ */
+k.operations.load.loadWalkableTiles = function(sourcename){
+    k.collections.maps[sourcename]['walkableTiles'] = k.operations.load.getWalkableTiles(sourcename);
+}
+
+/**
+ * Determine what tiles (coordinates) can be walked on in a map
+ * @param 	sourcename		{string}	The name of the map
  */
 k.operations.load.getWalkableTiles = function(sourcename){
 
-    var oneMap = k.collections.maps[sourcename];
-
+    // Get the map object
+    var map = k.links.getMap(sourcename);
+    
     // Create an array we'll fill up and return later
     var walkableTiles = [];
 
     // Calculate the total ammount of tiles on each layer
-    var totalTileAmmount = oneMap['width'] * oneMap['height'];
+    var totalTileAmmount = map.width * map.height;
 
     // Loop through the layers
-    for(var layerName in oneMap['layers']){
+    for(var layerName in map.layers){
 
-	// Loop through every tile in this layer
-	for(var pos = 0; pos < totalTileAmmount; pos++){
-	//debugEcho('Loop through the tiles ' + pos);
-
-	    if(oneMap['layers'][layerName]['data'][pos] !== undefined){
-
-		// Get the number of the tile from the tileset to use
-		var tileNumber = oneMap['layers'][layerName]['data'][pos];
-
-		// what tileset is this from?
-		var tileSetInfo = getTileSetInfo(sourcename, tileNumber);
-
-		if(tileSetInfo !== undefined){
-		    // Get the name of the tileset out of the returned array
-		    var tileSetName = tileSetInfo['tileSetName'];
-
-		    if(tileProperties[tileSetName][tileNumber] !== undefined){
-			if(tileProperties[tileSetName][tileNumber]['impenetrable'] !== undefined){
-			    walkableTiles[pos] = 0; // It's much more logical to set "walkable" to 0
-			}
-
-		    }
-		}
-
-	    }
-	}
+        // Loop through every tile in this layer
+        for(var pos = 0; pos < totalTileAmmount; pos++){
+        //debugEcho('Loop through the tiles ' + pos);
+    
+            if(map.layers[layerName]['data'][pos] !== undefined){
+    
+                // Get the number of the tile from the tileset to use
+                var tileNumber = map.layers[layerName]['data'][pos];
+        
+                // what tileset is this from?
+                var tileSetInfo = getTileSetInfo(sourcename, tileNumber);
+        
+                if(tileSetInfo !== undefined){
+                    // Get the name of the tileset out of the returned array
+                    var tileSetName = tileSetInfo['tileSetName'];
+        
+                    if(tileProperties[tileSetName][tileNumber] !== undefined){
+                        if(tileProperties[tileSetName][tileNumber]['impenetrable'] !== undefined){
+                            walkableTiles[pos] = 0; // It's much more logical to set "walkable" to 0
+                        }
+                    }
+                }
+            }
+        }
     };
 
     debugEcho('Return walkable tiles for map ' + sourcename);
@@ -1157,18 +731,19 @@ k.operations.isTileWalkable = function(mapName, x, y){
 }
 
 /**
- *Process and save a tileset
- *@param    source          {string}    The url of the tileset
- *@param    storeAsName     {string}    The name of the tileset
- *@param    imageTileWidth  {int}       The width of a tile in this tileset
- *@param    imageTileHeight {int}       The height of a tile in this tileset
- *@param    startGid        {int}       The starting number of this tileset
- *(Tileset 1 holds tile 1 to 10, tileset 2 holds 11 to 20, so its startGid is 11)
+ * Process and save a tileset
+ * @param    source          {string}    The url of the tileset
+ * @param    storeAsName     {string}    The name of the tileset
+ * @param    imageTileWidth  {int}       The width of a tile in this tileset
+ * @param    imageTileHeight {int}       The height of a tile in this tileset
+ * @param    startGid        {int}       The starting number of this tileset
  */
-k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth, imageTileHeight, startGid) {
+k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
+                                         imageTileHeight, startGid) {
 
     // Increase the "toLoad" waiting count
-    toLoad++;
+    k.state.load.toload++;
+    k.state.load.toloadTilesets++;
 
     // Create a new image variable where we'll load the image in.
     var img = new Image();
@@ -1191,7 +766,15 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth, im
             "firstgid": startGid
         };
 
-        loaded++; // Increase our loaded counter
+        // Increase the loaded counters
+        k.state.load.loaded++;
+        k.state.load.loadedTilesets++;
+        
+        // If all the tilesets have loaded, process the walkabletiles
+        if(k.state.load.loadedTilesets == k.state.load.toloadTilesets){
+            for(map in k.collections.maps)
+                k.operations.load.loadWalkableTiles(map);
+        }
 
         debugEcho('tileset image"' + source + '" has been downloaded', false);
     });
@@ -1199,7 +782,8 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth, im
     // Start downloading the source.
     img.src = k.settings.engine.BASEURL + source
 
-    debugEcho('tileset "' + source + '" has been loaded as "' + storeAsName + '"', false);
+    debugEcho('tileset "' + source + '" has been loaded as "'
+              + storeAsName + '"', false);
 }
 
 
