@@ -442,6 +442,34 @@ function echo(message, counter){
 }
 
 /**
+ * Only output this message once by its ID
+ * This will prevent flooding of debug messages
+ * @param	{string}	message		The message to output
+ * @param	{string}	id			The id of the message
+ */
+function echoOnce(message, id){
+	
+	if(k.state.debug.once[id] !== undefined) return;
+	
+	echo(message);
+	k.state.debug.once[id] = {'when': now(), 'message': message};
+}
+
+/**
+ * Only output this message to console once by its ID
+ * This will prevent flooding of debug messages
+ * @param	{string}	message		The message to output
+ * @param	{string}	id			The id of the message
+ */
+function logOnce(message, id){
+	
+	if(k.state.debug.once['console' + id] !== undefined) return;
+	
+	console.log(message);
+	k.state.debug.once['console' + id] = {'when': now(), 'message': message};
+}
+
+/**
  *Reset the debugCounter if you feel like it's needed.
  */
 function debugCounterReset(){

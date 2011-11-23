@@ -24,7 +24,7 @@ var k = {};
 
 k = {settings:{debug:{}, server:{}, ids:{}, engine:{}, walk:{}},
    state:{engine:{}, load:{}, animation:{}, server:{}, output:{}, walk:{},
-		  hud:{}, dirty:{x: {}}},
+		  hud:{}, dirty:{x: {}}, debug:{}},
    collections:{},
    classes:{},
    links:{},
@@ -60,7 +60,7 @@ k.settings.debug.GRID = false;
  * Draw dirty rectangle fadeness
  * @define {boolean}
  */
-k.settings.debug.DIRTY = true;
+k.settings.debug.DIRTY = false;
 
 /**
  * Draw debug FPS information
@@ -107,6 +107,7 @@ k.settings.server.ADDRESS = "ws://kipdola.be";
 k.settings.engine.fps = 25; 						// The default desired Frames Per Second
 k.settings.engine.background = 'rgb(255,255,255)' 	// The default background color
 k.settings.engine.drawextras = 5;
+k.settings.engine.dirty = true;
 
 k.settings.walk.MAXQUEUE = 2;       // The ammount of steps to queue
 k.settings.walk.msPerTile = 200;    // The time it takes to move one tile (at normal speed)
@@ -149,6 +150,11 @@ k.settings.ids.DEBUG = 'debug';
 /**
  * These values change during runtime
  */
+
+/**
+ * Store things which have already been echoed out
+ */
+k.state.debug.once = {};
 
 /**
  * Are we connected to the server?
@@ -235,6 +241,14 @@ k.collections.maps = {};
 k.collections.objects = {}		// The variable that will contain all the objects, including the user's data
 k.collections.hudLayers = {};
 
+/**
+ * The autotiles array
+ */
+k.collections.autotiles = [[5,  7,  5,  7,  13, 1,  13, 15],
+                           [8,  6,  8,  6,  16, 2,  16, 14],
+                           [17, 19, 17, 19, 9,  3,  9,  11],
+                           [20, 18, 20, 18, 12, 4,  12, 10]];
+
 var fps = 10;
 
 
@@ -244,6 +258,8 @@ var mappOffsetY = 0;
 var tileSet = [];       // All the tilesets are stored in this array
 var animation = [];
 var animatedTiles = {}; // This array keeps a progress of animated tiles. The first level of tilesetnames are defined at loading
+var animatedBegins = {};
+
 var sameFrame = {};
 var tileProperties = {};
 var toLoad = 0;
@@ -771,6 +787,9 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
             "total":totalTiles,
             "firstgid": startGid
         };
+		
+		// Make an entrance in the animatedBegins object
+		animatedBegins[storeAsName] = {};
 
         // Increase the loaded counters
         k.state.load.loaded++;

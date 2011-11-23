@@ -507,6 +507,7 @@ function drawAnimated(tileSetName, tileNumber, dx, dy, opacity, tileGidOnMap, ob
     var animationId;
 	
 	// Flag this tile for dirtyness due to being animated
+	if(k.settings.engine.dirty)
 	k.links.canvas.dirty.set.byAnimation(dx, dy, tileSetName);
     
     // Now let's decide which one it is
@@ -529,6 +530,7 @@ function drawAnimated(tileSetName, tileNumber, dx, dy, opacity, tileGidOnMap, ob
             "currentframe": tileGidOnMap,
             "nextframe": tileProperties[tileSetName][tileGidOnMap]['nextframe']
         };
+		
     } else { // This isn't a new animation. We're continuing...
         // If the currentframe is zero it means this animation is over!
         if(animatedTiles[tileSetName][animationId]["currentframe"] == 0){
@@ -540,6 +542,10 @@ function drawAnimated(tileSetName, tileNumber, dx, dy, opacity, tileGidOnMap, ob
     
     // Create a variable to hold our currentFrame
     var currentFrame = animatedTiles[tileSetName][animationId]["currentframe"];
+	
+	// Make an entrance in animatedBegins
+	if(animatedBegins[tileSetName][currentFrame] === undefined)
+		animatedBegins[tileSetName][currentFrame] = animationId;
     
     debugEchoLfps('Going to draw animated tile "<b>' + currentFrame + '</b>"!');
     
@@ -547,7 +553,7 @@ function drawAnimated(tileSetName, tileNumber, dx, dy, opacity, tileGidOnMap, ob
     // Now we put one in drawTile and drawTileAnimated. Ideally we would stop using the tileGidOnMap for tileproperties, but
     // hey, this works.
     var adjustedFrame = currentFrame - (tileSet[tileSetName]['firstgid']-1);
-    
+	
     try {
         // Draw the current frame
         drawTileSpecific(
@@ -720,6 +726,192 @@ function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
 
 }
 
+// tileNumber on the tileSet!
+function getAutoTile(tileSetName, tileNumber, mapX, mapY){
+    var ts = k.links.getTilesetByName(tileSetName);
+	
+	var debug = "";
+    
+    var coord = k.operations.coord.getByMap(mapX, mapY);
+    
+    var tileCanvas = document.createElement('canvas');
+    tileCanvas.width = k.links.canvas.map.tileWidth;
+    tileCanvas.height = k.links.canvas.map.tileHeight;
+    var tilectx = tileCanvas.getContext('2d');
+	
+	mapX = parseInt(mapX);
+	mapY = parseInt(mapY);
+	
+    var leftX = mapX - 1;
+    var leftY = mapY;
+    
+    var lefttopX = mapX - 1;
+    var lefttopY = mapY - 1;
+    
+    var topX = mapX;
+    var topY = mapY - 1;
+    
+    var righttopX = mapX + 1;
+    var righttopY = mapY - 1;
+    
+    var rightX = mapX + 1;
+    var rightY = mapY;
+    
+    var rightbotx = mapX + 1;
+    var rightbotY = mapY + 1;
+    
+    var botX = mapX;
+    var botY = mapY + 1;
+    
+    var leftbotX = mapX - 1;
+    var leftbotY = mapY + 1;
+	
+	logOnce('----------', tileSetName + '-' + tileNumber + 'top');
+	logOnce('(' + lefttopX + ',' + lefttopY + ') - ' +
+			'(' + topX + ',' + topY + ') - ' +
+			'(' + righttopX + ',' + righttopY + ')', tileSetName + '-' + tileNumber + 'row1');
+	
+	logOnce('(' + leftX + ',' + leftY + ') - ' +
+			'(' + mapX + ',' + mapY + ') - ' +
+			'(' + rightX + ',' + rightY + ')', tileSetName + '-' + tileNumber + 'row2');
+	
+	logOnce('(' + leftbotX + ',' + leftbotY + ') - ' +
+			'(' + botX + ',' + botY + ') - ' +
+			'(' + rightbotx + ',' + rightbotY + ')', tileSetName + '-' + tileNumber + 'row3');
+	
+    // Calculate the original tileNumber's source x parameter (sx) on the tileset
+    var sx = (Math.floor((tileNumber - 1) % ts.tpr) * ts.tileWidth);
+    
+    // Calculate this tileNumber's source y parameter (sy) on the tileset
+    var sy = (Math.floor((tileNumber - 1) / ts.tpr) * ts.tileHeight);
+	
+	// Calculate the real tile number
+	tileNumber = parseInt(ts.firstgid) + tileNumber - 1;
+	
+	// Check to see if it's animated (might have a different beginning)
+	if(animatedBegins[tileSetName][tileNumber] !== undefined)
+		tileNumber = animatedBegins[tileSetName][tileNumber];
+    
+    // Build all the 4 sprites of the tile
+    for(var s = 1; s < 5; s++){
+
+        switch(s){
+            
+            case 1:
+                var atile = 1 * isTileHere(leftX, leftY, tileNumber);
+                var btile = 2 * isTileHere(lefttopX, lefttopY, tileNumber);
+                var ctile = 4 * isTileHere(topX, topY, tileNumber);
+                var spritenr = atile + btile + ctile;
+                var sprite = k.collections.autotiles[s-1][spritenr];
+				if(spritenr == 5) {
+					debug = "-101 ";
+				}
+                break;
+            
+            case 2:
+                var atile = 1 * isTileHere(rightX, rightY, tileNumber);
+                var btile = 2 * isTileHere(righttopX, righttopY, tileNumber);
+                var ctile = 4 * isTileHere(topX, topY, tileNumber);
+                var spritenr = atile + btile + ctile;
+                var sprite = k.collections.autotiles[s-1][spritenr];
+                break;
+            
+            case 3:
+                var atile = 1 * isTileHere(leftX, leftY, tileNumber);
+                var btile = 2 * isTileHere(leftbotX, leftbotY, tileNumber);
+                var ctile = 4 * isTileHere(botX, botY, tileNumber);
+                var spritenr = atile + btile + ctile;
+                var sprite = k.collections.autotiles[s-1][spritenr];
+                break;
+            
+            case 4:
+                var atile = 1 * isTileHere(rightX, rightY, tileNumber);
+                var btile = 2 * isTileHere(rightbotx, rightbotY, tileNumber);
+                var ctile = 4 * isTileHere(botX, botY, tileNumber);
+                var spritenr = atile + btile + ctile;
+				var sprite = k.collections.autotiles[s-1][spritenr];
+                break;
+        }
+		
+		//console.log('Sprite position ' + s + ' = ' + spritenr + ' - ' + sprite + '(' + atile + '' + btile + '' + ctile + ')');
+		
+		// Set a margin, because the first 2 rows can't be fully used
+		var margin = 4;
+		var five = 4;
+
+		switch(sprite){
+			
+			case 1:
+			case 2:
+				margin = 2;
+				five = 0;
+				break;
+			
+			case 3:
+			case 4:
+				margin = 4;
+				five = 0;
+				break;
+		}
+		
+		sprite += margin;
+		
+		var spriterow = Math.floor((sprite - 1) / 4);
+		var spriteloc = (sprite - (1+five)) % 4;
+		
+		
+		var y = sy + ((ts.tileHeight/2) * spriterow);
+		var x = sx + ((ts.tileWidth/2) * spriteloc);
+		
+		var dx = (ts.tileWidth/2) * ((s-1)%2);
+		var dy = (ts.tileHeight/2) * Math.floor((s-1)/2);
+		
+		tilectx.drawImage(tileSet[tileSetName]["image"],
+					  x, y, ts.tileWidth/2, ts.tileHeight/2,
+					  dx, dy, ts.tileWidth/2, ts.tileHeight/2);
+
+    }
+	
+	return tileCanvas;
+}
+
+/**
+ * Detect if certain tilegid is on this map coordinate
+ * Loops through all layers to find it, returns 0 if it's not there
+ * 
+ * @param   {integer} mapX   The X-tile on the map
+ * @param   {integer} mapY   The Y-tile on the map
+ * @param   {integer} tileNumber The total tilegid
+ * 
+ * @returns {integer} 1 if it's found, 0 of it's not
+ */
+function isTileHere(mapX, mapY, tileNumber){
+    
+    var mapName = k.links.canvas.mapName;
+    
+    var tile = calculateMapTile(mapX, mapY);
+	
+    
+    for(var layer in k.links.canvas.map.layers){
+		if(k.links.canvas.map.layers[layer]['data'][tile] == tileNumber) return 1;
+    }
+    
+    return 0;
+}
+
+/**
+ * Calculate the absolute number of a tile by its coordinate
+ * 
+ * @param   {integer} mapX   The X-tile on the map
+ * @param   {integer} mapY   The Y-tile on the map
+ * 
+ * @returns {integer} The tile number
+ */
+function calculateMapTile(mapX, mapY){
+	
+    return mapY * k.collections.maps[k.links.canvas.mapName]['width'] + mapX;
+}
+
 /**
  *Draw a single specific tile from a specific tileset to the canvas
  *@param string    tileSetName  The name of the tileset to get the tile out of 
@@ -737,7 +929,25 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
         dx = dx + (userPosition.x * defaultTileWidth);
         dy = dy + (userPosition.y * defaultTileHeight);
     }
-
+	
+	var ts = k.links.getTilesetByName(tileSetName);
+	
+	var tileNumberMap = parseInt(tileNumber) + (parseInt(ts.firstgid)-1);
+	
+	// 823 > 825 > 827
+	
+	var tp = getTileProperty(tileSetName, tileNumberMap, "autotile");
+		
+	if(tp) {
+		
+        var coord = k.operations.coord.getByMouse(dx+mappOffsetX, (dy-ts.tileHeight)+mappOffsetY);
+        
+        var sourceimage = getAutoTile(tileSetName, tileNumber, coord.mapX, coord.mapY);
+		
+		var sx = 0;
+		var sy = 0;
+    }
+	
     // Temporary located here: adjusting the dy parameter
     dy = dy - parseInt(tileSet[tileSetName]['tileHeight']);
 
@@ -761,16 +971,23 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
 
     //End the function if no tileNumber is given
     if (!tileNumber) return;
-    
-    // Calculate this tileNumber's source x parameter (sx) on the tileset
-    var sx = (Math.floor((tileNumber - 1) % tilesPerRow) * tileWidth);
-    
-    // Calculate this tileNumber's source y parameter (sy) on the tileset
-    var sy = (Math.floor((tileNumber - 1) / tilesPerRow) * tileHeight);
+	
+	// Get our data from somewhere else if it's not a autotile
+	if(!tp){
+
+		// Calculate this tileNumber's source x parameter (sx) on the tileset
+		var sx = (Math.floor((tileNumber - 1) % tilesPerRow) * tileWidth);
+		
+		// Calculate this tileNumber's source y parameter (sy) on the tileset
+		var sy = (Math.floor((tileNumber - 1) / tilesPerRow) * tileHeight);
+		
+		// The image we need to draw from
+		var sourceimage = tileSet[tileSetName]["image"];
+	}
     
     try {
         // Draw the tile on the canvas
-        k.links.canvas.buffer.drawImage(tileSet[tileSetName]["image"], sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
+        k.links.canvas.buffer.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
     } catch (error) {
         debugEchoLfps('[drawTileSpecific] Error: ' + error.code + ' - ' +
                       error.message + '<br/>'+

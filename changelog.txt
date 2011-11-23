@@ -1,3 +1,18 @@
+--- Wednesday 2011-11-23 ---
+* Autotiles (The big RPG Maker kind, anyway) have been fully implemented!
+  There's a smaller type too, with only 4 basetiles in stead of 5, but it's not
+  that urgent.
+* Autotiles are even animated. (Autotile detection happens VERY low, right
+  before the actual draw on the canvas in fact)
+* Made a bit of a mess. The autotiles code needs lots of clean-up work.
+
+--- Tuesday 2011-11-22 ---
+* Did more research about the autotiles, and finally found the key, which is:
+  [5,  7,  5,  7,  13, 1,  13, 15]
+  [8,  6,  8,  6,  16, 2,  16, 14]
+  [17, 19, 17, 19, 9,  3,  9,  11]
+  [20, 18, 20, 18, 12, 4,  12, 10]
+
 --- Monday 2011-11-21 ---
 * Finally fixed "off-line" processing of walkable tiles. (This now gets done
   after the last tileset image has been loaded.) This will also happen for

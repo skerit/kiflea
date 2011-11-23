@@ -398,6 +398,9 @@ k.classes.Canvas = function(canvasId){
 	 */
 	this.dirty.get.byCanvas = function(canvasX, canvasY){
 		
+		// If dirty rectangles have been disabled, always return true
+		if(!k.settings.engine.dirty) return true;
+		
 		// FIXME: When out of bounds, these should return false, but that
 		// currently gives us empty tiles underneath objects.
 		
@@ -427,6 +430,9 @@ k.classes.Canvas = function(canvasId){
 	 */
 	this.dirty.get.byMap = function(mapX, mapY){
 		
+		// If dirty rectangles have been disabled, always return true
+		if(!k.settings.engine.dirty) return true;
+		
 		// Get the canvas coordinates
 		var coord = k.operations.coord.getByMap(mapX, mapY);
 		
@@ -441,6 +447,9 @@ k.classes.Canvas = function(canvasId){
 	 * 
 	 */
 	this.dirty.get.byAbsolute = function(absX, absY){
+		
+		// If dirty rectangles have been disabled, always return true
+		if(!k.settings.engine.dirty) return true;
 		
 		// Get the canvas coordinates
 		var coord = k.operations.coord.getByMouse(absX, absY);
