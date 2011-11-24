@@ -215,7 +215,13 @@ k.Types.CoordinatesClick = {
 	 * The absolute Y
 	 * @type	{Number}
 	 */
-	absY: 0
+	absY: 0,
+	
+	/**
+	 * The lexicographical order on the current map
+	 * @type	{Number}
+	 */
+	lex: 0
 	
 }
 

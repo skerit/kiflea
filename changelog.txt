@@ -1,3 +1,12 @@
+--- Thursday 2011-11-24 ---
+* The word of the day: lexicographic order.
+* Started thinking about caching certain things.
+* One of them: coordination calculation. jsPerf tests showed it can boost
+  efficiency by 800%, but I had drawing problems because of them. So I had to
+  disable it again (at least for 2 out of 3 functions)
+* Autotile caching. That's where the caching idea came from. Works fine:
+  Fake fps went from 47-50 to 60-62 while walking.
+
 --- Wednesday 2011-11-23 ---
 * Autotiles (The big RPG Maker kind, anyway) have been fully implemented!
   There's a smaller type too, with only 4 basetiles in stead of 5, but it's not

@@ -30,7 +30,8 @@ k = {settings:{debug:{}, server:{}, ids:{}, engine:{}, walk:{}},
    links:{},
    operations:{server:{}, load:{}, walk:{}, interface:{}, keyboard:{}, coord:{}},
    events: {},
-   actions: {}};
+   actions: {},
+   cache: {}};
 
 /**
  * Do we want to enable debugging?
@@ -42,7 +43,7 @@ k.settings.debug.DEBUG = true;
  * show debug info on movement
  * @define {boolean}
  */
-k.settings.debug.MOVEMENT = true;
+k.settings.debug.MOVEMENT = false;
 
 /**
  * Show debug info on HUD changes
@@ -248,6 +249,30 @@ k.collections.autotiles = [[5,  7,  5,  7,  13, 1,  13, 15],
                            [8,  6,  8,  6,  16, 2,  16, 14],
                            [17, 19, 17, 19, 9,  3,  9,  11],
                            [20, 18, 20, 18, 12, 4,  12, 10]];
+
+/**
+ * Extend the cache object
+ */
+k.cache.coord = {};
+k.cache.coord.canvas = [];
+k.cache.coord.mouse = [];
+k.cache.coord.map = [];
+
+k.cache.autotile = {};
+
+/**
+ * A place to store cache flushing functions
+ */
+k.cache.clear = {};
+
+/**
+ * Clear the coordinations cache
+ */
+k.cache.clear.coord = function(){
+	k.cache.coord.canvas = [];
+	k.cache.coord.mouse = [];
+	k.cache.coord.map = [];	
+}
 
 var fps = 10;
 

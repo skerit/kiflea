@@ -75,6 +75,10 @@ k.classes.Canvas = function(canvasId){
 	
 	// The current map we're working on
 	this.mapName = "";
+	
+	/**
+	 * @type {k.Types.Map}
+	 */
 	this.map = {};
 
 	// If the RECORD var is true, create a movie object
@@ -170,7 +174,14 @@ k.classes.Canvas = function(canvasId){
 		
 		if(that.mapName != mapname){
 			that.mapName = mapname;
-			that.map = k.links.getMap(mapname);
+			
+			var newMap = k.links.getMap(mapname);
+			
+			// Clear the coordination cache if the map dimensions differ
+			if(newMap.width != that.map.width ||
+			   newMap.height != that.map.height) k.cache.clear.coord();
+			
+			that.map = newMap;
 			
 			// Set the tile counts
 			that.tpr = Math.floor(that.width / that.map.tileWidth);

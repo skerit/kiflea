@@ -733,11 +733,6 @@ function getAutoTile(tileSetName, tileNumber, mapX, mapY){
 	var debug = "";
     
     var coord = k.operations.coord.getByMap(mapX, mapY);
-    
-    var tileCanvas = document.createElement('canvas');
-    tileCanvas.width = k.links.canvas.map.tileWidth;
-    tileCanvas.height = k.links.canvas.map.tileHeight;
-    var tilectx = tileCanvas.getContext('2d');
 	
 	mapX = parseInt(mapX);
 	mapY = parseInt(mapY);
@@ -765,25 +760,14 @@ function getAutoTile(tileSetName, tileNumber, mapX, mapY){
     
     var leftbotX = mapX - 1;
     var leftbotY = mapY + 1;
-	
-	logOnce('----------', tileSetName + '-' + tileNumber + 'top');
-	logOnce('(' + lefttopX + ',' + lefttopY + ') - ' +
-			'(' + topX + ',' + topY + ') - ' +
-			'(' + righttopX + ',' + righttopY + ')', tileSetName + '-' + tileNumber + 'row1');
-	
-	logOnce('(' + leftX + ',' + leftY + ') - ' +
-			'(' + mapX + ',' + mapY + ') - ' +
-			'(' + rightX + ',' + rightY + ')', tileSetName + '-' + tileNumber + 'row2');
-	
-	logOnce('(' + leftbotX + ',' + leftbotY + ') - ' +
-			'(' + botX + ',' + botY + ') - ' +
-			'(' + rightbotx + ',' + rightbotY + ')', tileSetName + '-' + tileNumber + 'row3');
-	
+		
     // Calculate the original tileNumber's source x parameter (sx) on the tileset
     var sx = (Math.floor((tileNumber - 1) % ts.tpr) * ts.tileWidth);
     
     // Calculate this tileNumber's source y parameter (sy) on the tileset
     var sy = (Math.floor((tileNumber - 1) / ts.tpr) * ts.tileHeight);
+	
+	var oriTile = tileNumber;
 	
 	// Calculate the real tile number
 	tileNumber = parseInt(ts.firstgid) + tileNumber - 1;
@@ -792,6 +776,8 @@ function getAutoTile(tileSetName, tileNumber, mapX, mapY){
 	if(animatedBegins[tileSetName][tileNumber] !== undefined)
 		tileNumber = animatedBegins[tileSetName][tileNumber];
     
+	var sprites = {};
+	
     // Build all the 4 sprites of the tile
     for(var s = 1; s < 5; s++){
 
@@ -801,78 +787,97 @@ function getAutoTile(tileSetName, tileNumber, mapX, mapY){
                 var atile = 1 * isTileHere(leftX, leftY, tileNumber);
                 var btile = 2 * isTileHere(lefttopX, lefttopY, tileNumber);
                 var ctile = 4 * isTileHere(topX, topY, tileNumber);
-                var spritenr = atile + btile + ctile;
-                var sprite = k.collections.autotiles[s-1][spritenr];
-				if(spritenr == 5) {
-					debug = "-101 ";
-				}
+                var spritenr1 = atile + btile + ctile;
+                sprites[s] = k.collections.autotiles[s-1][spritenr1];
                 break;
             
             case 2:
                 var atile = 1 * isTileHere(rightX, rightY, tileNumber);
                 var btile = 2 * isTileHere(righttopX, righttopY, tileNumber);
                 var ctile = 4 * isTileHere(topX, topY, tileNumber);
-                var spritenr = atile + btile + ctile;
-                var sprite = k.collections.autotiles[s-1][spritenr];
+                var spritenr2 = atile + btile + ctile;
+                sprites[s] = k.collections.autotiles[s-1][spritenr2];
                 break;
             
             case 3:
                 var atile = 1 * isTileHere(leftX, leftY, tileNumber);
                 var btile = 2 * isTileHere(leftbotX, leftbotY, tileNumber);
                 var ctile = 4 * isTileHere(botX, botY, tileNumber);
-                var spritenr = atile + btile + ctile;
-                var sprite = k.collections.autotiles[s-1][spritenr];
+                var spritenr3 = atile + btile + ctile;
+                sprites[s] = k.collections.autotiles[s-1][spritenr3];
                 break;
             
             case 4:
                 var atile = 1 * isTileHere(rightX, rightY, tileNumber);
                 var btile = 2 * isTileHere(rightbotx, rightbotY, tileNumber);
                 var ctile = 4 * isTileHere(botX, botY, tileNumber);
-                var spritenr = atile + btile + ctile;
-				var sprite = k.collections.autotiles[s-1][spritenr];
+                var spritenr4 = atile + btile + ctile;
+				sprites[s] = k.collections.autotiles[s-1][spritenr4];
                 break;
         }
+	}
+	
+	if(k.cache.autotile[tileSetName] === undefined)
+		k.cache.autotile[tileSetName] = {};
+				
+	if(k.cache.autotile[tileSetName][oriTile] === undefined)
+		k.cache.autotile[tileSetName][oriTile] = {};
 		
-		//console.log('Sprite position ' + s + ' = ' + spritenr + ' - ' + sprite + '(' + atile + '' + btile + '' + ctile + ')');
-		
-		// Set a margin, because the first 2 rows can't be fully used
-		var margin = 4;
-		var five = 4;
+	// Look for this autotile in the cache
+	var cachenr = spritenr1 + (spritenr2*10) + (spritenr3*100) + (spritenr4*1000);
 
-		switch(sprite){
+	if(k.cache.autotile[tileSetName][oriTile][cachenr] === undefined){
+	
+		var tileCanvas = document.createElement('canvas');
+		tileCanvas.width = k.links.canvas.map.tileWidth;
+		tileCanvas.height = k.links.canvas.map.tileHeight;
+		var tilectx = tileCanvas.getContext('2d');
+		
+		for(var s = 1; s < 5; s++){
 			
-			case 1:
-			case 2:
-				margin = 2;
-				five = 0;
-				break;
+			var sprite = sprites[s];
 			
-			case 3:
-			case 4:
-				margin = 4;
-				five = 0;
-				break;
+			// Set a margin, because the first 2 rows can't be fully used
+			var margin = 4;
+			var five = 4;
+	
+			switch(sprite){
+				
+				case 1:
+				case 2:
+					margin = 2;
+					five = 0;
+					break;
+				
+				case 3:
+				case 4:
+					margin = 4;
+					five = 0;
+					break;
+			}
+			
+			sprite += margin;
+			
+			var spriterow = Math.floor((sprite - 1) / 4);
+			var spriteloc = (sprite - (1+five)) % 4;
+			
+			
+			var y = sy + ((ts.tileHeight/2) * spriterow);
+			var x = sx + ((ts.tileWidth/2) * spriteloc);
+			
+			var dx = (ts.tileWidth/2) * ((s-1)%2);
+			var dy = (ts.tileHeight/2) * Math.floor((s-1)/2);
+			
+			tilectx.drawImage(tileSet[tileSetName]["image"],
+						  x, y, ts.tileWidth/2, ts.tileHeight/2,
+						  dx, dy, ts.tileWidth/2, ts.tileHeight/2);
+			
+			k.cache.autotile[tileSetName][oriTile][cachenr] = tileCanvas;
 		}
-		
-		sprite += margin;
-		
-		var spriterow = Math.floor((sprite - 1) / 4);
-		var spriteloc = (sprite - (1+five)) % 4;
-		
-		
-		var y = sy + ((ts.tileHeight/2) * spriterow);
-		var x = sx + ((ts.tileWidth/2) * spriteloc);
-		
-		var dx = (ts.tileWidth/2) * ((s-1)%2);
-		var dy = (ts.tileHeight/2) * Math.floor((s-1)/2);
-		
-		tilectx.drawImage(tileSet[tileSetName]["image"],
-					  x, y, ts.tileWidth/2, ts.tileHeight/2,
-					  dx, dy, ts.tileWidth/2, ts.tileHeight/2);
 
     }
 	
-	return tileCanvas;
+	return k.cache.autotile[tileSetName][oriTile][cachenr];
 }
 
 /**
