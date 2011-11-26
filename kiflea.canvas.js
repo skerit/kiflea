@@ -45,6 +45,9 @@ k.classes.Canvas = function(canvasId){
 	this.tpc = 0;
 	this.totaltiles = 0;
 	
+	// The background color to draw on the canvas
+	this.background = 'rgb(0,0,0)';
+	
 	// Should we draw the world or not this render?
 	this.drawWorld = true;
 	
@@ -69,6 +72,9 @@ k.classes.Canvas = function(canvasId){
 	this.dirty.cleaned = {};
 	this.dirty.get = {};
 	this.dirty.set = {};
+	
+	// Do we have to calculate the offset? Is set to false after every render
+	this.dirty.offset = 3;
 	
 	// Cleaned rectangles
 	this.cleanedRectangles = {};
@@ -191,6 +197,11 @@ k.classes.Canvas = function(canvasId){
 			// Recreate the dirty map
 			that.dirty.set.create();
 			
+			// Set the background color
+			if(that.map.properties.backgroundcolor !== undefined){
+				that.background = k.links.canvas.map.properties.backgroundcolor;
+			}
+			
 		}
 	}
 	
@@ -239,6 +250,9 @@ k.classes.Canvas = function(canvasId){
 		// The starting x coordinates, from left to right
 		var cx = 0 - that.dirty.buffer;
 		
+		// Set the offset dirtyness
+		that.dirty.set.offset(duration);
+		
 		for(var x = 0 - (that.map.tileWidth*that.dirty.buffer);
 			x <= that.width + (that.map.tileWidth*that.dirty.buffer);
 			x = x + that.map.tileWidth){
@@ -255,6 +269,20 @@ k.classes.Canvas = function(canvasId){
 			}
 			cx++;
 		}
+	}
+	
+	/**
+	 * Set the offset dirtyness
+	 */
+	this.dirty.set.offset = function(duration){
+		
+		// Set the offset dirtyness
+		if(duration > 0){
+			if(that.dirty.offset < 5) that.dirty.offset += duration;
+		} else {
+			if(that.dirty.offset > 0) that.dirty.offset--;
+		}
+		
 	}
 	
 	/**
@@ -351,6 +379,9 @@ k.classes.Canvas = function(canvasId){
 		if(duration === undefined) duration = 1;
 		
 		var object = k.links.getObject(objectId);
+		
+		// If it's our user, set the offset dirtyness too
+		if(objectId == userPosition.uid) that.dirty.set.offset(duration);
 		
 		// Get the tielset info of the sprite, needed for its tile dimensions
 		var tileSet = getTileSetInfo(k.settings.engine.DEFAULTSPRITES, object.currentSprite);

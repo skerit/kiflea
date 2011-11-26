@@ -17,7 +17,10 @@
 	Last Modified: Trunk
 */
 
-// A var storing all useful keys for easy access
+/**
+ * All keyboard key definitions
+ * @typedef {Object}
+ */
 var key = {
     'Backspace': 8,
     'Tab': 9,
@@ -108,23 +111,32 @@ var key = {
 }
 
 /**
- *This function simulates a keypress.
- *It checks if an arrow key has been pressed down and repeats it.
- *This function is called in the renderloop()
+ * This function simulates a keypress we have stored in the queue
+ * It checks if an arrow key has been pressed down and repeats it.
+ * This function is called every renderFrame();
  */
-function fakePress() {
+k.operations.keyboard.fakePress = function() {
     
     // Only do these keypresses every other loop
-    if(keyFake.ms > 1){
-        keyFake.ms = 0; // Reset the ms timer
+    if(k.state.keyboard.skippedFrames > 1){
         
-        if(keyFake.up == true) keyFinish({'keyCode': key.Uparrow});
-        if(keyFake.down == true) keyFinish({'keyCode': key.Downarrow});
-        if(keyFake.right == true) keyFinish({'keyCode': key.Rightarrow});
-        if(keyFake.left == true) keyFinish({'keyCode': key.Leftarrow});
+		// Reset the skipped frames counter
+		k.state.keyboard.skippedFrames = 0;
+        
+        if(k.state.keyboard.up)
+			k.operations.keyboard.doKey({'keyCode': key.Uparrow});
+			
+        if(k.state.keyboard.down)
+			k.operations.keyboard.doKey({'keyCode': key.Downarrow});
+			
+        if(k.state.keyboard.right)
+			k.operations.keyboard.doKey({'keyCode': key.Rightarrow});
+			
+        if(k.state.keyboard.left)
+			k.operations.keyboard.doKey({'keyCode': key.Leftarrow});
     }
     
-    keyFake.ms++;
+    k.state.keyboard.skippedFrames++;
 }
 
 /**
@@ -132,27 +144,30 @@ function fakePress() {
  */
 k.operations.keyboard.onKeyDown = function(keypress) {
 
-    // Select the correct key and execute its functions
+    /**
+	 * Queue the arrow keys for later, but execute other keys directly
+	 */
     switch (keypress.keyCode) {
 
         case key.Uparrow: // Arrow up
-            keyFake.up = true;
+            k.state.keyboard.up = true;
             break
 
         case key.Rightarrow: // Arrow right
-            keyFake.right = true;
+            k.state.keyboard.right = true;
             break
 
         case key.Downarrow: // Arrow down
-            keyFake.down = true;
+            k.state.keyboard.down = true;
             break
         
         case key.Leftarrow: // Arrow left
-            keyFake.left = true;
+            k.state.keyboard.left = true;
             break
         
+		// If it's not one of the arrow keys, perform the keypress directly
         default:
-            keyFinish(keypress);
+            k.operations.keyboard.doKey(keypress);
             break;
     }
     return false;
@@ -167,29 +182,29 @@ k.operations.keyboard.onKeyUp = function(keypress) {
     switch (keypress.keyCode) {
 
         case key.Uparrow: // Arrow up
-            keyFake.up = false;
+            k.state.keyboard.up = false;
             break
 
         case key.Rightarrow: // Arrow right
-            keyFake.right = false;
+            k.state.keyboard.right = false;
             break
 
         case key.Downarrow: // Arrow down
-            keyFake.down = false;
+            k.state.keyboard.down = false;
             break
         
         case key.Leftarrow: // Arrow left
-            keyFake.left = false;
+            k.state.keyboard.left = false;
             break
     }
     
 };
 
 /**
- *This function is called after we sorted the keydown
- *@param    key     {int}   The key
+ * Actually perform the keypresses
+ * @param   {int}   The key
  */
-function keyFinish(keypress) {
+k.operations.keyboard.doKey = function(keypress) {
 
     // If the debugCounter is bigger than 1000 this means nothing has happened
     // In a long time. It's best to reset it.

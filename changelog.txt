@@ -1,3 +1,8 @@
+--- Saturday 2011-11-26 ---
+* Continued cleaning up the code (adding things to the k namespace)
+* Made it so the map offset calculation actually only happens when moving, it
+  now also happens in the Canvas class (with the "dirty rectangles" code)
+
 --- Thursday 2011-11-24 ---
 * The word of the day: lexicographic order.
 * Started thinking about caching certain things.

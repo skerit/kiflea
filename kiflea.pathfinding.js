@@ -364,8 +364,12 @@ k.actions.moveRequest = function(x, y, objectid, checkfull) {
  */
 k.actions.moveAccept = function(move){
 	
+	// Add the move to the queue of this object
 	animatedObjects[move.targetid]['path'].push(move);
 	
+	// Set the object as dirty
+	k.links.canvas.dirty.set.byObject(move.targetid);
+
 }
 
 /**

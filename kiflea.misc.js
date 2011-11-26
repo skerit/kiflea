@@ -430,7 +430,7 @@ function echo(message, counter){
 	    text = '<p>[<span class="msi">--INFO--</span>] ' + message + '</p>';
 		k.links.echo.innerHTML += text;
     } else {
-        msPassed = (new Date()).getTime() - debugCounter;
+        msPassed = (new Date()).getTime() - k.state.debug.counter;
 	    text='<p>[<span class="ms">'+msPassed.toPrecision(5)+'ms</span>] ' + message + '</p>';
         k.links.echo.innerHTML += text;
     

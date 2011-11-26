@@ -49,20 +49,18 @@ k.operations.renderFrame = function(){
 		k.links.canvas.drawLoadingMessages();
 	} else {
 		
+		// Make sure we haven't moved to a different map
 		k.links.canvas.prepareMap(animatedObjects[userPosition.uid]['map']);
 		
-		// If this map has a backgroundcolor set, use it.
-		if(k.collections.maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'] !== undefined){
-			backgroundColor = k.collections.maps[animatedObjects[userPosition.uid]['map']]['properties']['backgroundcolor'];
-		}
-		
-		fakePress(); // Simulate autorepeating keypresses
+		// Simulate autorepeating keyboard presses (arrows)
+		k.operations.keyboard.fakePress();
 		
 		doActionsReceived(); // Do the actions every object has received
 		
-		k.operations.prerenderMoveObjects(); // Calculate every objects next xy coordinates
+		// Calculate every objects next xy coordinates
+		k.operations.prerenderMoveObjects();
 	
-		prerenderMapOffset(); // Calculate the map offset
+		k.operations.render.calculateOffset(); // Calculate the map offset
 	
 		// Loop through the layers and render them
 		for(var layerName in k.collections.maps[animatedObjects[userPosition.uid]['map']]['layers']) {
@@ -370,8 +368,10 @@ k.operations.renderLayer = function(layerName){
 				if(tileNumber == 0 || tileNumber === undefined) continue;
 	
 				// Now calculate where to draw this tile, based on the size of the tiles of the map, not the tileset
-				var destinationX = (tileX * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - mappOffsetX;
-				var destinationY = (tileY * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - mappOffsetY;
+				var destinationX = (tileX * k.links.canvas.map.tileWidth)
+									- k.state.engine.mappOffsetX;
+				var destinationY = (tileY * k.links.canvas.map.tileHeight)
+									- k.state.engine.mappOffsetY;
 				
 				// And now draw that tile!
 				try {
@@ -394,22 +394,30 @@ k.operations.renderLayer = function(layerName){
 /**
  *Calculate the "mapOffset" of the user if we're moving when the map is drawn
  */
-function prerenderMapOffset(){
+k.operations.render.calculateOffset = function(){
 	
 	// Store the previous mapp offset
-	k.state.engine.prevMappOffsetX = mappOffsetX;
-	k.state.engine.prevMappOffsetY = mappOffsetY;
+	k.state.engine.prevMappOffsetX = k.state.engine.mappOffsetX;
+	k.state.engine.prevMappOffsetY = k.state.engine.mappOffsetY;
 	
-	//This has to be floored, because pixels can't have a decimal value
-	//And this would create 1 pixel spacing between the tiles while moving.
-	mappOffsetX = Math.floor((k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'] * decimal(animatedObjects[userPosition.uid]['position']['x'])));
-	mappOffsetY = Math.floor((k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'] * decimal(animatedObjects[userPosition.uid]['position']['y'])));
-
-	// If we're moving, redraw everything
-	if(mappOffsetX != k.state.engine.prevMappOffsetX ||
-	   mappOffsetY != k.state.engine.prevMappOffsetY){
-		k.links.canvas.dirty.set.all(1);
+	if(k.links.canvas.dirty.offset > 0){
+		
+		//This has to be floored, because pixels can't have a decimal value
+		//And this would create 1 pixel spacing between the tiles while moving.
+		k.state.engine.mappOffsetX = Math.floor((k.links.canvas.map.tileWidth *
+					decimal(animatedObjects[userPosition.uid]['position']['x'])));
+		
+		k.state.engine.mappOffsetY = Math.floor((k.links.canvas.map.tileHeight *
+					decimal(animatedObjects[userPosition.uid]['position']['y'])));
+		
+		// If we're moving, redraw everything
+		if(k.state.engine.mappOffsetX != k.state.engine.prevMappOffsetX ||
+		   k.state.engine.mappOffsetY != k.state.engine.prevMappOffsetY){
+			k.links.canvas.dirty.set.all(1);
+		}
 	}
+
+
 }
 
 /**
@@ -462,8 +470,8 @@ function getRealCoordinates(objectId, x, y, tileWidth, tileHeight){
         tempHeight = tempHeight - (tempHeight % k.collections.maps[animatedObjects[objectId]['map']]['tileHeight']);
     }
 
-    var objX = (tempWidth - (Math.floor(animatedObjects[userPosition.uid]['position']['x']) * tileWidth)) + (x * tileWidth) - mappOffsetX;
-    var objY = (tempHeight - (Math.floor(animatedObjects[userPosition.uid]['position']['y']) * tileHeight)) + (y * tileHeight) - mappOffsetY;
+    var objX = (tempWidth - (Math.floor(animatedObjects[userPosition.uid]['position']['x']) * tileWidth)) + (x * tileWidth) - k.state.engine.mappOffsetX;
+    var objY = (tempHeight - (Math.floor(animatedObjects[userPosition.uid]['position']['y']) * tileHeight)) + (y * tileHeight) - k.state.engine.mappOffsetY;
 
     return({'x': objX, 'y': objY});
     
@@ -945,7 +953,7 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
 		
 	if(tp) {
 		
-        var coord = k.operations.coord.getByMouse(dx+mappOffsetX, (dy-ts.tileHeight)+mappOffsetY);
+        var coord = k.operations.coord.getByMouse(dx+k.state.engine.mappOffsetX, (dy-ts.tileHeight)+k.state.engine.mappOffsetY);
         
         var sourceimage = getAutoTile(tileSetName, tileNumber, coord.mapX, coord.mapY);
 		
@@ -1096,8 +1104,8 @@ function drawTestPath(){
     for(var node = 0; node < testPath.length; node++){
 
         // Calculate coordinates
-        var objX = (((canvasWidth - k.collections.maps[userPosition.map]['tileWidth']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'])) + (testPath[node]['x'] * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - mappOffsetX;
-        var objY = (((canvasWidth - k.collections.maps[userPosition.map]['tileHeight']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'])) + (testPath[node]['y'] * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - mappOffsetY;
+        var objX = (((canvasWidth - k.collections.maps[userPosition.map]['tileWidth']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['x']) * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth'])) + (testPath[node]['x'] * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) - k.state.engine.mappOffsetX;
+        var objY = (((canvasWidth - k.collections.maps[userPosition.map]['tileHeight']) / 2) - (Math.floor(animatedObjects[userPosition.uid]['y']) * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight'])) + (testPath[node]['y'] * k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) - k.state.engine.mappOffsetY;
 
 
         // Draw tile 309 (hardcoded, I know. It's in the grassland tileset

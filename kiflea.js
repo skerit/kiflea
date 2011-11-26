@@ -22,16 +22,46 @@
  */
 var k = {};
 
-k = {settings:{debug:{}, server:{}, ids:{}, engine:{}, walk:{}},
-   state:{engine:{}, load:{}, animation:{}, server:{}, output:{}, walk:{},
-		  hud:{}, dirty:{x: {}}, debug:{}},
-   collections:{},
-   classes:{},
-   links:{},
-   operations:{server:{}, load:{}, walk:{}, interface:{}, keyboard:{}, coord:{}},
-   events: {},
-   actions: {},
-   cache: {}};
+k = {
+	settings:{		
+		debug:{},
+		server:{},
+		ids:{},
+		engine:{},
+		walk:{}
+	},
+	
+	state:{
+		engine:{},
+		load:{},
+		animation:{},
+		server:{},
+		output:{},
+		walk:{},
+		hud:{},
+		dirty:{x: {}},
+		debug:{},
+		keyboard:{}
+	},
+	
+	collections:{},
+	classes:{},
+	links:{},
+   
+	operations:{
+		server:{},
+		load:{},
+		walk:{},
+		interface:{},
+		keyboard:{},
+		coord:{},
+		render:{}
+	},
+	
+	events: {},
+	actions: {},
+	cache: {}
+};
 
 /**
  * Do we want to enable debugging?
@@ -105,13 +135,41 @@ k.settings.server.PORT = 1234;
  */
 k.settings.server.ADDRESS = "ws://kipdola.be";
 
-k.settings.engine.fps = 25; 						// The default desired Frames Per Second
-k.settings.engine.background = 'rgb(255,255,255)' 	// The default background color
-k.settings.engine.drawextras = 5;
+/**
+ * What's our target FPS?
+ * @define {integer}
+ */
+k.settings.engine.fps = 25;
+
+/**
+ * The default background color to draw on the canvas
+ * @define {string}
+ */
+k.settings.engine.background = 'rgb(255,255,255)';
+
+/**
+ * The amount of extra tiles to draw (outside the canvas)
+ * @define {integer}
+ */
+k.settings.engine.drawextras = 3;
+
+/**
+ * Use dirty rectangles?
+ * @define {bool}
+ */
 k.settings.engine.dirty = true;
 
-k.settings.walk.MAXQUEUE = 2;       // The ammount of steps to queue
-k.settings.walk.msPerTile = 200;    // The time it takes to move one tile (at normal speed)
+/**
+ * The amount of steps to queue
+ * @define {integer}
+ */
+k.settings.walk.MAXQUEUE = 2;
+
+/**
+ * The time it takes to walk from one tile to another (at tilespeed 1.0)
+ * @define {integer}
+ */
+k.settings.walk.msPerTile = 200;
 
 /**
  * The map which holds the tiles for the objects and users and such.
@@ -127,6 +185,7 @@ k.settings.engine.MAPS = ['map.tmx.xml', k.settings.engine.DEFAULTSPRITES];
 
 /**
  * The url from where we'll be downloading the files
+ * @define {string}
  */
 k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea/';
 
@@ -156,6 +215,12 @@ k.settings.ids.DEBUG = 'debug';
  * Store things which have already been echoed out
  */
 k.state.debug.once = {};
+
+/**
+ * Every echoDebug() called will also print this time.
+ * @define {integer}
+ */
+k.state.debug.counter = 0;
 
 /**
  * Are we connected to the server?
@@ -244,6 +309,7 @@ k.collections.hudLayers = {};
 
 /**
  * The autotiles array
+ * @define {array}
  */
 k.collections.autotiles = [[5,  7,  5,  7,  13, 1,  13, 15],
                            [8,  6,  8,  6,  16, 2,  16, 14],
@@ -287,23 +353,26 @@ var animatedBegins = {};
 
 var sameFrame = {};
 var tileProperties = {};
-var toLoad = 0;
-var loaded = 0;
-var backgroundColor = "rgb(255,255,255)";   // The colour outside of the map. Should be moved to the map itself.
 var defaultSprites = 'default.tmx.xml';	    // The map which holds the tiles for the objects and users and such.
 					    // This map isn't actually useable, but this way we can use tiled to quickly edit tile preferences.
 
 var visibleTilesX;      // The ammount of tiles visible per row (should be deprecated)
 var visibleTilesY;      // The ammount of tiles visible per col (should be deprecated)
-var loopInterval = 0;
 var ws;
 var timeDifference = 0;	// The difference between the time on the server and the client
-// Normally you only want to draw what you can see (that's logic)
-// But since this engine supports multiple tile sizes in one world it's sometimes
-// necesarry to draw outside those bounds.
-var drawExtras = 5;
-var keyFake = {		// Keypresses are handled in an annoying way.
-	"ms": 0,
+
+
+/**
+ * The state of the keyboard
+ */
+k.state.keyboard = {
+	
+	/**
+	 * How many frames have been skipped before finishing a certain keypress
+	 * @define {integer}
+	 */
+	"skippedFrames": 0,
+	
 	"up": false,
 	"down": false,
 	"right": false,

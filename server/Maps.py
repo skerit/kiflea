@@ -51,7 +51,11 @@ class Map:
             endY = beginY + int(math.floor(int(event.attrib['height']) / self.tileHeight))
             
             eventProperties = {}
-            eventName = event.attrib['name']
+            
+            if 'name' in event.attrib:
+                eventName = event.attrib['name']
+            else:
+                eventName = 'unknown'
             
             try:
                 eventAction = event.attrib['type']
