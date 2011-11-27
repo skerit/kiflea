@@ -346,6 +346,40 @@ function dump(arr,level) {
 }
 
 /**
+ * Output a message to the frame debug div
+ */
+function debugFrame(message, counter){
+	
+	if(counter === undefined || counter === true) counter = true;
+	echoFrame(message, counter);
+}
+
+/**
+ *Output a message to the framedebug div, no matter what
+ *@param message {string} The string you want to show
+ *@param counter {bool}   Show how much time has passed since the last echo
+ *                        (with counter enabled). Defaults to false.
+ */
+function echoFrame(message, counter){
+
+	var text;
+
+    if(counter === undefined || counter === false) {
+	    text = '<p>[<span class="msi">--INFO--</span>] ' + message + '</p>';
+		k.links.framedebug.innerHTML += text;
+    } else {
+        msPassed = (new Date()).getTime() - k.state.debug.counter;
+	    text='<p>[<span class="ms">'+msPassed.toPrecision(5)+'ms</span>] ' + message + '</p>';
+        k.links.framedebug.innerHTML += text;
+    
+        // Reset debugcounter
+        debugCounterReset();
+    }
+
+	if(k.state.recording) movie.addDebug(text);
+}
+
+/**
  *Output a message to the echo div if the k.settings.debug.DEBUG variable is true
  *@param message {string} The string you want to show
  *@param counter {bool}   Show how much time has passed since the last debugEcho

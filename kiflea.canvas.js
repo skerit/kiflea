@@ -447,20 +447,13 @@ k.classes.Canvas = function(canvasId){
 		// currently gives us empty tiles underneath objects.
 		
 		// Return false for anything out of bounds
-		if(that.dirty.tiles[canvasX] === undefined) {
-			//echo('X not found: ' + canvasX);
-			return true;
-		}
-		if(that.dirty.tiles[canvasX][canvasY] === undefined) {
-			//echo('Y not found: ' + canvasY);
-			return true;
-		}
+		if(that.dirty.tiles[canvasX] === undefined)	return true;
 		
-		if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0){
-			return true;
-		} else {
-			return false;
-		}
+		if(that.dirty.tiles[canvasX][canvasY] === undefined) return true;
+		
+		if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0) return true;
+		else return false;
+
 	}
 	
 	/**
@@ -549,6 +542,9 @@ k.classes.Canvas = function(canvasId){
 	 * Indicate that we're starting a render
 	 */
 	this.beginRender = function(){
+		
+		if(k.links.framedebug) k.links.framedebug.innerHTML = '';
+		
 		that.state.msfTimer = now();
 	}
 	

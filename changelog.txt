@@ -1,3 +1,10 @@
+--- Sunday 2011-11-27 ---
+* Fixed the loading of xml files without an .xml extension (possible thanks to
+  jQuery >1.5, now at version 1.7.1)
+* Added shadows, which are drawn above the user's walking layer, but under the
+  users.
+* Started to add new tileSet operations.
+
 --- Saturday 2011-11-26 ---
 * Continued cleaning up the code (adding things to the k namespace)
 * Made it so the map offset calculation actually only happens when moving, it

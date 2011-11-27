@@ -283,7 +283,56 @@ k.Types.Map = {
 	 * Walkabletiles on a map
 	 * @type	{Array}
 	 */
-	walkabletiles: {}
+	walkableTiles: {},
+	
+	/**
+	 * Shadowtiles in a map
+	 * @type	{Array}
+	 */
+	shadowTiles: {}
+}
+
+/**
+ * A layer on the map
+ * @typedef {Object}
+ */
+k.Types.mapLayer = {
+	
+	/**
+	 * The array holding all the tiles in a lexicographical order
+	 * @type	{Array}
+	 */
+	data: [],
+	
+	/**
+	 * The height of this layer
+	 * @type	{Integer}
+	 */
+	height: 0,
+	
+	/**
+	 * The width of this layer
+	 * @type	{Integer}
+	 */
+	width: 0,
+	
+	/**
+	 * The name of this map
+	 * @type	{String}
+	 */
+	name: "",
+	
+	/**
+	 * The opacity of this map
+	 * @type	{Integer}
+	 */
+	opacity: 0,
+	
+	/**
+	 * The properties of this layer
+	 * @type	{Object}
+	 */
+	properties: {}
 }
 
 /**
@@ -333,6 +382,38 @@ k.Types.tileSetInfo = {
 	 * @type {Number}
 	 */
 	firstgid: 0
+}
+
+/**
+ * A tile object
+ * @typedef	{Object}
+ */
+k.Types.tile = {
+	
+	/**
+	 * The parent tileset
+	 * @type	{k.Types.tileSetInfo}
+	 */
+	tileset: {},
+	
+	/**
+	 * The global tilenumber
+	 * @type	{Integer}
+	 */
+	tilegid: 0,
+	
+	/**
+	 * The local tilenumber
+	 * @type	{Integer}
+	 */
+	tilenr: 0,
+	
+	/**
+	 * The properties of this tile
+	 * @type	{Object}
+	 */
+	properties: {}
+	
 }
 
 /**

@@ -44,7 +44,7 @@ k = {
 		keyboard:{}
 	},
 	
-	collections:{},
+	collections:{tilegid: {}},
 	classes:{},
 	links:{},
    
@@ -176,12 +176,12 @@ k.settings.walk.msPerTile = 200;
  * This map isn't actually useable, but this way we can use tiled to quickly edit tile preferences.
  *  @define {string}
  */
-k.settings.engine.DEFAULTSPRITES = 'default.tmx.xml';
+k.settings.engine.DEFAULTSPRITES = 'default.tmx';
 
 /**
  * All the mapfiles that need to be loaded when no server is required
  */
-k.settings.engine.MAPS = ['map.tmx.xml', k.settings.engine.DEFAULTSPRITES];
+k.settings.engine.MAPS = ['map.tmx', k.settings.engine.DEFAULTSPRITES];
 
 /**
  * The url from where we'll be downloading the files
@@ -206,6 +206,12 @@ k.settings.ids.ECHO = 'echo';
  * @define {string}
  */
 k.settings.ids.DEBUG = 'debug';
+
+/**
+ * The id of the frame debug element
+ * @define {string}
+ */
+k.settings.ids.FRAMEDEBUG = 'frameecho';
 
 /**
  * These values change during runtime
@@ -353,7 +359,7 @@ var animatedBegins = {};
 
 var sameFrame = {};
 var tileProperties = {};
-var defaultSprites = 'default.tmx.xml';	    // The map which holds the tiles for the objects and users and such.
+var defaultSprites = 'default.tmx';	    // The map which holds the tiles for the objects and users and such.
 					    // This map isn't actually useable, but this way we can use tiled to quickly edit tile preferences.
 
 var visibleTilesX;      // The ammount of tiles visible per row (should be deprecated)
@@ -388,7 +394,7 @@ var userPosition = {
 	"fromY": 0,
 	"msMoved": 100, 	// How many ms have we spent on this move?
 	"lastMoved": 1000, 	// when did the user last moved?
-	"map": "grassland.tmx.xml", // In what map is the user?
+	"map": "template.tmx", // In what map is the user?
 	"sprites": {
 		"stand": 493 	// what sprites to use for walking (the rest are defined in tiled)
 	},
@@ -399,7 +405,6 @@ var animatedObjects = {};	    // The variable that will contain all the objects,
 var textObjects = [];		    // The variable that will store text messages
 var charsPerLine = 52;		    // The ammount of letters that fit on one line
 var userMoveTilePerSecond = 10;     // Tile per second
-var userMoveMsPerTile = 100;        // MS per tile (one of these has to go)
 var userMoveSmoothness = 2;         // How smooth you want the character to move (0 - ?)
 var userMoveQueue = 2;		    // How many moves we can queue up. Shouldn't be to much
 var debugCounter;                   // Every echoDebug() called will also print this time.
@@ -444,6 +449,10 @@ k.operations.startEngine = function() {
     if (document.getElementById(k.settings.ids.ECHO)) {
 		k.links.echo = document.getElementById(k.settings.ids.ECHO);
 	}
+	
+	if (document.getElementById(k.settings.ids.FRAMEDEBUG)){
+		k.links.framedebug = document.getElementById(k.settings.ids.FRAMEDEBUG);
+	}
 
     // Start the debug counter
     k.state.counter = now();
@@ -486,15 +495,13 @@ k.operations.startEngine = function() {
 		
 		animatedObjects[userPosition.uid] = {
 				"uid": userPosition.uid,
-				"x": 30,
-				"y": 31,
 				"moveToX": 30,
 				"moveToY": 31,
 				"fromX": 30,
 				"fromY": 31,
 				"msMoved": 100,
 				"lastMoved": 1000,
-				"map": "grassland.tmx.xml",
+				"map": "template.tmx",
 				"sprites": [1, 21],
 				"spritesToDraw": [1, 21], 
 				"currentSprite": 1,
@@ -502,13 +509,12 @@ k.operations.startEngine = function() {
 				"selection": 0,
 				"currenthealth": 55,
 				"fullhealth": 100,
-                "position": {'x': 35, 'y': 17},
-				"path": [{moveBegin: 100, moveEnd: 200, walkable: true, terrainSpeed: 1, timeRequested: 100, x: 33, y: 17},
-						 {moveBegin: now()-200, moveEnd: now()-100, walkable: true, terrainSpeed: 1, timeRequested: 100, x: 34, y: 17},
-						 {moveBegin: now()-100, moveEnd: now(), walkable: true, terrainSpeed: 1, timeRequested: 100, x: 30, y: 31}],
+				"path": [{moveBegin: 100, moveEnd: 200, walkable: true, terrainSpeed: 1, timeRequested: 100, x: 9, y: 10},
+						 {moveBegin: now()-200, moveEnd: now()-100, walkable: true, terrainSpeed: 1, timeRequested: 100, x: 9, y: 13},
+						 {moveBegin: now()-100, moveEnd: now(), walkable: true, terrainSpeed: 1, timeRequested: 100, x: 9, y: 13}],
 				"actionsreceived": [],
 				"finishedEvents": {},
-				"position": {"x": 30, "y": 31}
+				"position": {"x": 9, "y": 13}
 			};
 		
     }
@@ -521,6 +527,46 @@ k.operations.startEngine = function() {
  */
 k.links.getMap = function(mapname){
 	return k.collections.maps[mapname];
+}
+
+/**
+ * Get a layer object
+ * @param	{String}	layername	The name of the layer
+ * @param	{String}	[mapname]	The name of the map
+ * @returns	{k.Types.mapLayer}		The layer object
+ */
+k.links.getLayer = function(layername, mapname){
+	
+	if(mapname === undefined) var map = k.links.canvas.map;
+	else var map = k.links.getMap(mapname);
+	
+	return map.layers[layername];
+	
+}
+
+/**
+ * Get a tile by its canvas position
+ */
+k.links.getTileByCanvas = function(canvasX, canvasY, layername, mapname){
+	
+	if(mapname === undefined) var map = k.links.canvas.map;
+	else var map = k.links.getMap(mapname);
+	
+	var layer = k.links.getLayer(layername);
+	var coord = k.operations.coord.getByCanvas(canvasX, canvasY, mapname);
+	
+	/**
+	 * The return object
+	 * @type	{k.Types.tile}
+	 */
+	var ret = {};
+	
+	// Get the gid by the lexicographical order
+	ret.tilegid = layer.data[coord.lex];
+	
+	
+	
+	
 }
 
 /**
@@ -540,6 +586,18 @@ k.operations.renderLoop = function(){
 	// Combine setInterval and requestAnimationFrame in order to get a desired fps
 	k.state.engine.loop = setInterval("window.requestAnimFrame(k.operations.renderFrame)", 1000 / k.settings.engine.fps);
 
+}
+
+/**
+ * Toggle the engine
+ */
+k.operations.toggleEngine = function(){
+	if(k.state.engine.loop){
+		clearInterval(k.state.engine.loop);
+		k.state.engine.loop = false;
+	} else {
+		k.operations.renderLoop();
+	}
 }
 
 /**
@@ -564,7 +622,7 @@ k.operations.load.getMaps = function(loadMaps){
         $.ajax({
             type: "GET",
             url: k.settings.engine.BASEURL + currentMap,
-            dataType: "xml",
+            dataType: "text xml",
             async: false,
             success: function(xml, textStatus, jqXHR){
 				//k.operations.load.processMap(xml, right(jqXHR['responseXML']['URL'], "/"));
@@ -584,12 +642,14 @@ k.operations.load.getMaps = function(loadMaps){
 k.operations.load.processMap = function(xml, sourcename) {
 
     debugEcho('Processing "<b>' + sourcename + '</b>" map', false);
-
+	
     // Temporary storage array
     var oneMap = {};
 
     // Now iterate every map element (should only be one in every file)
     $(xml).find('map').each(function(){
+		
+		console.log('Found map in ' + sourcename);
 
 		//Save the attributes of the map element
 		oneMap['width'] = parseInt($(this).attr('width'));
@@ -597,7 +657,7 @@ k.operations.load.processMap = function(xml, sourcename) {
 		oneMap['tileWidth'] = parseInt($(this).attr('tilewidth'));
 		oneMap['tileHeight'] = parseInt($(this).attr('tileheight'));
 	
-		debugEcho('Create an array for all the layers', false);
+		debugEcho(sourcename + ' - Create an array for all the layers', false);
 	
 		// Create an array to store all the events in
 		oneMap['events'] = {};
@@ -701,12 +761,13 @@ k.operations.load.processMap = function(xml, sourcename) {
 			'firstgid': firstGid
 			};
 	
-				k.operations.load.loadTileSet(
+			k.operations.load.loadTileSet(
 				$(this).find('image').attr('source'),	// The url of the tileset (the source in the xml)
 				tileSetName, 			// The name of the tileset
 				$(this).attr('tilewidth'),	// The width of one tile
 				$(this).attr('tileheight'),	// The height of one tile
-				firstGid	// The beginning id of the tileset
+				firstGid,	// The beginning id of the tileset
+				sourcename	// The map name
 			);
 	
 			// Add new tileSet to the tileProperties array
@@ -772,7 +833,13 @@ k.operations.load.processMap = function(xml, sourcename) {
  * @param 	sourcename		{string}	The name of the map
  */
 k.operations.load.loadWalkableTiles = function(sourcename){
-    k.collections.maps[sourcename]['walkableTiles'] = k.operations.load.getWalkableTiles(sourcename);
+	
+	var get =  k.operations.load.getWalkableTiles(sourcename);
+	
+	console.log(get);
+	
+    k.collections.maps[sourcename]['walkableTiles'] = get.walkableTiles;
+	k.collections.maps[sourcename]['shadowTiles'] = get.shadowTiles;
 }
 
 /**
@@ -786,6 +853,9 @@ k.operations.load.getWalkableTiles = function(sourcename){
     
     // Create an array we'll fill up and return later
     var walkableTiles = [];
+	
+	// Shadows
+	var shadowTiles = [];
 
     // Calculate the total ammount of tiles on each layer
     var totalTileAmmount = map.width * map.height;
@@ -795,7 +865,6 @@ k.operations.load.getWalkableTiles = function(sourcename){
 
         // Loop through every tile in this layer
         for(var pos = 0; pos < totalTileAmmount; pos++){
-        //debugEcho('Loop through the tiles ' + pos);
     
             if(map.layers[layerName]['data'][pos] !== undefined){
     
@@ -813,6 +882,27 @@ k.operations.load.getWalkableTiles = function(sourcename){
                         if(tileProperties[tileSetName][tileNumber]['impenetrable'] !== undefined){
                             walkableTiles[pos] = 0; // It's much more logical to set "walkable" to 0
                         }
+						
+						if(tileProperties[tileSetName][tileNumber]['shadow'] !== undefined){
+							
+							// Get the coordinates by the lex value
+							var coord = k.operations.coord.getByLex(pos, sourcename);
+							
+							// Increase the x
+							coord.mapX++;
+							
+							console.log('Setting shadow for ' + coord.mapX);
+
+							// Get the new lex if it's still on the map
+							if(coord.mapX <= map.width){
+								
+								var newc = k.operations.coord.getByMap(coord.mapX, coord.mapY, sourcename);
+								
+								// Only draw a shadow if the tile is different
+								if(map.layers[layerName]['data'][pos] != map.layers[layerName]['data'][newc.lex])
+									shadowTiles[newc.lex] = tileProperties[tileSetName][tileNumber]['shadow'];
+							}
+                        }
                     }
                 }
             }
@@ -820,7 +910,7 @@ k.operations.load.getWalkableTiles = function(sourcename){
     };
 
     debugEcho('Return walkable tiles for map ' + sourcename);
-    return walkableTiles;
+    return {'walkableTiles': walkableTiles, 'shadowTiles': shadowTiles};
 }
 
 /**
@@ -855,7 +945,7 @@ k.operations.isTileWalkable = function(mapName, x, y){
  * @param    startGid        {int}       The starting number of this tileset
  */
 k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
-                                         imageTileHeight, startGid) {
+                                         imageTileHeight, startGid, mapname) {
 
     // Increase the "toLoad" waiting count
     k.state.load.toload++;
@@ -871,6 +961,7 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
         var tilesPerRow = Math.floor(img.width / imageTileWidth);
         var tilesPerCol = Math.floor(img.height / imageTileHeight);
         var totalTiles = tilesPerCol * tilesPerRow;
+		startGid = parseInt(startGid);
 
         tileSet[storeAsName] = {
             "image": img,
@@ -881,6 +972,18 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
             "total":totalTiles,
             "firstgid": startGid
         };
+		
+		if(k.collections.tilegid[mapname] === undefined)
+			k.collections.tilegid[mapname] = [];
+		
+		// Store it in the tilegid collection, as a map to the tileset
+		for(var t = 0; t < totalTiles; t++){
+			
+			var gid = t + startGid;
+			
+			k.collections.tilegid[mapname][gid] = tileSet[storeAsName];
+			
+		}
 		
 		// Make an entrance in the animatedBegins object
 		animatedBegins[storeAsName] = {};

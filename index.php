@@ -40,7 +40,7 @@
     </script>
 	<script type="text/javascript" src="kiflea.shim.js"></script>
 	<script type="text/javascript" src="json.js"></script>
-	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 	
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
     <script type="text/javascript" src="kiflea.misc.js"></script>
@@ -63,8 +63,8 @@
 			k.settings.server.PORT = 1234;
 			k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea/';
 			k.settings.debug.DEBUG = true;
-			k.settings.engine.DEFAULTSPRITES = 'default.tmx.xml';
-			k.settings.engine.MAPS = ['grassland.tmx.xml', k.settings.engine.DEFAULTSPRITES];
+			k.settings.engine.DEFAULTSPRITES = 'default.tmx';
+			k.settings.engine.MAPS = ['template.tmx', k.settings.engine.DEFAULTSPRITES];
 			
 			defaultTileWidth = 32;
 			defaultTileHeight = 32;
@@ -91,7 +91,7 @@
 					"fromY": 35,
 					"msMoved": 100,
 					"lastMoved": 1000,
-					"map": "grassland.tmx.xml",
+					"map": "template.tmx",
 					"sprites": [1, 21],
 					"spritesToDraw": [1,21], 
 					"currentSprite": 1,
@@ -115,7 +115,7 @@
 					"fromY": 25,
 					"msMoved": 100,
 					"lastMoved": 1000,
-					"map": "grassland.tmx.xml",
+					"map": "template.tmx",
 					"sprites": [1, 21],
 					"spritesToDraw": [1,21], 
 					"currentSprite": 1,
@@ -141,7 +141,7 @@
 				"fromY": 31,
 				"msMoved": 100,
 				"lastMoved": 1000,
-				"map": "grassland.tmx.xml",
+				"map": "template.tmx",
 				"sprites": [1, 21],
 				"spritesToDraw": [1, 21], 
 				"currentSprite": 1,
@@ -234,6 +234,7 @@
 			Count 1: <span id="count1"></span><br/>
 			Count 2: <span id="count2"></span>
 		</div>
+		<div id="frameecho"></div>
 		<div id="echo"></div>
 		<div id="debug"></div>
 		<div id="footer">
