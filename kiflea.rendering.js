@@ -221,7 +221,7 @@ function renderEffects(objectId){
         }
 
         try{
-            drawTile(currentSprite, coordinates['x'], coordinates['y'], null, objectId, animatedObjects[objectId]['effects'][effectNr]['id']); // The given id contains the ID, but not yet the tilenumberonmap
+            k.operations.render.drawTile(currentSprite, coordinates['x'], coordinates['y'], null, objectId, animatedObjects[objectId]['effects'][effectNr]['id']); // The given id contains the ID, but not yet the tilenumberonmap
         } catch (error){
             debugEcho('Error drawing ' + dText + ' of baseSprite ' + baseSprite + ' namely: ' + currentSprite + ' -- ' + error);
         }
@@ -318,7 +318,7 @@ function renderObjects(){
 			// did) But to get the coordinates, we need to subtract it again
 			if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
 
-				drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr],
+				k.operations.render.drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr],
 						 objX, objY, null, objectId);
 				
 			}
@@ -338,7 +338,7 @@ function renderObjects(){
 k.operations.renderLayer = function(layerName){
 	
 	var layer = k.links.getLayer(layerName);
-    
+
     // Loop through every row (+ the extra rows)
     for (var tileY = 0;
 		 tileY <= k.links.canvas.tpr + k.settings.engine.drawextras; tileY++) {
@@ -346,64 +346,41 @@ k.operations.renderLayer = function(layerName){
         // And for every tile in that row (+ the drawExtras)
         for (var tileX = (0-k.settings.engine.drawextras);
 			 tileX <= k.links.canvas.tpc; tileX++) {
+			
+			var tile = k.links.getTileByCanvas(tileX, tileY, layerName);
+			
+			// Skip to the next loop if the tile is not dirty
+			if(!tile.dirty) continue;
+			
+			// See if it's inside the map, otherwise draw the background color
+			if(tile.coord.lex < 0) {
+				
+				k.links.canvas.buffer.fillStyle = "rgb(0, 0, 0)";
+				k.links.canvas.buffer.fillRect(tile.coord.absX,
+											   tile.coord.absY,
+											   k.links.canvas.map.tileWidth,
+											   k.links.canvas.map.tileHeight);
+				
+				// Skip to the next loop
+				continue;
+			}
 
-			if(k.links.canvas.dirty.get.byCanvas(tileX, tileY)){
+			if(tile.tilegid && tile.properties['draw'] === undefined){
 				
 				// Clear this tile only on the bottom layer
 				k.links.canvas.clearTileOnce(tileX, tileY);
 				
-				// Calculate the coördinates of the tile we need, based on our current position
-				// (Example: The tile in row 10, column 5)
-				var rowTile = Math.floor(animatedObjects[userPosition.uid]['position']['x']
-							 + (tileX + (Math.floor(k.links.canvas.tpr / 2))+1)
-							 - k.links.canvas.tpc);
-				
-				// Do not continue if rowTile is negative or bigger than the width of the map
-				if(rowTile < 0 || rowTile >= k.links.canvas.map.width) continue;
-				
-				var colTile = Math.floor(animatedObjects[userPosition.uid]['position']['y']
-							 + (tileY + (Math.floor(k.links.canvas.tpc / 2))+1) - k.links.canvas.tpr);
-	
-				// Do not continue if colTile is negative or bigger than the height of the map
-				if(colTile < 0 || colTile >= k.links.canvas.map.height) continue;
-				
-				// Now that we know what piece of the map we need
-				// we need to get the corresponding tileset image
-				var tileNumber = getLayerTile(animatedObjects[userPosition.uid]['map'], layerName, rowTile, colTile);
-				
-				// Now calculate where to draw this tile, based on the size of the tiles of the map, not the tileset
-				var destinationX = (tileX * k.links.canvas.map.tileWidth)
-									- k.state.engine.mappOffsetX;
-				var destinationY = (tileY * k.links.canvas.map.tileHeight)
-									- k.state.engine.mappOffsetY;
-				
-				// When we get to an empty tile we can skip towards the next loop
-				if(tileNumber > 0 || tileNumber !== undefined) {
-
-					// And now draw that tile!
-					try {
-						drawTile(tileNumber, destinationX, destinationY);
-		
-					} catch(error) {
-						debugEchoLfps('[renderLoop] Error drawing tilenumber <b>"' + tileNumber +
-									  '"</b> from layer "<b>' + layerName + '</b>" - coordinates (<b>' + rowTile +
-									  '</b>,<b>' + colTile + '</b>) to (<b>' +
-									  destinationX + '</b>,<b>' + destinationY +
-									  '</b>)'
-						);
-		
-					}
-				}
-				
-				var coord = k.operations.coord.getByMap(rowTile, colTile);
+				k.operations.render.drawTile(tile.tilegid,
+						 tile.coord.absX,
+						 tile.coord.absY + k.links.canvas.map.tileHeight);
 			
 				// Draw shadows
 				if(layer.properties['drawShadow']==1){
-					if(k.links.canvas.map.shadowTiles[coord.lex] !== undefined){
+					if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
 						
 						k.links.canvas.buffer.fillStyle = "rgba(30, 30, 30, 0.5)";
-						k.links.canvas.buffer.fillRect(destinationX,
-													   destinationY-k.links.canvas.map.tileWidth,
+						k.links.canvas.buffer.fillRect(tile.coord.absX,
+													   tile.coord.absY,
 													   k.links.canvas.map.tileWidth/3,
 													   k.links.canvas.map.tileHeight);
 					}
@@ -696,7 +673,8 @@ function checkSameFrame(tileSetName, tileGidOnMap, animationId){
  *                             its id
  *@param    extraId      {integer}      An extra id, mainly for animations
  */
-function drawTile(tileNumber, dx, dy, opacity, objectId, extraId) {
+//function(tileNumber, dx, dy, opacity, objectId, extraId) {
+k.operations.render.drawTile = function(tileNumber, dx, dy, opacity, objectId, extraId) {
 
 	// Declarations
 	var movingObject;    // Is the object moving?
@@ -1130,7 +1108,7 @@ function drawTestPath(){
 
 
         // Draw tile 309 (hardcoded, I know. It's in the grassland tileset
-        drawTile(279, objX, objY);
+        k.operations.render.drawTile(279, objX, objY);
 
     }
 

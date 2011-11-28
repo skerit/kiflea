@@ -232,6 +232,12 @@ k.Types.CoordinatesClick = {
 k.Types.Map = {
 	
 	/**
+	 * The (source)name of the map
+	 * @type	{String}
+	 */
+	name :'',
+	
+	/**
 	 * The height of the map
 	 * @type	{Number}
 	 */
@@ -254,6 +260,18 @@ k.Types.Map = {
 	 * @type	{Number}
 	 */
 	tileWidth: 0,
+	
+	/**
+	 * The width of the map in pixels
+	 * @type	{Integer}
+	 */
+	pixelWidth: 0,
+	
+	/**
+	 * The height of the map in pixels
+	 * @type	{Integer}
+	 */
+	pixelHeight: 0,
 	
 	/**
 	 * Events on a map
@@ -345,7 +363,13 @@ k.Types.tileSetInfo = {
 	 * The name of the tileset
 	 * @type {String}
 	 */
-	tileSetName: "",
+	name: "",
+	
+	/**
+	 * The tileset image
+	 * @type	{Object}
+	 */
+	image: {},
 	
 	/**
 	 * The width of a single tile
@@ -388,7 +412,7 @@ k.Types.tileSetInfo = {
  * A tile object
  * @typedef	{Object}
  */
-k.Types.tile = {
+k.Types.Tile = {
 	
 	/**
 	 * The parent tileset
@@ -412,7 +436,19 @@ k.Types.tile = {
 	 * The properties of this tile
 	 * @type	{Object}
 	 */
-	properties: {}
+	properties: {},
+	
+	/**
+	 * The coordinates of this tile
+	 * @type	{k.Types.CoordinatesClick}
+	 */
+	coord: {},
+	
+	/**
+	 * If the space where this tile is in is dirty
+	 * @type	{Bool}
+	 */
+	dirty: true
 	
 }
 

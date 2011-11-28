@@ -45,6 +45,7 @@
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
     <script type="text/javascript" src="kiflea.misc.js"></script>
 	<script type="text/javascript" src="kiflea.js"></script>
+	<script type="text/javascript" src="kiflea.load.js"></script>
 	<script type="text/javascript" src="kiflea.canvas.js"></script>
 	<script type="text/javascript" src="kiflea.rendering.js"></script>
 	<script type="text/javascript" src="kiflea.sercon.js"></script>

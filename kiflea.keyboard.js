@@ -377,22 +377,30 @@ k.operations.coord.getByCanvas = function(canvasX, canvasY, mapname){
 		var map = k.links.getMap(mapname);
 	}
 	
-	// Calculate the lexicographical order
-	var canvaslex = canvasX + canvasY * k.links.canvas.tpr;
-
-	var absX = canvasX * map.tileWidth;
-	var absY = canvasY * map.tileHeight;
+	var absX = canvasX * map.tileWidth - k.state.engine.mappOffsetX;
+	var absY = canvasY * map.tileHeight - k.state.engine.mappOffsetY;
 	
-	var mapX = Math.floor(animatedObjects[userPosition.uid]['position']['x'] + (canvasX + (Math.floor(k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']) / 2)) + 1) - k.links.canvas.visibletilesx(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']));
-	var mapY = Math.floor(animatedObjects[userPosition.uid]['position']['y'] + (canvasY + (Math.floor(k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']) / 2))+2) - k.links.canvas.visibletilesy(k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']));
+	var mapX = ~~(animatedObjects[userPosition.uid]['position']['x']
+				  + (canvasX + (Math.floor(k.links.canvas.tpr / 2)) + 1)
+				  - k.links.canvas.tpr);
 	
-	var lex = mapX + mapY * k.links.canvas.map.width;
+	var mapY = ~~(animatedObjects[userPosition.uid]['position']['y']
+				  + (canvasY + (Math.floor(k.links.canvas.tpc / 2)) + 2)
+				  - k.links.canvas.tpc);
+	
+	// Coordinates beyond the map can't give a good lex value
+	if(mapX < 0 || mapX > map.width ||
+	   mapY < 0 || mapY > map.height){
+		var lex = -1;
+	} else {
+		var lex = mapX + mapY * k.links.canvas.map.width;
+	}
 	
 	return {'mapX': mapX, 'mapY': mapY,
-								 'mouseX': absX, 'mouseY': absY,
-								 'canvasX': canvasX, 'canvasY': canvasY,
-								 'absX': absX, 'absY': absY,
-								 'lex': lex};
+			'mouseX': absX, 'mouseY': absY,
+			'canvasX': canvasX, 'canvasY': canvasY,
+			'absX': absX, 'absY': absY,
+			'lex': lex};
 
 }
 
@@ -412,8 +420,8 @@ k.operations.coord.getByMap = function(mapX, mapY, mapname){
 	
 	var lex = mapX + mapY * map.width;
 	
-	var canvasX = Math.floor((mapX - animatedObjects[userPosition.uid]['position']['x']) + (Math.floor(k.links.canvas.visibletilesx(k.links.canvas.map.tileWidth) / 2)));
-	var canvasY = Math.floor((mapY - animatedObjects[userPosition.uid]['position']['y']) + (Math.floor(k.links.canvas.visibletilesy(k.links.canvas.map.tileHeight) / 2))) -1;
+	var canvasX = ~~((mapX - animatedObjects[userPosition.uid]['position']['x']) + (Math.floor(k.links.canvas.visibletilesx(k.links.canvas.map.tileWidth) / 2)));
+	var canvasY = ~~((mapY - animatedObjects[userPosition.uid]['position']['y']) + (Math.floor(k.links.canvas.visibletilesy(k.links.canvas.map.tileHeight) / 2))) -1;
 	
 	var absX = canvasX * map.tileWidth;
 	var absY = canvasY * map.tileHeight;

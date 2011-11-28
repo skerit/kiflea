@@ -667,11 +667,11 @@ k.classes.Canvas = function(canvasId){
 		if(that.cleanedRectangles[canvasX] === undefined) that.cleanedRectangles[canvasX] = {};
 		
 		// If the Y doesn't exist, we can clean it
-		if(that.cleanedRectangles[canvasY] === undefined){
+		if(that.cleanedRectangles[canvasX][canvasY] === undefined){
 			that.clearTile(canvasX, canvasY);
 			
 			// And create it
-			that.cleanedRectangles[canvasY] = true;
+			that.cleanedRectangles[canvasX][canvasY] = true;
 		}
 		
 	}

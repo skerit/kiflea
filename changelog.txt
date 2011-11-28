@@ -1,3 +1,15 @@
+--- Monday 2011-11-28 ---
+* The splitting of files continues: kiflea.load.js was added, where all the code
+  regarding downloading and processing of tilesets, maps, ... resides.
+* Progressed on the new getting of a tile(set). The new functions should improve
+  the overal workflow and code readability a lot.
+* Found out on jsperf.com: ~~ is faster than Math.floor()
+* Made k.operations.renderLayer() a whole lot cleaner, thanks to the new tileset
+  and coord functions.
+* Still a few problems: some coord functions produce different results.
+* The "out of bounds" tileset drawing has almost been completely fixed. Black
+  space will now be drawn there, but there's still a problem while walking.
+
 --- Sunday 2011-11-27 ---
 * Fixed the loading of xml files without an .xml extension (possible thanks to
   jQuery >1.5, now at version 1.7.1)
