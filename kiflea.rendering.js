@@ -45,12 +45,12 @@ k.operations.renderFrame = function(){
 	// When messages have been added (or for some other reason) the drawWorld
 	// variable will be false. Draw the loading messages then.
 	// Else: just draw the world
-	if(!k.links.canvas.drawWorld) {
+	if(!k.links.canvas.drawWorld || !k.state.load.finished) {
 		k.links.canvas.drawLoadingMessages();
 	} else {
 		
 		// Make sure we haven't moved to a different map
-		k.links.canvas.prepareMap(animatedObjects[userPosition.uid]['map']);
+		k.links.canvas.prepareMap(k.sel.map.name);
 		
 		// Simulate autorepeating keyboard presses (arrows)
 		k.operations.keyboard.fakePress();
@@ -63,13 +63,13 @@ k.operations.renderFrame = function(){
 		k.operations.render.calculateOffset(); // Calculate the map offset
 	
 		// Loop through the layers and render them
-		for(var layerName in k.collections.maps[animatedObjects[userPosition.uid]['map']]['layers']) {
+		for(var layerName in k.sel.map.layers) {
 	
 			k.operations.renderLayer(layerName); // Render this layer
 	
 			// If this layer has the "drawUsers" property set to "1"
 			// We draw all the objects on top of it.
-			if(k.collections.maps[animatedObjects[userPosition.uid]['map']]['layers'][layerName]['properties']['drawUsers']==1){
+			if(k.sel.map.layers[layerName]['properties']['drawUsers']==1){
 				
 				highlightSelectedObject(); // Draw a circle underneath our selection
 				
@@ -131,7 +131,7 @@ function highlightSelectedObject(){
  *@param    objectId    {string}    The object of which to render the effects
  */
 function renderEffects(objectId){
-
+return;
     // Loop through every effect
     for(var effectNr = 0; effectNr < animatedObjects[objectId]['effects'].length; effectNr++){
         
@@ -278,17 +278,16 @@ function renderEffects(objectId){
  *Render every object
  */
 function renderObjects(){
-    
+
     // Loop through every object
-    for (var objectId in animatedObjects){
-		
-		var object = k.links.getObject(objectId);
-		var user = k.links.getObject(userPosition.uid);
-		var map = k.links.getMap(object.map);
+    for (var object in k.collections.objects){
+	
+		var object = k.links.getObject(object);
+		var map = object.map;
         
         // If this object isn't on the same map as our user,
 		// continue to the next object
-        if(object.map != user.map) continue;
+        if(object.map != k.sel.map) continue;
         
 		// Get all the coordinates
 		var objC = k.operations.coord.getByMap
@@ -296,20 +295,20 @@ function renderObjects(){
         
         // Loop through all the layers of this object
         for (var spriteNr = 0;
-			spriteNr < object.spritesToDraw.length;
+			spriteNr < object.tiles.length;
 			spriteNr++){
             
-            if(objectId == userPosition.uid){
-                debugEchoLfps('Drawing own user ' + objectId + ' layer nr ' +
+            if(object.id == k.sel.id){
+                debugEchoLfps('Drawing own user ' + object.id + ' layer nr ' +
 							  spriteNr + ' - namely: ' +
-							  object.spritesToDraw[spriteNr] );
+							  object.tiles[spriteNr] );
             }
 			
-			if(objectId == userPosition.uid){
+			if(object.id == k.sel.id){
 				var objX = objC.absX;
 				var objY = objC.absY + map.tileHeight;
 			} else {
-				var coord = getRealCoordinates(objectId);
+				var coord = getRealCoordinates(object.id);
 				var objX = coord.x;
 				var objY = coord.y;
 			}
@@ -318,14 +317,14 @@ function renderObjects(){
 			// did) But to get the coordinates, we need to subtract it again
 			if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
 
-				k.operations.render.drawTile(animatedObjects[objectId]['spritesToDraw'][spriteNr],
-						 objX, objY, null, objectId);
+				k.operations.render.drawTile(object.tiles[spriteNr],
+						 objX, objY, null, object.id);
 				
 			}
         }
         
         // Draw the effects of this user
-        renderEffects(objectId);
+        renderEffects(object.id);
         
         
     }
@@ -349,43 +348,26 @@ k.operations.renderLayer = function(layerName){
 			
 			var tile = k.links.getTileByCanvas(tileX, tileY, layerName);
 			
-			// Skip to the next loop if the tile is not dirty
-			if(!tile.dirty) continue;
-			
-			// See if it's inside the map, otherwise draw the background color
-			if(tile.coord.lex < 0) {
-				
-				k.links.canvas.buffer.fillStyle = "rgb(0, 0, 0)";
-				k.links.canvas.buffer.fillRect(tile.coord.absX,
-											   tile.coord.absY,
-											   k.links.canvas.map.tileWidth,
-											   k.links.canvas.map.tileHeight);
-				
-				// Skip to the next loop
-				continue;
-			}
-
-			if(tile.tilegid && tile.properties['draw'] === undefined){
-				
-				// Clear this tile only on the bottom layer
-				k.links.canvas.clearTileOnce(tileX, tileY);
-				
-				k.operations.render.drawTile(tile.tilegid,
-						 tile.coord.absX,
-						 tile.coord.absY + k.links.canvas.map.tileHeight);
-			
-				// Draw shadows
-				if(layer.properties['drawShadow']==1){
-					if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
-						
-						k.links.canvas.buffer.fillStyle = "rgba(30, 30, 30, 0.5)";
-						k.links.canvas.buffer.fillRect(tile.coord.absX,
-													   tile.coord.absY,
-													   k.links.canvas.map.tileWidth/3,
-													   k.links.canvas.map.tileHeight);
-					}
-				}
-			}
+            // Do we have to do something to this tile?
+            if(k.links.canvas.prepareTile(tile)){
+		
+                k.operations.render.drawTile(tile.tilegid,
+                         tile.coord.absX,
+                         tile.coord.absY + k.links.canvas.map.tileHeight);
+            
+                // Draw shadows
+                if(layer.properties['drawShadow']==1){
+                    if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
+                        
+                        k.links.canvas.buffer.fillStyle = "rgba(30, 30, 30, 0.5)";
+                        k.links.canvas.buffer.fillRect(tile.coord.absX,
+                                                       tile.coord.absY,
+                                                       k.links.canvas.map.tileWidth/3,
+                                                       k.links.canvas.map.tileHeight);
+                    }
+                }
+                
+            }
         }
     }
 }
@@ -401,17 +383,20 @@ k.operations.render.calculateOffset = function(){
 	
 	//if(k.links.canvas.dirty.offset > 0){
 		
+        
+        
 		//This has to be floored, because pixels can't have a decimal value
 		//And this would create 1 pixel spacing between the tiles while moving.
-		k.state.engine.mappOffsetX = Math.floor((k.links.canvas.map.tileWidth *
-					decimal(animatedObjects[userPosition.uid]['position']['x'])));
+		k.state.engine.mappOffsetX = ~~((k.links.canvas.map.tileWidth *
+					decimal(k.sel.position.zx)));
 		
-		k.state.engine.mappOffsetY = Math.floor((k.links.canvas.map.tileHeight *
-					decimal(animatedObjects[userPosition.uid]['position']['y'])));
+		k.state.engine.mappOffsetY = ~~((k.links.canvas.map.tileHeight *
+					decimal(k.sel.position.zy)));
 		
 		// If we're moving, redraw everything
 		if(k.state.engine.mappOffsetX != k.state.engine.prevMappOffsetX ||
 		   k.state.engine.mappOffsetY != k.state.engine.prevMappOffsetY){
+            
 			k.links.canvas.dirty.set.all(1);
 		}
 	//}
@@ -425,10 +410,10 @@ k.operations.render.calculateOffset = function(){
  */
 k.operations.prerenderMoveObjects = function(){
 
-    for (var objectId in animatedObjects){
-        
+    for(var objectId in k.collections.objects){
+
         // Apply the path to walk and move the object
-        k.operations.walkPath(objectId);
+        k.operations.walkPath(k.collections.objects[objectId]);
     }
 }
 
@@ -686,12 +671,12 @@ k.operations.render.drawTile = function(tileNumber, dx, dy, opacity, objectId, e
     
     // If this isn't an object the sourcemap is the current map we're on
     if(objectId === undefined) {
-        sourceMap = animatedObjects[userPosition.uid]['map'];
+        sourceMap = k.sel.map.name;
     }else {
         // If it is an object we have to get the tilesets from the default "map". Hackish, but it works
         sourceMap = defaultSprites;
 
-	    if(animatedObjects[objectId]['path'].length > (k.state.walk.indexNow + 1)) movingObject = true;
+	    if(k.collections.objects[objectId].path.length > (k.state.walk.indexNow + 1)) movingObject = true;
     }
     //if(objectId == userPosition.uid) debugEcho(now() - animatedObjects[objectId]['lastMoved']);
     // We know the map and the tilenumber, but not the tilesetname.
@@ -1075,21 +1060,23 @@ function getTileSetInfo(sourceMap, tileNumber){
 */
 function changeMovingObjectSprite(objectId, movementDirection){
     
+    var object = k.links.getObject(objectId);
+    
         //Change the sprite of every layer if there is one specified for this move
-        for (var spriteNr = 0; spriteNr < animatedObjects[objectId]['sprites'].length; spriteNr++){
+        for (var spriteNr = 0; spriteNr < object.tiles.length; spriteNr++){
 
             // We know the map and the tilenumber, but not the tilesetname.
             // Look that up using our getTileSetInfo function.
-            tileSetInfo = new getTileSetInfo(defaultSprites, animatedObjects[objectId]['sprites'][spriteNr]);
+            tileSetInfo = new getTileSetInfo(defaultSprites, object.tiles[spriteNr]);
             tileSetName = tileSetInfo['tileSetName'];
             tileSetCorrectGid = tileSetInfo['firstgid'] - 1; // Yes, we have to correct for tileset gids again.
 
             // Check if this object has a sprite for this movement
-           if(tileProperties[tileSetName][animatedObjects[objectId]['sprites'][spriteNr]][movementDirection] !== undefined){
+           if(tileProperties[tileSetName][object.tiles[spriteNr]][movementDirection] !== undefined){
                debugEchoLfps('Object <b>' + objectId + '</b> has a sprite for this direction: ' + movementDirection + ' on layer ' + spriteNr);
                 
                 // Now set it AANDD don't forget to modify for the tileset firstgid.
-                animatedObjects[objectId]['spritesToDraw'][spriteNr] = parseInt(tileProperties[tileSetName][animatedObjects[objectId]['sprites'][spriteNr]][movementDirection])+tileSetCorrectGid;
+                //animatedObjects[objectId]['spritesToDraw'][spriteNr] = parseInt(tileProperties[tileSetName][animatedObjects[objectId]['sprites'][spriteNr]][movementDirection])+tileSetCorrectGid;
             }
         };
 }

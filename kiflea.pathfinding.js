@@ -293,12 +293,9 @@ function doActionsReceived(){
 		    } else {
 			queueAction("attack", thisAction['from'], 1, objectId);
 		    }
-		    
-
 	    }
 	}
-    }
-    
+	}
 }
 
 /**
@@ -317,40 +314,42 @@ function addFinishedEvent(objectId, eventname){
 
 /**
  * Request a move
- * @param 	x	{integer}	Move X? (Should be 1, -1 or 0)
- * @param	y	{integer}	Move Y? (Should be 1, -1 or 0)
- * @param	objectid {string}	The id of the object to move
- * @param	checkfull {boolean}	Enabled by default, only add paths if the array isn't full?
+ * @param 	{integer}			x		x-movement (Should be 1, -1 or 0)
+ * @param	{integer}			y		y-movement (Should be 1, -1 or 0)
+ * @param	{k.Types.Object}	object	The object to move
  */
-k.actions.moveRequest = function(x, y, objectid, checkfull) {
+k.actions.moveRequest = function(x, y, object) {
 
-	// If there isn't an objectid, use our own user
-	if(objectid === undefined) objectid = userPosition.uid;
+	// If the object isn't specified, use the current user
+	if(object === undefined) object = k.sel;
 	
-	var object = k.links.getObject(objectid);
-
-	var arraySize = object.path.length;
+	// Temporary: should be removed as only objects should be passed
+	if(typeof object == "string") object = k.links.getObject(object);
 
 	/**
 	 * Checkfull makes us check if the array is full. If it's not, add the path.
 	 * This variable is enabled by default.
 	 */
-	if((checkfull === undefined || checkfull == true) && arraySize > k.state.walk.maxQueue) return false;
-
-	// Take the last x & y value from our path
-	var prevX = object.path[arraySize - 1]['x'];
-	var prevY = object.path[arraySize - 1]['y'];
-
-	var move = {'action': 'move', 'timeRequested': now(), 'x': prevX + x, 'y': prevY + y, 'targetid': objectid};
+	if(object.path.length > k.state.walk.maxQueue) return false;
+	
+	// Get the previous step from our path
+	var prev = k.links.step.getPrev(object);
+	
+	var move = k.links.step.create(prev.position.x + x, prev.position.y + y);
 
 	// If we're not connected to the server, accept the move directly
 	if(!k.state.server.connected) {
 		
 		// Is the tile walkable?
-		move.walkable = k.operations.isTileWalkable(object.map, move.x, move.y);
-		k.actions.moveAccept(move);
+		move.properties.walkable = k.operations.isTileWalkable(object.map.name, move.position.x, move.position.y);
+		k.actions.moveAccept(object, move);
+		
 	} else {
+		
 		// If we are, send it to the server first
+		// We used to send the action as a part of the object itself, but that
+		// would cause the object to become dirty. I suggest sending an object
+		// containing a payload and an instruction type.
 		k.send(move);
 	}
 
@@ -360,15 +359,16 @@ k.actions.moveRequest = function(x, y, objectid, checkfull) {
 
 /**
  * Add a move to the object's path
- * @param	move	{k.Types.EventMoveAccept}
+ * @param	{k.Types.Object}	object
+ * @param	{k.Types.Pathstep}	move
  */
-k.actions.moveAccept = function(move){
+k.actions.moveAccept = function(object, move){
 	
 	// Add the move to the queue of this object
-	animatedObjects[move.targetid]['path'].push(move);
+	object.path.push(move);
 	
 	// Set the object as dirty
-	k.links.canvas.dirty.set.byObject(move.targetid);
+	k.links.canvas.dirty.set.byObject(object);
 
 }
 
@@ -409,12 +409,12 @@ function teleport(objectid, x, y, map){
 /**
  * If an object has a certain path it needs to walk, make sure that path gets
  * executed properly.
- * @param       objectId    {string}    The ID of the object
+ * @param       object    {k.Types.Object}    The object
  */
-k.operations.walkPath = function(objectId) {
+k.operations.walkPath = function(object) {
 
 	// When there are no steps queued exit the function
-	if(animatedObjects[objectId]['path'].length < (k.state.walk.indexNext + 1)) return;
+	if(object.path.length < (k.state.walk.indexNext + 1)) return;
 
 	// Normally we only run walk.step once, but sometimes we need to do it twice for a nice smooth transition
 	var keepWalking = false;
@@ -422,175 +422,195 @@ k.operations.walkPath = function(objectId) {
 	do {
 		
 		// Store our previous, current and future steps
-		
-		/**
-		 * @type	{k.Types.EventMoveRequest}
-		 */
-		var stepPrev = animatedObjects[objectId]['path'][k.state.walk.indexPrev];
-		
-		/**
-		 * @type	{k.Types.EventMoveRequest}
-		 */
-		var stepNow = animatedObjects[objectId]['path'][k.state.walk.indexNow];
-		
-		/**
-		 * @type	{k.Types.EventMoveRequest}
-		 */
-		var stepNext = animatedObjects[objectId]['path'][k.state.walk.indexNext];
-		
-		/**
-		 * @type	{k.Types.EventMoveRequest}
-		 */
-		var stepFut = animatedObjects[objectId]['path'][k.state.walk.indexNext+1];
-		
+		var stepPrev = k.links.step.get(object, k.state.walk.indexPrev);
+		var stepNow = k.links.step.get(object, k.state.walk.indexNow);
+		var stepNext = k.links.step.get(object, k.state.walk.indexNext);
+		var stepFut = k.links.step.getNext(object);
 		
 		var futRequestTime;
 
 		// Calculate the waiting time for the future step, if there is one
 		if(stepFut) {
-			futRequestTime = (stepFut.timeRequested - stepNext.timeRequested)
+			futRequestTime = (stepFut.time.request - stepNext.time.request)
 		}
 		else {
 			futRequestTime = 9999;
 		}
 
-		keepWalking = k.operations.walk.step(objectId, stepNow, stepNext, futRequestTime, keepWalking);
+		keepWalking = k.operations.walk.step(object, stepNow, stepNext, futRequestTime, keepWalking);
 
 	} while(keepWalking == true);
 }
 
 /**
  * Execute a step in the path
- * @param	objectId	{Number}	The objectId we're changing
- * @param	stepNow		{k.Types.EventMoveAccept}
- * @param	stepNext	{k.Types.EventMoveAccept}
+ * @param	{k.Types.Object}	object		The object we're changing
+ * @param	{k.Types.Pathstep}	stepNow
+ * @param	{k.Types.Pathstep}	stepNext
  * @param	futRequestTime
  * @param	keepWalking
  */
-k.operations.walk.step = function(objectId, stepNow, stepNext, futRequestTime, keepWalking){
+k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, keepWalking){
 
 	// Our basic return value to determine if we need to walk another step
 	var walkAnotherStep = false;
-
-	// Store our current location
-	var position = animatedObjects[objectId]['position'];
+	
+	var begin = false;
+	var axischange = false;
 
 	// Is this the first time we see this step?
-	if(stepNext.moveBegin === undefined) {
+	if(stepNext.time.begin == 0) {
 
 		// Determine along what axis we need to move (x or y)
-		stepNext.moveAxis = stepNow.x != stepNext.x ? 'x' : 'y';
+		stepNext.state.axis = stepNow.position.x != stepNext.position.x ? 'x' : 'y';
 
 		// Mark now() as the beginning of the step
-		stepNext.moveBegin = now();
+		stepNext.time.begin = now();
+		
+		begin = true;
 
 		// Get the event for this tile in the map and add it to the action list
-		getMapEvent(objectId, stepNext.x, stepNext.y);
+		// FIXME: Events!
+		//getMapEvent(objectId, stepNext.x, stepNext.y);
 
 		// Calculate the waiting times
 		// The wait time between the request and the beginning of the next step
-		stepNext.moveWait = stepNext.moveBegin - stepNext.timeRequested;
+		stepNext.state.wait = stepNext.time.begin - stepNext.time.request;
 
 		// How fast we requested this move after the previous one (Pressing down generates a keypress around every 68ms)
-		stepNext.moveRequestTime = stepNext.timeRequested - stepNow.timeRequested;
+		stepNext.state.requestSpeed = stepNext.time.request - stepNow.time.request;
 
 		// The gap between the current (next) and the previous (now) step.
-		stepNext.moveGap = stepNext.moveBegin - stepNow.moveEnd;
+		stepNext.state.gap = stepNext.time.begin - stepNow.time.end;
 
 		// Get the terrain speed (certain terrains make you move faster)
-		stepNext.terrainSpeed = stepNext.terrainSpeed === undefined ? 1.0 : stepNext.terrainSpeed;
+		stepNext.properties.speed = stepNext.properties.speed === undefined ? 100 : stepNext.properties.speed;
 
 		// Calculate the numerical direction
-		stepNext.moveDirection = (stepNext[stepNext.moveAxis] - stepNow[stepNext.moveAxis]);
+		stepNext.state.direction = (stepNext.position[stepNext.state.axis] - stepNow.position[stepNext.state.axis]);
 
 		// If the absolute moveDirection is bigger than 1, remove the step and all the following
-		if(Math.abs(stepNext.moveDirection) > 1) animatedObjects[objectId]['path'].splice(k.state.walk.indexNext, (animatedObjects[objectId]['path'].length - k.state.walk.indexNext));
+		if(Math.abs(stepNext.state.direction) > 1) object.path.splice(k.state.walk.indexNext, (object.path.length - k.state.walk.indexNext));
 
 		// Depending on the direction on this axis, choose the right tile
-		stepNext.moveSprite = stepNext.moveDirection > 0 ? (stepNext.moveAxis == 'x') ? 'righttile' : 'downtile' : (stepNext.moveAxis == 'x') ? 'lefttile' : 'uptile';
+		stepNext.state.sprite = stepNext.state.direction > 0 ? (stepNext.state.axis == 'x') ? 'righttile' : 'downtile' :
+															   (stepNext.state.axis == 'x') ? 'lefttile' : 'uptile';
 
 		// What is the next tile in this direction?
-		stepNext.tileNext = Math.floor(position[stepNext.moveAxis]) + stepNext.moveDirection;
+		stepNext.state.nextTile = object.position[stepNext.state.axis] + stepNext.state.direction;
 
 		// Change the direction of the tile with our function
 		// This has to happen wheter the tile is walkable or not
-		changeMovingObjectSprite(objectId, stepNext.moveSprite);
+		changeMovingObjectSprite(object.id, stepNext.state.sprite);
 
 		// If the next tile we're going to enter isn't walkable, remove that and all the following steps, and make sure we're propperly positioned
 		// Do the same if the tile is more than 1 tile away
 		// || ((Math.abs(Math.abs(stepNext.x) - Math.abs(position.x)) > 1) || (Math.abs(Math.abs(stepNext.y) - Math.abs(position.y)) > 1))
-		if(!stepNext.walkable) {
+		if(!stepNext.properties.walkable) {
 
-			animatedObjects[objectId]['path'].splice(k.state.walk.indexNext, (animatedObjects[objectId]['path'].length - k.state.walk.indexNext));
+			object.path.splice(k.state.walk.indexNext, (object.path.length - k.state.walk.indexNext));
 
-			position['x'] = stepNow['x'];
-			position['y'] = stepNow['y'];
+			object.position.x = stepNow.position.x;
+			object.position.y = stepNow.position.y;
+			
+			object.position.zx = stepNow.position.x;
+			object.position.zy = stepNow.position.y;
 			
 		}
 		
 	}
 
 	// If the axes of the move is found and the tile is walkable
-	if(stepNext.moveAxis && stepNext.walkable) {
-
+	if(stepNext.state.axis && stepNext.properties.walkable) {
+		
+		// In a perfect world this would work fine, but sometimes
+		// when going through a queue the normal and z floor values
+		// would not line up. I've added a "fix" for that down below,
+		// which is more resource intensive and currently renders
+		// this code redundant.
+		if(!begin){
+			if(stepNext.state.direction < 0){
+				object.position.x = stepNext.position.x;
+				object.position.y = stepNext.position.y;
+			}
+		}
+		
 		// How much time has past since the beginning of this step?
-		stepNext.moveChange = parseInt(now() - stepNext.moveBegin);
+		stepNext.state.change = parseInt(now() - stepNext.time.begin);
 
 		// If keepWalking is true this is the second time we run this function this frame
 		// This time adition to the moveChange should make walking smoother.
-		if(keepWalking) stepNext.moveChange += stepNext.moveGap;
+		if(keepWalking) stepNext.state.change += stepNext.state.gap;
 
 		// If the next tile is past our destination, we don't need to take it into account
 		// if ((nextTile * directionAmmount) > (step['x'] * directionAmmount)) nextTile -= directionAmmount;
 
 		// If it is walkable, actually move
 		// Our progress in this move (between 0 and 1)
-		stepNext.moveProgress = ((stepNext.moveChange * stepNext.terrainSpeed) / k.settings.walk.msPerTile);
-
-		debugMove('<b>' + objectId + '</b> has to move ' + stepNext.moveDirection + ' (' + stepNext.moveAxis + '): ' + stepNext.moveProgress + ' Now: <b>(' + position['x'] + ', ' + position['y'] + ')</b> - Destination: (' + stepNext.x + ', ' + stepNext.y + ') ' + futRequestTime, false);
+		stepNext.state.progress = ((stepNext.state.change * (stepNext.properties.speed/100)) / k.settings.walk.msPerTile);
+		
+		debugMove('<b>' + object.id + '</b> has to move ' + stepNext.state.direction + ' (' + stepNext.state.axis + '): ' + stepNext.state.progress + ' Now: <b>(' + object.position.x + ', ' + object.position.y + ')</b> - Destination: (' + stepNext.position.x + ', ' + stepNext.position.y + ') ' + futRequestTime, false);
 
 		// If we've spent too much time on this move: finish it
-		if((stepNext.moveChange * stepNext.terrainSpeed) >= k.settings.walk.msPerTile) {
+		if((stepNext.state.change * (stepNext.properties.speed/100)) >= k.settings.walk.msPerTile) {
 
 			// Indicate when this move ended
-			stepNext.moveEnd = now();
+			stepNext.time.end = now();
 
 			// Store the overtime
-			stepNext.moveOvertime = ((stepNext.moveChange)  * stepNext.terrainSpeed) - k.settings.walk.msPerTile;
+			stepNext.state.overtime = ((stepNext.state.change)  * (stepNext.properties.speed/100)) - k.settings.walk.msPerTile;
 
 			// If this is the end of the queue, use the requested ending axis position
 			// If not, leave it as it is.
-			if((animatedObjects[objectId]['path'].length - 1) <= (k.state.walk.indexNext)) {
+			if((object.path.length - 1) <= (k.state.walk.indexNext)) {
 				// Store our destination in the position
-				position[stepNext.moveAxis] = stepNext[stepNext.moveAxis];
+				object.position[stepNext.state.axis] = stepNext.position[stepNext.state.axis];
+				object.position["z" + stepNext.state.axis] = stepNext.position[stepNext.state.axis];
 			} else {
-
-				// If the future step isn't on the same axis, do reset the position
-				if(animatedObjects[objectId]['path'][k.state.walk.indexNext+1][stepNext.moveAxis] == stepNext[stepNext.moveAxis]){
-					position[stepNext.moveAxis] = stepNext[stepNext.moveAxis];
+				
+				if(object.path[k.state.walk.indexNow+1].position[stepNext.state.axis] == stepNext.position[stepNext.state.axis]){
+					axischange = true;
+				} else {
+					axischange = false;
 				}
 
+				// If the future step isn't on the same axis, do reset the position
+				if(axischange){
+					object.position[stepNext.state.axis] = stepNext.position[stepNext.state.axis];
+					object.position["z"+stepNext.state.axis] = stepNext.position[stepNext.state.axis];
+				}
+				
 				// Was the next step (the future one) requested in time?
 				// Future steps do not have a moveRequestTime property yet
 				if(futRequestTime < 300) walkAnotherStep = true;
 			}
-
+			
 			if(!walkAnotherStep) {
-					position['x'] = stepNext['x']
-					position['y'] = stepNext['y']
+				object.position.zx = stepNext.position.x;
+				object.position.zy = stepNext.position.y;
 			}
+			
+			object.position.x = stepNext.position.x;
+			object.position.y = stepNext.position.y;
 
 			// Move the queue up by one
-			animatedObjects[objectId]['path'].splice(0, 1);
+			object.path.splice(0, 1);
 
 		} else { // Else calculate our current position
 
-			position[stepNext.moveAxis] = stepNow[stepNext.moveAxis] + ((stepNext[stepNext.moveAxis] - stepNow[stepNext.moveAxis]) * stepNext.moveProgress);
+			object.position["z" + stepNext.state.axis] = stepNow.position[stepNext.state.axis]
+				+ ((stepNext.position[stepNext.state.axis] - stepNow.position[stepNext.state.axis]) * stepNext.state.progress);
+			
+			// In a perfect world this would not be necesary, but sometimes when
+			// going through a queue, the x and zx (or y and zy) floor values
+			// would differ, so we set them again here.
+			object.position[stepNext.state.axis] = ~~object.position["z" + stepNext.state.axis];
+			
 		}
 	}
 	
 	// Flag this object as dirty
-	k.links.canvas.dirty.set.byObject(objectId, 1);
+	k.links.canvas.dirty.set.byObject(object, 1);
 	
 	return walkAnotherStep;
 

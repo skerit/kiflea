@@ -372,22 +372,25 @@ k.classes.Canvas = function(canvasId){
 	
 	/**
 	 * Set an object as dirty
+	 * @param	{k.Types.Object}	object		The object to flag as dirty
+	 * @param	{integer}			duration	How long it's dirty
 	 */
-	this.dirty.set.byObject = function(objectId, duration){
+	this.dirty.set.byObject = function(object, duration){
 		
 		// Set the default duration to 1 if none is supplied
 		if(duration === undefined) duration = 1;
-		
-		var object = k.links.getObject(objectId);
-		
+
 		// If it's our user, set the offset dirtyness too
-		if(objectId == userPosition.uid) that.dirty.set.offset(duration);
+		if(object.id == k.sel.id) that.dirty.set.offset(duration);
 		
-		// Get the tielset info of the sprite, needed for its tile dimensions
-		var tileSet = getTileSetInfo(k.settings.engine.DEFAULTSPRITES, object.currentSprite);
+		// IDE Hack: Enables autocomplete suport because object[] does not work
+		var tile = k.links.getObjectTile(object);
+		
+		// Get the tileset info of the sprite, needed for its tile dimensions
+		var tileSet = tile.tileset;
 		
 		// The steps of the object
-		var stepPrev = object.path[k.state.walk.indexPrev];
+		var stepPrev = k.links.step.get(object, k.state.walk.indexPrev);
 		var stepNow = object.path[k.state.walk.indexNow];
 		var stepNext = object.path[k.state.walk.indexNext];
 		
@@ -400,15 +403,15 @@ k.classes.Canvas = function(canvasId){
 				height < (tileSet.tileHeight/that.map.tileHeight);
 				height += 1){
 				
-				that.dirty.set.byMap(stepPrev.x + width,
-									 stepPrev.y - height, duration);
+				that.dirty.set.byMap(stepPrev.position.x + width,
+									 stepPrev.position.y - height, duration);
 				
-				that.dirty.set.byMap(stepNow.x + width,
-									 stepNow.y - height, duration);
+				that.dirty.set.byMap(stepNow.position.x + width,
+									 stepNow.position.y - height, duration);
 				
 				if(stepNext) {
-					that.dirty.set.byMap(stepNext.x + width,
-										 stepNext.y - height, duration);
+					that.dirty.set.byMap(stepNext.position.x + width,
+										 stepNext.position.y - height,duration);
 				}
 			}
 		}
@@ -659,19 +662,56 @@ k.classes.Canvas = function(canvasId){
 	
 	/**
 	 * Clear a certain tile on the canvas only once per render
+	 * @param	{k.Types.Tile}	The tile to clear
 	 * 
 	 */
-	this.clearTileOnce = function(canvasX, canvasY){
+	this.clearTileOnce = function(tile){
+		
+		var coord = tile.coord;
 		
 		// Create the object if it doesn't exist
-		if(that.cleanedRectangles[canvasX] === undefined) that.cleanedRectangles[canvasX] = {};
+		if(that.cleanedRectangles[coord.canvasX] === undefined)
+				that.cleanedRectangles[coord.canvasX] = {};
 		
 		// If the Y doesn't exist, we can clean it
-		if(that.cleanedRectangles[canvasX][canvasY] === undefined){
-			that.clearTile(canvasX, canvasY);
+		if(that.cleanedRectangles[coord.canvasX][coord.canvasY] === undefined){
+			that.clearTile(coord.canvasX, coord.canvasY);
 			
 			// And create it
-			that.cleanedRectangles[canvasX][canvasY] = true;
+			that.cleanedRectangles[coord.canvasX][coord.canvasY] = true;
+		}
+		
+	}
+	
+	/**
+	 * Prepare a certain tile and return if something needs to be done
+	 * @param	{k.Types.Tile}	The tile to prepare
+	 * @return	{bool}			Wether to do something to this tile or not
+	 */
+	this.prepareTile = function(tile){
+		
+		// If the tile isn't dirty: do nothing
+		if(!tile.dirty) return false;
+		
+		// Clear the tile on the bottom layer
+		that.clearTileOnce(tile);
+		
+		// Is this tile out of bounds? Then draw the background color and return
+		if(tile.coord.lex < 0) {
+				
+			that.buffer.fillStyle = "rgb(0, 0, 0)";
+			that.buffer.fillRect(tile.coord.absX,
+								tile.coord.absY,
+								that.map.tileWidth,
+								that.map.tileHeight);
+			
+			return false;
+		}
+		
+		if(tile.tilegid && tile.properties['draw'] === undefined) {
+			return true;
+		} else {
+			return false;
 		}
 		
 	}

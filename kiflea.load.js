@@ -391,6 +391,9 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
         if(k.state.load.loadedTilesets == k.state.load.toloadTilesets){
             for(map in k.collections.maps)
                 k.operations.load.loadWalkableTiles(map);
+			
+			// And do some other loading stuff
+			k.operations.load.finished();
         }
 
         debugEcho('tileset image"' + source + '" has been downloaded', false);
@@ -401,4 +404,17 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
 
     debugEcho('tileset "' + source + '" has been loaded as "'
               + storeAsName + '"', false);
+}
+
+/**
+ * Things to do at the very end, after every image has loaded
+ */
+k.operations.load.finished = function(){
+	
+	// Set our object
+	k.me = k.links.createObject("U00001", 9, 13, "template.tmx");
+	k.collections.objects["U00001"] = k.me;
+	k.sel = k.me;
+	
+	k.state.load.finished = true;
 }

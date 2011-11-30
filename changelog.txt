@@ -1,3 +1,13 @@
+--- Wednesday 2011-11-30 ---
+* Objects have been moved to the new layout. Still need to fix some things,
+  like smooth scrolling.
+* There: we still need to fix object directional sprite rendering, but so much
+  code has changed a commit is really needed.
+
+--- Tuesday 2011-11-29 ---
+* Began moving the objects to the new code layout. Will be lots of work, nearly
+  everything depends on our main object.
+
 --- Monday 2011-11-28 ---
 * The splitting of files continues: kiflea.load.js was added, where all the code
   regarding downloading and processing of tilesets, maps, ... resides.

@@ -81,6 +81,12 @@ k.Types.EventMoveAccept = {
 	y: 0,
 	
 	/**
+	 * The target object
+	 * @type	{k.Types.Object}
+	 */
+	object: {},
+	
+	/**
 	 * The id of the object we're moving
 	 * @type	{Number}
 	 */
@@ -453,10 +459,194 @@ k.Types.Tile = {
 }
 
 /**
+ * The game object and character object
+ * @typedef	{Object}
+ */
+k.Types.Object = {
+	
+	/**
+	 * The ID of this object
+	 * @type	{String}
+	 */
+	id: "",
+	
+	/**
+	 * The position of our character
+	 * @type	{Object}
+	 */
+	position: {x: 0, y:0, zx: 0.0, zy: 0.0},
+	
+	/**
+	 * The map our object is currently on
+	 * @type {k.Types.Map}
+	 */
+	map: {},
+	
+	/**
+	 * The path our object needs to walk
+	 * @type	{Array[k.Types.Pathstep]}
+	 */
+	path: [],
+	
+	/**
+	 * An array of tile GIDS our object uses
+	 * @type	{Array}
+	 */
+	tiles: [],
+	
+	/**
+	 * Information about the state of this object
+	 * @type	{Object}
+	 */
+	state: {
+		
+		/**
+		 * When we last heard something from this object (if on-line)
+		 * @type	{integer}
+		 */
+		ping: 0,
+		
+		/**
+		 * When this object last moved
+		 * @type	{integer}
+		 */
+		msMoved: 0,
+		
+		/**
+		 * A collection of tiles
+		 */
+		tiles: [],
+		
+		/**
+		 * Along what axis we're moving
+		 */
+		axis: ''
+		
+	}
+}
+
+/**
+ * A single step in a path
+ * @typedef	{Object}
+ */
+k.Types.Pathstep = {
+	
+	/**
+	 * Object containing timings
+	 * @type	{Object}
+	 */
+	time: {
+		
+		/**
+		 * When it was requested
+		 * @type	{Integer}
+		 */
+		request: 0,
+		
+		/**
+		 * When the move began
+		 * @type	{Integer}
+		 */
+		begin: 0,
+		
+		/**
+		 * When the move ended
+		 * @type	{Integer}
+		 */
+		end: 0
+	},
+	
+	/**
+	 * The position of this move
+	 * @type	{Object}
+	 */
+	position: {
+		x: 0,
+		y:0
+	},
+	
+	/**
+	 * Properties of this movement
+	 * @type	{Object}
+	 */
+	properties: {
+		
+		/**
+		 * Is this walkable?
+		 * @type	{Boolean}
+		 */
+		walkable: true,
+		
+		/**
+		 * How fast can we go on this?
+		 */
+		speed: 100
+	},
+	
+	/**
+	 * The state of this step
+	 * @type	{Object}
+	 */
+	state: {
+		
+		/**
+		 * The axis of this movement
+		 */
+		axis: "",
+		
+		/**
+		 * How long it took to request this move
+		 */
+		requestSpeed: 0,
+		
+		/**
+		 * How long we had to wait
+		 */
+		wait: 0,
+		
+		/**
+		 * The time gap between moves
+		 */
+		gap: 0,
+		
+		/**
+		 * The direction of this move
+		 */
+		direction: 0,
+		
+		/**
+		 * What sprite type to use for this move
+		 */
+		sprite: "",
+		
+		/**
+		 * What's the next tile in this direction?
+		 */
+		nextTile: 0,
+		
+		/**
+		 * How much time has passed since the beginning of this step
+		 */
+		change: 0,
+		
+		/**
+		 * How much this move has progressed
+		 */
+		progress: 0,
+		
+		/**
+		 * How much longer did we spend on this move than allowed?
+		 */
+		overtime: 0
+		
+	}
+}
+
+/**
  * The object object
  * @typedef {Object}
  */
-k.Types.Object = {
+k.Types.oldObject = {
 	
 	/**
 	 * What action we last received

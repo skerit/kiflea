@@ -46,7 +46,7 @@ k = {
 	
 	collections:{tilegid: {}},
 	classes:{},
-	links:{},
+	links:{step:{}},
    
 	operations:{
 		server:{},
@@ -55,12 +55,26 @@ k = {
 		interface:{},
 		keyboard:{},
 		coord:{},
-		render:{}
+		render:{},
+		step: {}
 	},
 	
 	events: {},
 	actions: {},
-	cache: {}
+    objects: {},
+	cache: {},
+	
+	/**
+	 * The object of our current user
+	 * @type	{k.Types.Object}
+	 */
+	me: {},
+	
+	/**
+	 * The object of our SELECTED user (probably k.me)
+	 * @type	{k.Types.Object}
+	 */
+	sel: {}
 };
 
 /**
@@ -251,6 +265,12 @@ k.state.load.toload = 0;
  * @type    {number}
  */
 k.state.load.loaded = 0;
+
+/**
+ * Has the final loading function completed?
+ * @type    {Boolean}
+ */
+k.state.load.finished = false;
 
 /**
  * Total count of tilesets that need to be loaded
@@ -491,33 +511,88 @@ k.operations.startEngine = function() {
 		// defined. Otherwise we'd get them from the server
 		k.operations.load.getMaps(k.settings.engine.MAPS);
 		
-		userPosition.uid = "U00001";
-		
-		animatedObjects[userPosition.uid] = {
-				"uid": userPosition.uid,
-				"moveToX": 30,
-				"moveToY": 31,
-				"fromX": 30,
-				"fromY": 31,
-				"msMoved": 100,
-				"lastMoved": 1000,
-				"map": "template.tmx",
-				"sprites": [1, 21],
-				"spritesToDraw": [1, 21], 
-				"currentSprite": 1,
-				"effects": [],
-				"selection": 0,
-				"currenthealth": 55,
-				"fullhealth": 100,
-				"path": [{moveBegin: 100, moveEnd: 200, walkable: true, terrainSpeed: 1, timeRequested: 100, x: 9, y: 10},
-						 {moveBegin: now()-200, moveEnd: now()-100, walkable: true, terrainSpeed: 1, timeRequested: 100, x: 9, y: 13},
-						 {moveBegin: now()-100, moveEnd: now(), walkable: true, terrainSpeed: 1, timeRequested: 100, x: 9, y: 13}],
-				"actionsreceived": [],
-				"finishedEvents": {},
-				"position": {"x": 9, "y": 13}
-			};
+        // Temp object for coord calculation
+		k.sel = {};
+        k.sel.position = {};
+        k.sel.position.x = 0;
+        k.sel.position.y = 0;
 		
     }
+}
+
+/**
+ * Get a new map object
+ * @returns	{k.Types.Object}
+ */
+k.links.createObject = function(id, x, y, mapname){
+	
+	var map = k.links.getMap(mapname);
+	
+	// Create an empty object
+	var r = {};
+	
+	// Set the id
+	r.id = id;
+	
+	// Create the position object
+	r.position = {};
+	
+	// Set the x and y parameters
+	r.position.x = x;
+	r.position.zx = x;
+	r.position.y = y;
+	r.position.zy = y;
+	
+	// Set the map
+	r.map = map;
+	
+	// Create fake previous steps
+	var step = {
+		time: {
+			request: now() - k.settings.walk.msPerTile*3,
+			begin: now() - k.settings.walk.msPerTile*2,
+			end: now() - k.settings.walk.msPerTile
+		},
+		position: {
+			x: x,
+			y:y
+		},
+		properties: {
+			walkable: true,
+			speed: 100
+		},
+		state: {axis:""}
+	};
+		
+	// Create a path array with fake 'previous' walks
+	r.path = [step, step, step];
+	
+	// Create an empty tiles array (object is invisible)
+	r.tiles = [1, 21];
+	
+	// Set the state object
+	r.state = {};
+	
+	// Link the tiles
+	r.state.tiles = [k.links.getTileByGid(1, "default.tmx")];
+	
+	// Set default state objects
+	r.state.ping = now();
+	r.state.msMoved = now();
+	r.state.axis = '';
+	
+	
+	return r;
+}
+
+/**
+ * Get the tile object of a map object
+ * @param	{k.Types.Object}	object
+ * @returns	{k.Types.Tile}
+ */
+k.links.getObjectTile = function(object){
+	
+	return object.state.tiles[0];
 }
 
 /**
@@ -575,6 +650,39 @@ k.links.getTileByLex = function(lex, layername, mapname){
 	
 	return k.links.getTileByCoord(coord, layername, mapname);
     
+}
+
+/**
+ * Get a tile by its gid
+ * @param	{integer}			gid			The GID of the tile
+ * @param	{string}			mapname		What map it's on
+ * @returns	{k.Types.Tile}
+ */
+k.links.getTileByGid = function(gid, mapname){
+	
+	/**
+	 * The return object
+	 * @type	{k.Types.tile}
+	 */
+	var r = {};
+	
+	r.tilegid = gid;
+	
+	// The tileset object
+	r.tileset = k.collections.tilegid[mapname][r.tilegid];
+	
+	// Get the number of the tile on the tileset
+	r.tilenr = r.tilegid - r.tileset.firstgid;
+	
+	// Get the properties of this tile
+	r.properties = k.collections.tileproperties[r.tileset.name][r.tilegid] ||
+				   {};
+				   
+	// Default settings
+	r.dirty = true;
+	r.coord = {};
+	
+	return r;
 }
 
 /**
@@ -638,9 +746,7 @@ k.links.getTileByObject = function(objectId){
 	 * @type	{k.Types.tile}
 	 */
 	var r = {};
-	
-	
-	
+
 }
 
 /**
@@ -649,7 +755,72 @@ k.links.getTileByObject = function(objectId){
  * @returns	{k.Types.Object}		The object
  */
 k.links.getObject = function(objectId){
-	return animatedObjects[objectId];
+	return k.collections.objects[objectId];
+}
+
+/**
+ * Get the previous step of an object
+ * @param	{k.Types.Object}	object	The user object
+ * @returns	{k.Types.Pathstep}	The previous step
+ */
+k.links.step.getPrev = function(object){
+	return object.path[object.path.length-1];
+}
+
+/**
+ * Get a specific step of an object
+ * @param	{k.Types.Object}	object	The user object
+ * @param	{integer}			index	The index to get
+ * @returns	{k.Types.Pathstep}	The previous step
+ */
+k.links.step.get = function(object, index){
+	return object.path[index];
+}
+
+/**
+ * Get the future step of an object
+ * @param	{k.Types.Object}	object	The user object
+ * @returns	{k.Types.Pathstep}	The previous step
+ */
+k.links.step.getNext = function(object){
+	return object.path[k.state.walk.indexNext+1];
+}
+
+/**
+ * Create a new step
+ * @returns	{k.Types.Pathstep}
+ */
+k.links.step.create = function(x, y){
+	return {
+		
+		time: {
+			request: now(),
+			begin: 0,
+			end: 0
+		},
+		
+		position: {
+			x: x,
+			y: y
+		},
+		
+		properties: {
+			walkable: false,
+			speed: 100
+		},
+		
+		state: {
+			axis: "",
+			requestSpeed: 0,
+			wait: 0,
+			gap: 0,
+			direction: 0,
+			sprite: "",
+			nextTile: 0,
+			change: 0,
+			progress: 0
+		}
+	}
 }
 
 /**
@@ -684,8 +855,8 @@ k.operations.toggleEngine = function(){
 k.operations.isTileWalkable = function(mapName, x, y){
 
 	// If the x and y is beyond the bounds of the map, return false
-	if(y < 0 || y >= k.collections.maps[animatedObjects[userPosition.uid]['map']]['height'] ||
-	   x < 0 || x >= k.collections.maps[animatedObjects[userPosition.uid]['map']]['width']) return false;
+	if(y < 0 || y >= k.collections.maps[mapName]['height'] ||
+	   x < 0 || x >= k.collections.maps[mapName]['width']) return false;
 
 	wantedTile = y * k.collections.maps[mapName]['width'] + x;
 
