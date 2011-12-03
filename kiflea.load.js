@@ -201,36 +201,42 @@ k.operations.load.processMap = function(xml, sourcename) {
 			// Load through every tile that has a special property
 			$(this).find('tile').each(function(){
 	
-			// Calculate the ID of this tile (they're stored starting with 0, not with their firstgid)
-			var tileGid = parseInt(firstGid) + parseInt($(this).attr('id'));
-	
-			// Loop through each property and save it in the temporary array
-			$(this).find('property').each(function(){
-	
-				// Save the name and value in a variable, to make our code prettier to read
-				var propertyName = $(this).attr('name');
-				var propertyValue = $(this).attr('value');
-	
-				// Look at the name of the given property, and do things accordingly
-				switch(propertyName) {
-				// We define nextframes in tiled according to their order in THAT tileset
-				// We don't use tilegids there because these can change as new tilesets are
-				// added or removed.
-				case 'nextframe':
-				  tempProperties[propertyName] = parseInt(propertyValue) + parseInt(firstGid-1);
-				  break;
-	
-				// If it's none of the above, just save the value as is
-				default:
-				  tempProperties[propertyName] = propertyValue;
-				}
-	
-			});
-	
-			// Store all the properties of this tile in tileProperties array
-			tileProperties[tileSetName][tileGid] = tempProperties;
-			k.collections.tileproperties[tileSetName][tileGid] = tempProperties;
-			tempProperties = {};
+				// Calculate the ID of this tile (they're stored starting with 0, not with their firstgid)
+				var tiletid = parseInt($(this).attr('id'));
+				var tileGid = parseInt(firstGid) + tiletid;
+		
+				// Loop through each property and save it in the temporary array
+				$(this).find('property').each(function(){
+		
+					// Save the name and value in a variable, to make our code prettier to read
+					var propertyName = $(this).attr('name');
+					var propertyValue = $(this).attr('value');
+		
+					// Look at the name of the given property, and do things accordingly
+					switch(propertyName) {
+						
+						case 'downtile':
+						case 'lefttile':
+						case 'righttile':
+						case 'uptile':
+							tempProperties[propertyName] = parseInt(propertyValue) + tileGid;
+							break;
+						
+						case 'nextframe':
+						  tempProperties[propertyName] = parseInt(propertyValue) + tileGid;
+						  break;
+			
+						// If it's none of the above, just save the value as is
+						default:
+						  tempProperties[propertyName] = propertyValue;
+					}
+		
+				});
+		
+				// Store all the properties of this tile in tileProperties array
+				tileProperties[tileSetName][tileGid] = tempProperties;
+				k.collections.tileproperties[tileSetName][tileGid] = tempProperties;
+				tempProperties = {};
 			});
 	
 		});

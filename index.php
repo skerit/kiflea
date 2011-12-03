@@ -5,10 +5,10 @@
 		.title, h1, h2, h3 {font-family: sans-serif;}
 		.ms {color: #EE0000;font-family: monospace;}
 		.msi {color: #00BB00;font-family: monospace;}
-		#main {text-align: center;float:left;font-size: 20px;margin-bottom:10px;width:600px;}
+		#main {text-align: center;float:left;font-size: 20px;margin-bottom:10px;width:600px;height:700px;}
 		#echo p, #info p {margin:0px;}
 		#flatearth {border: 1px solid #000;}
-		#echo, #info {font-family: sans-serif;word-wrap: break-word;}
+		#echo, #info {font-family: monospace;word-wrap: break-word;}
 		#echo {font-size: 12px;}
 		#dummyinput {border-style: none;background-color: #000;color: #fff;}
 		#cleartable {border-collapse: collapse;text-align: left;}
@@ -23,7 +23,11 @@
 			clear:both;
 		     }
 		img {border: none;}
-		#container {height: 95%};
+		#container {height: 95%;}
+		#titlogo {height: 81px;margin-bottom: 6px;}
+		#titlogo img {float:left;max-width: 150px;}
+		#titlogo h2 {margin-top: 0px;padding-top: 20px;}
+		#info {margin-left: 600px;height:700px;}
 	</style>
 	<!--[if IE]><script type="text/javascript" src="excanvas.compiled.js"></script><![endif]-->
     <!--<script type="text/javascript" src="objSort.js"></script>-->
@@ -177,11 +181,14 @@
 	
 	</script>
 </head>
-<body style="height:95%">
+<body>
 	<div id="container">
 		<div id="main">
-			<img src="images/kiflea-logo-v2-small.png">
-			<h2 class="title">Kipdola's Flat Earth Engine</h2>
+			<div id="titlogo">
+				<img src="images/kiflea-logo-v2-small.png">
+				<h2 class="title">Kipdola's Flat Earth Engine</h2>
+			</div>
+			
 			<canvas id="flatearth" width="480" height="480"></canvas>
 			<br/>
 			<button id="clearecho" onclick="k.links.echo = '';">Clear echo div</button>
@@ -201,50 +208,19 @@
 			<br/><br/>
 			<input id="dummyinput" style="margin-bottom:150px;">
 		</div>
+		
 		<div id="info">
             <a class="FlattrButton" style="display:none;"
             href="http://www.kipdola.be/en/blog/skerit/126-presenting-kiflea-canvas-game-engine-html5"></a>
-			<p style="float:right;font-size:13px;">The Kiflea engine aims to bring fun 2D on-line gaming to your browser.<br/><br/>
-			
-			I set up a repository for the code, more information through the trac link at the bottom of the page.<br/>
-			This is my very first time programming something in javascript, optimalization wasn't always the first thing on my mind.<br/>
-			Any tips, bugs, patches, ... are very, very welcome!
-			</p><div style="clear:right"></div>
-			
-			<p class="cc" style=""><br/>Example tiles where downloaded from
-				<a href="http://www.opengameart.org">OpenGameArt.org</a>. I included:
-				<table class="cleartable">
-					<tr><td>
-						<ul class="cc"><li><a href="http://opengameart.org/content/whispers-of-avalon-grassland-tileset">Whispers of Avalon: Grassland Tileset</a> by Leonard Pabin
-						<li><a href="http://opengameart.org/content/fire-spell-explosion">Fire Spell Explosion</a> by pfunked
-						<li><a href="http://opengameart.org/content/fantasy-rpg-npcs">Fantasy RPG NPCs</a> by Mandi Paugh
-						</ul>
-					</td>
-					<td>
-						<ul class="cc"><li><a href="http://opengameart.org/content/anime-style-male-base-sprite">Anime-style male base sprite</a> by Tayoko
-						<li><a href="http://opengameart.org/content/pixel-art-contest-entry-brigand-armor">Pixel Art Contest entry: Brigand Armor</a> by Blarumyrran
-						<li><a href="http://opengameart.org/content/fireball-spell">Fireball Spell</a> by pfunked
-						<li><a href="http://opengameart.org/content/bw-ornamental-cursor-19x19">B&W Ornamental Cursor</a> by qubodup 
-						</ul>
-					</td></tr>
-				</table>
-			</p>
-			<hr>
-		</div>
-		<div id="counters">
-			Count 1: <span id="count1"></span><br/>
-			Count 2: <span id="count2"></span>
-		</div>
-		<div id="frameecho"></div>
-		<div id="echo"></div>
-		<div id="debug"></div>
-		<div id="footer">
 			<a href="http://kipdola.be/trac/repos/" style="padding: 0pt; border: medium none;">
-			<img title="Trac" alt="trac_logo_mini.png" src="http://kipdola.be/trac/repos/chrome/common/trac_logo_mini.png"></a>
-			A <a href="http://www.kipdola.be">Kipdola Studios production.</a>
-			<div style="float:right;"<button id="removefooter" onclick="$('#footer').hide();">Hide footer</button></div>
+				<img title="Trac" alt="trac_logo_mini.png" src="http://kipdola.be/trac/repos/chrome/common/trac_logo_mini.png"></a>
+				A <a href="http://www.kipdola.be">Kipdola Studios production.</a>
+			<hr>
+			
+			<div id="frameecho"></div>
+			<div id="echo"></div>
+			<div id="debug"></div>
+			
 		</div>
 	</div>
-
-
 </body>

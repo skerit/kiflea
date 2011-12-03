@@ -366,11 +366,11 @@ function echoFrame(message, counter){
 
     if(counter === undefined || counter === false) {
 	    text = '<p>[<span class="msi">--INFO--</span>] ' + message + '</p>';
-		k.links.framedebug.innerHTML += text;
+		k.links.framedebug.innerHTML = text + k.links.framedebug.innerHTML;
     } else {
         msPassed = (new Date()).getTime() - k.state.debug.counter;
 	    text='<p>[<span class="ms">'+msPassed.toPrecision(5)+'ms</span>] ' + message + '</p>';
-        k.links.framedebug.innerHTML += text;
+        k.links.framedebug.innerHTML = text + k.links.framedebug.innerHTML;
     
         // Reset debugcounter
         debugCounterReset();
@@ -462,11 +462,11 @@ function echo(message, counter){
 
     if(counter === undefined || counter === false) {
 	    text = '<p>[<span class="msi">--INFO--</span>] ' + message + '</p>';
-		k.links.echo.innerHTML += text;
+		k.links.echo.innerHTML = text + k.links.echo.innerHTML;
     } else {
         msPassed = (new Date()).getTime() - k.state.debug.counter;
 	    text='<p>[<span class="ms">'+msPassed.toPrecision(5)+'ms</span>] ' + message + '</p>';
-        k.links.echo.innerHTML += text;
+        k.links.echo.innerHTML = text + k.links.echo.innerHTML;
     
         // Reset debugcounter
         debugCounterReset();

@@ -501,7 +501,7 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 
 		// Change the direction of the tile with our function
 		// This has to happen wheter the tile is walkable or not
-		changeMovingObjectSprite(object.id, stepNext.state.sprite);
+		k.operations.render.changeObjectTiles(object, stepNext.state.sprite);
 
 		// If the next tile we're going to enter isn't walkable, remove that and all the following steps, and make sure we're propperly positioned
 		// Do the same if the tile is more than 1 tile away

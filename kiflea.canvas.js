@@ -297,6 +297,8 @@ k.classes.Canvas = function(canvasId){
 		if(that.dirty.tiles[canvasX] === undefined) return;
 		if(that.dirty.tiles[canvasX][canvasY] === undefined) return;
 		
+		var coord = k.operations.coord.getByCanvas(canvasX, canvasY);
+
 		// Increase or decrease the duration
 		// And set the fadeness (for debugging)
 		if(duration){
@@ -332,6 +334,7 @@ k.classes.Canvas = function(canvasId){
 				that.dirty.tiles[canvasX][canvasY]['dirty']--;
 			}
 		}
+
 	}
 	
 	/**
@@ -366,7 +369,7 @@ k.classes.Canvas = function(canvasId){
 		var coord = k.operations.coord.getByMouse(absX, absY);
 		
 		// Use the canvas coordinates to set the tile as dirty
-		that.dirty.set.byCanvas(coord.canvasX, coord.canvasY);
+		that.dirty.set.byCanvas(coord.canvasX, coord.canvasY, duration);
 		
 	}
 	
@@ -428,7 +431,9 @@ k.classes.Canvas = function(canvasId){
 			
 			for(var y = 0; y < ts.tileHeight; y = y + that.map.tileHeight){
 				
-				that.dirty.set.byAbsolute(absX + x, absY - y, 2);
+				var coord = k.operations.coord.getByMouse(absX+x, absY+y - ts.tileHeight);
+				
+				that.dirty.set.byCanvas(coord.canvasX, coord.canvasY, 5);
 				
 			}
 		}
@@ -685,11 +690,11 @@ k.classes.Canvas = function(canvasId){
 	
 	/**
 	 * Prepare a certain tile and return if something needs to be done
-	 * @param	{k.Types.Tile}	The tile to prepare
+	 * @param	{k.Types.Tile}	tile	The tile to prepare
 	 * @return	{bool}			Wether to do something to this tile or not
 	 */
 	this.prepareTile = function(tile){
-		
+
 		// If the tile isn't dirty: do nothing
 		if(!tile.dirty) return false;
 		
@@ -751,7 +756,7 @@ k.classes.Canvas = function(canvasId){
 		that.mouse.upx = e.pageX-this.offsetLeft;
 		that.mouse.upy = e.pageY-this.offsetTop;
 		
-		console.log(getClickedTile(that.mouse.upx, that.mouse.upy));
+		console.log(k.operations.coord.getByMouse(that.mouse.upx, that.mouse.upy));
 
 	});
 

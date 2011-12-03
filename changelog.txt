@@ -1,3 +1,16 @@
+--- Saturday 2011-12-03 ---
+* New cache layer is so complex it would take days to implement. We'll leave it
+  as it is for the moment.
+* You no longer have to (or can) supply the tilenumber for an animation's
+  "nextframe", in stead you have to supply how much tiles further the next
+  frame tile is. Makes it much easier.
+* The drawing of animated tiles has been fixed.
+* Fixed the moving sprites of an object, but still need to finetune the code.
+
+--- Friday 2011-12-02 ---
+* Decided to add a new cache layer, which fundamentally changes the way the map
+  is drawn.
+
 --- Wednesday 2011-11-30 ---
 * Objects have been moved to the new layout. Still need to fix some things,
   like smooth scrolling.

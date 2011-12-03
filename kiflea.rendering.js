@@ -294,14 +294,17 @@ function renderObjects(){
 				   (object.position.x, object.position.y);
         
         // Loop through all the layers of this object
-        for (var spriteNr = 0;
+        /*for (var spriteNr = 0;
 			spriteNr < object.tiles.length;
-			spriteNr++){
+			spriteNr++){*/
+		for (var sprite in object.state.tiles){
             
+			var tile = object.state.tiles[sprite];
+			
             if(object.id == k.sel.id){
                 debugEchoLfps('Drawing own user ' + object.id + ' layer nr ' +
-							  spriteNr + ' - namely: ' +
-							  object.tiles[spriteNr] );
+							  sprite + ' - namely: ' +
+							  object.tiles[sprite] );
             }
 			
 			if(object.id == k.sel.id){
@@ -317,7 +320,7 @@ function renderObjects(){
 			// did) But to get the coordinates, we need to subtract it again
 			if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
 
-				k.operations.render.drawTile(object.tiles[spriteNr],
+				k.operations.render.drawTile(tile.tilegid,
 						 objX, objY, null, object.id);
 				
 			}
@@ -358,7 +361,7 @@ k.operations.renderLayer = function(layerName){
                 // Draw shadows
                 if(layer.properties['drawShadow']==1){
                     if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
-                        
+						
                         k.links.canvas.buffer.fillStyle = "rgba(30, 30, 30, 0.5)";
                         k.links.canvas.buffer.fillRect(tile.coord.absX,
                                                        tile.coord.absY,
@@ -1054,31 +1057,34 @@ function getTileSetInfo(sourceMap, tileNumber){
 }
 
 /**
- *Change the sprite of a moving object
- *@param objectId           {string}    The Id of the object to change
- *@param movementDirection  {string}    The direction this object has to face
-*/
-function changeMovingObjectSprite(objectId, movementDirection){
-    
-    var object = k.links.getObject(objectId);
-    
-        //Change the sprite of every layer if there is one specified for this move
-        for (var spriteNr = 0; spriteNr < object.tiles.length; spriteNr++){
 
-            // We know the map and the tilenumber, but not the tilesetname.
-            // Look that up using our getTileSetInfo function.
-            tileSetInfo = new getTileSetInfo(defaultSprites, object.tiles[spriteNr]);
-            tileSetName = tileSetInfo['tileSetName'];
-            tileSetCorrectGid = tileSetInfo['firstgid'] - 1; // Yes, we have to correct for tileset gids again.
+ * Change the sprite of a moving object
+ * @param 	{k.Types.Object}	object				The Id of the object to change
+ * @param 	{string}			movementDirection   The direction this object has to face
+ */
+k.operations.render.changeObjectTiles = function(object, movementDirection){
+        
+	//Change the sprite of every layer if there is one specified for this move
+	for (var layer = 0; layer < object.tiles.length; layer++){
 
-            // Check if this object has a sprite for this movement
-           if(tileProperties[tileSetName][object.tiles[spriteNr]][movementDirection] !== undefined){
-               debugEchoLfps('Object <b>' + objectId + '</b> has a sprite for this direction: ' + movementDirection + ' on layer ' + spriteNr);
-                
-                // Now set it AANDD don't forget to modify for the tileset firstgid.
-                //animatedObjects[objectId]['spritesToDraw'][spriteNr] = parseInt(tileProperties[tileSetName][animatedObjects[objectId]['sprites'][spriteNr]][movementDirection])+tileSetCorrectGid;
-            }
-        };
+		// We know the map and the tilenumber, but not the tilesetname.
+		// Look that up using our getTileSetInfo function.
+		tileSetInfo = new getTileSetInfo(defaultSprites, object.tiles[layer]);
+		tileSetName = tileSetInfo['tileSetName'];
+		
+		// Get this default tile
+		var tile = k.links.getTileByGid(object.tiles[layer], 'default.tmx');
+
+		// Check if this object has a sprite for this movement
+	   if(tile.properties[movementDirection] !== undefined){
+			debugEchoLfps('Obj <b>' + object.id + '</b> has a sprite for '
+						  + movementDirection + ' on layer ' + layer
+						  + ':' + tile.properties[movementDirection]);
+			
+			object.state.tiles[layer] = k.links.getTileByGid(tile.properties[movementDirection], 'default.tmx');
+			//animatedObjects[objectId]['spritesToDraw'][spriteNr] = parseInt(tileProperties[tileSetName][animatedObjects[objectId]['sprites'][spriteNr]][movementDirection])+tileSetCorrectGid;
+		}
+	};
 }
 
 /**
