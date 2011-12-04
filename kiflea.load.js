@@ -223,12 +223,17 @@ k.operations.load.processMap = function(xml, sourcename) {
 							break;
 						
 						case 'nextframe':
-						  tempProperties[propertyName] = parseInt(propertyValue) + tileGid;
-						  break;
+							tempProperties[propertyName] = parseInt(propertyValue) + tileGid;
+							break;
+						
+						// Store a reference to this character tile
+						// Don't break, we want to use the default action too
+						case 'char':
+							k.collections.chars[propertyValue] = tileGid;
 			
 						// If it's none of the above, just save the value as is
 						default:
-						  tempProperties[propertyName] = propertyValue;
+							tempProperties[propertyName] = propertyValue;
 					}
 		
 				});
@@ -303,8 +308,8 @@ k.operations.load.getWalkableTiles = function(sourcename){
                     var tileSetName = tileSetInfo['tileSetName'];
         
                     if(tileProperties[tileSetName][tileNumber] !== undefined){
-                        if(tileProperties[tileSetName][tileNumber]['impenetrable'] !== undefined){
-                            walkableTiles[pos] = 0; // It's much more logical to set "walkable" to 0
+                        if(tileProperties[tileSetName][tileNumber]['walkable'] !== undefined){
+                            walkableTiles[pos] = parseInt(tileProperties[tileSetName][tileNumber]['walkable']); // It's much more logical to set "walkable" to 0
                         }
 						
 						if(tileProperties[tileSetName][tileNumber]['shadow'] !== undefined){

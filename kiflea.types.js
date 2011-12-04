@@ -520,7 +520,12 @@ k.Types.Object = {
 		/**
 		 * Along what axis we're moving
 		 */
-		axis: ''
+		axis: '',
+		
+		/**
+		 * Selected objects
+		 */
+		selected: []
 		
 	}
 }

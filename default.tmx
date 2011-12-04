@@ -608,18 +608,31 @@
   </tile>
   <tile id="1">
    <properties>
+    <property name="char" value="m01"/>
     <property name="downtile" value="0"/>
-    <property name="fps" value="4"/>
-    <property name="lefttile" value="3"/>
+    <property name="fps" value="7"/>
+    <property name="lefttile" value="12"/>
     <property name="movingobject" value="1"/>
     <property name="nextframe" value="-1"/>
-    <property name="righttile" value="6"/>
-    <property name="uptile" value="9"/>
+    <property name="righttile" value="24"/>
+    <property name="uptile" value="36"/>
    </properties>
   </tile>
   <tile id="2">
    <properties>
     <property name="nextframe" value="-2"/>
+   </properties>
+  </tile>
+  <tile id="4">
+   <properties>
+    <property name="char" value="v01"/>
+    <property name="downtile" value="0"/>
+    <property name="fps" value="4"/>
+    <property name="lefttile" value="12"/>
+    <property name="movingobject" value="1"/>
+    <property name="nextframe" value="-1"/>
+    <property name="righttile" value="24"/>
+    <property name="uptile" value="36"/>
    </properties>
   </tile>
   <tile id="12">
@@ -629,7 +642,7 @@
   </tile>
   <tile id="13">
    <properties>
-    <property name="fps" value="3"/>
+    <property name="fps" value="7"/>
     <property name="movingobject" value="1"/>
     <property name="nextframe" value="-1"/>
    </properties>
@@ -646,7 +659,7 @@
   </tile>
   <tile id="25">
    <properties>
-    <property name="fps" value="3"/>
+    <property name="fps" value="7"/>
     <property name="movingobject" value="1"/>
     <property name="nextframe" value="-1"/>
    </properties>
@@ -663,7 +676,7 @@
   </tile>
   <tile id="37">
    <properties>
-    <property name="fps" value="3"/>
+    <property name="fps" value="7"/>
     <property name="movingobject" value="1"/>
     <property name="nextframe" value="-1"/>
    </properties>
@@ -671,6 +684,11 @@
   <tile id="38">
    <properties>
     <property name="nextframe" value="-2"/>
+   </properties>
+  </tile>
+  <tile id="49">
+   <properties>
+    <property name="char" value="m02"/>
    </properties>
   </tile>
  </tileset>

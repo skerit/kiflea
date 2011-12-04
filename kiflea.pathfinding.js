@@ -140,7 +140,7 @@ function findPath(sx, sy, dx, dy){
         for(var subTile in thisTile){
 
             // If it's walkable ...
-            if(k.operations.isTileWalkable(animatedObjects[userPosition.uid]['map'], thisTile[subTile]['x'],thisTile[subTile]['y'])){
+            if(k.operations.isTileWalkable(k.sel.map.name, thisTile[subTile]['x'],thisTile[subTile]['y'])){
 		
 
                 // Make sure the x already exists in the done array before adding the Y
@@ -336,12 +336,72 @@ k.actions.moveRequest = function(x, y, object) {
 	var prev = k.links.step.getPrev(object);
 	
 	var move = k.links.step.create(prev.position.x + x, prev.position.y + y);
+    
+    // Determine along what axis we need to move (x or y)
+	move.state.axis = prev.position.x != move.position.x ? 'x' : 'y';
+    
+    // Calculate the numerical direction
+	move.state.direction = (move.position[move.state.axis] - prev.position[move.state.axis]);
 
 	// If we're not connected to the server, accept the move directly
 	if(!k.state.server.connected) {
 		
-		// Is the tile walkable?
-		move.properties.walkable = k.operations.isTileWalkable(object.map.name, move.position.x, move.position.y);
+        if(k.operations.isTileInsideMap(object.map.name, move.position.x, move.position.y)){
+            
+            var wn = k.operations.isTileWalkable(object.map.name, move.position.x, move.position.y);
+            var wp = k.operations.isTileWalkable(object.map.name, prev.position.x, prev.position.y);
+            
+            // What type of walkable tile are we walking into?
+            switch(wn){
+                
+                case 0:
+                    move.properties.walkable = false;
+                    break;
+                
+                case 1:
+                    // It's walkable, but where are we coming from?
+                    switch(wp){
+                        
+                        case 0:
+                        case 1:
+                            move.properties.walkable = true;
+                            break;
+                        
+                        case 2:
+                            // Walking into normal tile from type 2
+                            if(move.state.axis == 'x'){
+                                move.properties.walkable = true;
+                            } else {
+                                if(move.state.direction > 0) {
+                                    move.properties.walkable = false;
+                                } else {
+                                    move.properties.walkable = true;
+                                }
+                            }
+                            break;
+                    }
+                    break;
+                
+                case 2:
+                    // It's half walkable, where are we coming from?
+                    if(move.state.axis == 'x'){
+                        move.properties.walkable = true;
+                    } else {
+                        if(move.state.direction > 0) {
+                            move.properties.walkable = true;
+                        } else {
+                            move.properties.walkable = false;
+                        }
+                    }
+                    break;
+                
+            }
+            
+        } else {
+            // Tile is outside map
+            move.properties.walkable = false;
+        }
+        
 		k.actions.moveAccept(object, move);
 		
 	} else {
@@ -461,9 +521,6 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 	// Is this the first time we see this step?
 	if(stepNext.time.begin == 0) {
 
-		// Determine along what axis we need to move (x or y)
-		stepNext.state.axis = stepNow.position.x != stepNext.position.x ? 'x' : 'y';
-
 		// Mark now() as the beginning of the step
 		stepNext.time.begin = now();
 		
@@ -485,9 +542,6 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 
 		// Get the terrain speed (certain terrains make you move faster)
 		stepNext.properties.speed = stepNext.properties.speed === undefined ? 100 : stepNext.properties.speed;
-
-		// Calculate the numerical direction
-		stepNext.state.direction = (stepNext.position[stepNext.state.axis] - stepNow.position[stepNext.state.axis]);
 
 		// If the absolute moveDirection is bigger than 1, remove the step and all the following
 		if(Math.abs(stepNext.state.direction) > 1) object.path.splice(k.state.walk.indexNext, (object.path.length - k.state.walk.indexNext));

@@ -135,31 +135,6 @@
 					"position": {'x': 25, 'y': 25}
 				}
 			}
-			
-			animatedObjects[userPosition.uid] = {
-				"uid": userPosition.uid,
-				"x": 30,
-				"y": 31,
-				"moveToX": 30,
-				"moveToY": 31,
-				"fromX": 30,
-				"fromY": 31,
-				"msMoved": 100,
-				"lastMoved": 1000,
-				"map": "template.tmx",
-				"sprites": [1, 21],
-				"spritesToDraw": [1, 21], 
-				"currentSprite": 1,
-				"effects": [],
-				"selection": 0,
-				"currenthealth": 55,
-				"fullhealth": 100,
-                "position": {'x': 35, 'y': 17},
-				"path": [{x: 33, y: 17}, {x: 34, y: 17}, {x: 35, y: 17}],
-				"actionsreceived": [],
-				"finishedEvents": {},
-				"position": {"x": 30, "y": 31}
-			};
 
 			k.operations.startEngine();
 		});

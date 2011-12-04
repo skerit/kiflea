@@ -111,7 +111,7 @@ function getSelectedObject(){
 function highlightSelectedObject(){
     
     // Draw a little square under our selection if we have one
-    if(animatedObjects[userPosition.uid]['selection'].length  > 0){
+    if(k.sel.state.selected.length  > 0){
         
         var selectionC = getRealCoordinates(animatedObjects[userPosition.uid]['selection']);
         
@@ -1066,14 +1066,9 @@ k.operations.render.changeObjectTiles = function(object, movementDirection){
         
 	//Change the sprite of every layer if there is one specified for this move
 	for (var layer = 0; layer < object.tiles.length; layer++){
-
-		// We know the map and the tilenumber, but not the tilesetname.
-		// Look that up using our getTileSetInfo function.
-		tileSetInfo = new getTileSetInfo(defaultSprites, object.tiles[layer]);
-		tileSetName = tileSetInfo['tileSetName'];
 		
 		// Get this default tile
-		var tile = k.links.getTileByGid(object.tiles[layer], 'default.tmx');
+		var tile = k.links.getTileByChar(object.tiles[layer]);
 
 		// Check if this object has a sprite for this movement
 	   if(tile.properties[movementDirection] !== undefined){

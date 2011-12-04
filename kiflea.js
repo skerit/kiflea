@@ -44,7 +44,7 @@ k = {
 		keyboard:{}
 	},
 	
-	collections:{tilegid: {}},
+	collections:{tilegid: {}, chars:{}},
 	classes:{},
 	links:{step:{}},
    
@@ -61,7 +61,6 @@ k = {
 	
 	events: {},
 	actions: {},
-    objects: {},
 	cache: {},
 	
 	/**
@@ -405,21 +404,6 @@ k.state.keyboard = {
 	"left": false
 };
 
-// Data on the whereabouts of our user (This variable will be scaled down, as most of its data will be put in the objects variable)
-var userPosition = {
-	"uid": "U"+ rand(100000),	// The userid (and object id)
-	"moveToX": 0, 	// Where is the user going?
-	"moveToY": 0,
-	"fromX": 0,
-	"fromY": 0,
-	"msMoved": 100, 	// How many ms have we spent on this move?
-	"lastMoved": 1000, 	// when did the user last moved?
-	"map": "template.tmx", // In what map is the user?
-	"sprites": {
-		"stand": 493 	// what sprites to use for walking (the rest are defined in tiled)
-	},
-	"currentSprite": 493 // the current sprite to use
-	};
 
 var animatedObjects = {};	    // The variable that will contain all the objects, including the user's data
 var textObjects = [];		    // The variable that will store text messages
@@ -567,20 +551,19 @@ k.links.createObject = function(id, x, y, mapname){
 	// Create a path array with fake 'previous' walks
 	r.path = [step, step, step];
 	
-	// Create an empty tiles array (object is invisible)
-	r.tiles = [1, 21];
+	r.tiles = ["m01"];
 	
 	// Set the state object
 	r.state = {};
 	
 	// Link the tiles
-	r.state.tiles = [k.links.getTileByGid(1, "default.tmx")];
+	r.state.tiles = [k.links.getTileByChar("m01")];
 	
 	// Set default state objects
 	r.state.ping = now();
 	r.state.msMoved = now();
 	r.state.axis = '';
-	
+	r.state.selected = [];
 	
 	return r;
 }
@@ -683,6 +666,22 @@ k.links.getTileByGid = function(gid, mapname){
 	r.coord = {};
 	
 	return r;
+}
+
+/**
+ * Get a tile by its charname
+ * @param   {string}    charname
+ * @returns {k.Types.Tile}
+ */
+k.links.getTileByChar = function(charname){
+    
+    // If the char isn't found, return our naked char
+    if(k.collections.chars[charname] === undefined){
+        return k.links.getTileByGid(1, 'default.tmx');
+    } else {
+        return k.links.getTileByGid(k.collections.chars[charname], 'default.tmx');
+    }
+    
 }
 
 /**
@@ -846,24 +845,36 @@ k.operations.toggleEngine = function(){
 }
 
 /**
- *Determine if a tile is walkable
- *@param	mapName		{string}	The name of the map
- *@param	x		{integer}	The x tile we want
- *@param	y		{integer}	The y tile we want
- *@returns 			{bool}		Yes or no
+ * Determine if a tile is walkable
+ * @param	mapName		{string}	The name of the map
+ * @param	x		{integer}	The x tile we want
+ * @param	y		{integer}	The y tile we want
+ * @returns 			{integer}		Type of walkability
  */
 k.operations.isTileWalkable = function(mapName, x, y){
-
-	// If the x and y is beyond the bounds of the map, return false
-	if(y < 0 || y >= k.collections.maps[mapName]['height'] ||
-	   x < 0 || x >= k.collections.maps[mapName]['width']) return false;
 
 	wantedTile = y * k.collections.maps[mapName]['width'] + x;
 
 	// If the wantedtile is defined in the walkableTiles array it isn't walkable: return false.
 	if(k.collections.maps[mapName]['walkableTiles'][wantedTile] !== undefined){
-		return false;
+		return k.collections.maps[mapName]['walkableTiles'][wantedTile];
 	}else {
-		return true;
+		return 1;
 	}
+}
+
+/**
+ * Determine if a tile is out of bounds
+ * @param	mapName		{string}	The name of the map
+ * @param	x		{integer}	The x tile we want
+ * @param	y		{integer}	The y tile we want
+ * @returns 			{bool}		Yes or no
+ */
+k.operations.isTileInsideMap = function(mapName, x, y){
+
+	// If the x and y is beyond the bounds of the map, return false
+	if(y < 0 || y >= k.collections.maps[mapName]['height'] ||
+	   x < 0 || x >= k.collections.maps[mapName]['width']) return false;
+
+	return true;
 }

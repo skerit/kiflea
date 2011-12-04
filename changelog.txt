@@ -6,6 +6,13 @@
   frame tile is. Makes it much easier.
 * The drawing of animated tiles has been fixed.
 * Fixed the moving sprites of an object, but still need to finetune the code.
+* Setting walkable tiles in tiled happens with the "walkable" property in stead
+  of the old "impenetrable" one. When set to 2 it means it's half-walkable.
+  You can enter it from top to bottom on the y axis, or any way on the x axis,
+  but only exit the same way out (so no top to bottom exit).
+  This is nice for fences.
+* We need to change the place objects are drawn. Now they're drawn on top of an
+  entire layer, but for Z-axis problems we need it to follow the map.
 
 --- Friday 2011-12-02 ---
 * Decided to add a new cache layer, which fundamentally changes the way the map
