@@ -313,7 +313,13 @@ k.Types.Map = {
 	 * Shadowtiles in a map
 	 * @type	{Array}
 	 */
-	shadowTiles: {}
+	shadowTiles: {},
+	
+	/**
+	 * An object containing aliases
+	 * @type	{Object}
+	 */
+	alias: {}
 }
 
 /**
@@ -356,7 +362,13 @@ k.Types.mapLayer = {
 	 * The properties of this layer
 	 * @type	{Object}
 	 */
-	properties: {}
+	properties: {},
+	
+	/**
+	 * The order of this layer
+	 * @type	{Integer}
+	 */
+	nr: 1
 }
 
 /**
@@ -454,7 +466,13 @@ k.Types.Tile = {
 	 * If the space where this tile is in is dirty
 	 * @type	{Bool}
 	 */
-	dirty: true
+	dirty: true,
+	
+	/**
+	 * The layer this tile is on
+	 * @type	{k.Types.mapLayer}
+	 */
+	layer: {}
 	
 }
 
@@ -567,7 +585,13 @@ k.Types.Pathstep = {
 	 */
 	position: {
 		x: 0,
-		y:0
+		y:0,
+		
+		/**
+		 * The coord object
+		 * @type	{k.Types.CoordinatesClick}
+		 */
+		coord: {}
 	},
 	
 	/**

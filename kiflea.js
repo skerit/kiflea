@@ -41,10 +41,11 @@ k = {
 		hud:{},
 		dirty:{x: {}},
 		debug:{},
-		keyboard:{}
+		keyboard:{},
+		position:{}
 	},
 	
-	collections:{tilegid: {}, chars:{}},
+	collections:{tilegid: {}, chars:{}, alias:{}},
 	classes:{},
 	links:{step:{}},
    
@@ -365,12 +366,6 @@ k.cache.clear.coord = function(){
 	k.cache.coord.map = [];	
 }
 
-var fps = 10;
-
-
-var mappOffsetX = 0;		// The current offset of the map in relation to our user
-var mappOffsetY = 0;
-
 var tileSet = [];       // All the tilesets are stored in this array
 var animation = [];
 var animatedTiles = {}; // This array keeps a progress of animated tiles. The first level of tilesetnames are defined at loading
@@ -381,8 +376,6 @@ var tileProperties = {};
 var defaultSprites = 'default.tmx';	    // The map which holds the tiles for the objects and users and such.
 					    // This map isn't actually useable, but this way we can use tiled to quickly edit tile preferences.
 
-var visibleTilesX;      // The ammount of tiles visible per row (should be deprecated)
-var visibleTilesY;      // The ammount of tiles visible per col (should be deprecated)
 var ws;
 var timeDifference = 0;	// The difference between the time on the server and the client
 
@@ -404,8 +397,6 @@ k.state.keyboard = {
 	"left": false
 };
 
-
-var animatedObjects = {};	    // The variable that will contain all the objects, including the user's data
 var textObjects = [];		    // The variable that will store text messages
 var charsPerLine = 52;		    // The ammount of letters that fit on one line
 var userMoveTilePerSecond = 10;     // Tile per second
@@ -420,8 +411,6 @@ var testPath = [];                  // An array with test pathfinding data
 var loadHud = 'hud.json'	    // The URL of the HUD file we'll be loading
 var hudLayers = {};		    // We'll store the HUD in here.
 var previousHudLayers = {};	    // To determine wheter we've clicked on the HUD we need to know where they WERE.
-var mouseX = 0;
-var mouseY = 0;
 
 // The default font setting, if no other default is set in hud.json
 var font = {"size": 20,		    // Size in pixels
@@ -685,6 +674,27 @@ k.links.getTileByChar = function(charname){
 }
 
 /**
+ * Get a tile by its alias on this map
+ * @param   {string}    alias
+ * @param   {string}    mapname
+ * @returns {k.Types.Tile}
+ */
+k.links.getTileByAlias = function(alias, mapname){
+	
+	if(mapname === undefined) mapname = k.links.canvas.map.name;
+	
+	var map = k.links.getMap(mapname);
+    
+    // If the char isn't found, return the first tile
+    if(map.alias[alias] === undefined){
+        return k.links.getTileByGid(1, mapname);
+    } else {
+        return k.links.getTileByGid(map.alias[alias], mapname);
+    }
+    
+}
+
+/**
  * Get a tile with the coord object already delivered
  * @param	{k.Types.CoordinatesClick}	coord		The coordinate of the map
  * @param	{string}					layername	The name of the layer
@@ -728,6 +738,9 @@ k.links.getTileByCoord = function(coord, layername, mapname){
 	
 	// Is this tile dirty?
 	r.dirty=k.links.canvas.dirty.get.byCanvas(coord.canvasX, coord.canvasY);
+	
+	// The layer of this itle
+	r.layer = k.links.getLayer(layername, mapname);
 	
 	// Set the coord of this tile on this map
 	r.coord = coord;

@@ -424,6 +424,10 @@ k.actions.moveRequest = function(x, y, object) {
  */
 k.actions.moveAccept = function(object, move){
 	
+	// Add the coord object
+	var coord = k.operations.coord.getByMap(move.position.x, move.position.y);
+	move.position.coord = coord;
+	
 	// Add the move to the queue of this object
 	object.path.push(move);
 	
@@ -659,12 +663,33 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 			// going through a queue, the x and zx (or y and zy) floor values
 			// would differ, so we set them again here.
 			object.position[stepNext.state.axis] = ~~object.position["z" + stepNext.state.axis];
-			
 		}
 	}
 	
+	// Get this coord
+	var coord = k.operations.coord.getByMap(object.position.x, object.position.y);
+	
+	// If we've changed position move us in the state object
+	if(coord.lex != stepNow.position.coord.lex){
+		
+		if(k.state.position[object.map.name][stepNow.position.coord.lex] !== undefined){
+			if(k.state.position[object.map.name][stepNow.position.coord.lex][object.id] !==undefined){
+				delete k.state.position[object.map.name][stepNow.position.coord.lex][object.id];
+			}
+		}
+		
+		if(k.state.position[object.map.name][coord.lex] === undefined)
+			k.state.position[object.map.name][coord.lex] = [];
+			
+		if(k.state.position[object.map.name][coord.lex][object.id] === undefined)
+			k.state.position[object.map.name][coord.lex][object.id] = object;
+		
+		
+	}
+
 	// Flag this object as dirty
 	k.links.canvas.dirty.set.byObject(object, 1);
+	
 	
 	return walkAnotherStep;
 

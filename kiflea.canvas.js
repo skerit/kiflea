@@ -69,15 +69,11 @@ k.classes.Canvas = function(canvasId){
 	this.dirty = {};
 	this.dirty.buffer = 3;	// Use a buffer of 3 tiles outside of the canvas
 	this.dirty.tiles = {};
-	this.dirty.cleaned = {};
 	this.dirty.get = {};
 	this.dirty.set = {};
 	
 	// Do we have to calculate the offset? Is set to false after every render
 	this.dirty.offset = 3;
-	
-	// Cleaned rectangles
-	this.cleanedRectangles = {};
 	
 	// The current map we're working on
 	this.mapName = "";
@@ -563,10 +559,7 @@ k.classes.Canvas = function(canvasId){
 		that.once.clear = false;
 		that.once.messages = [];
 		that.drawWorld = true;
-		
-		// Reset the cleanedRectangles object
-		that.cleanedRectangles = {};
-		
+
 		// Set every tile as clean
 		that.dirty.set.all(0);
 		
@@ -633,23 +626,20 @@ k.classes.Canvas = function(canvasId){
 	
 	/**
 	 * Clear a certain tile on the canvas
-	 * 
+	 * @param	{k.Types.Tile}	The tile to clear
 	 */
-	this.clearTile = function(canvasX, canvasY){
-		
-		// Get the absolute coordinates
-		var coord = k.operations.coord.getByCanvas(canvasX, canvasY);
+	this.clearTile = function(tile){
 		
 		// Use the default color if none is provided
 		if(backgroundColor === undefined) backgroundColor = k.settings.engine.background;
 		
 		// Draw the rectangle
 		this.buffer.fillStyle = backgroundColor;
-		this.buffer.fillRect(coord.absX, coord.absY, that.map.tileWidth, that.map.tileHeight);
+		this.buffer.fillRect(tile.coord.absX, tile.coord.absY, that.map.tileWidth, that.map.tileHeight);
 		
 	}
 	
-	that.drawFadeness = function(){
+	this.drawFadeness = function(){
 		
 		for(var x in that.dirty.tiles){
 			for(var y in that.dirty.tiles[x]){
@@ -666,29 +656,6 @@ k.classes.Canvas = function(canvasId){
 	}
 	
 	/**
-	 * Clear a certain tile on the canvas only once per render
-	 * @param	{k.Types.Tile}	The tile to clear
-	 * 
-	 */
-	this.clearTileOnce = function(tile){
-		
-		var coord = tile.coord;
-		
-		// Create the object if it doesn't exist
-		if(that.cleanedRectangles[coord.canvasX] === undefined)
-				that.cleanedRectangles[coord.canvasX] = {};
-		
-		// If the Y doesn't exist, we can clean it
-		if(that.cleanedRectangles[coord.canvasX][coord.canvasY] === undefined){
-			that.clearTile(coord.canvasX, coord.canvasY);
-			
-			// And create it
-			that.cleanedRectangles[coord.canvasX][coord.canvasY] = true;
-		}
-		
-	}
-	
-	/**
 	 * Prepare a certain tile and return if something needs to be done
 	 * @param	{k.Types.Tile}	tile	The tile to prepare
 	 * @return	{bool}			Wether to do something to this tile or not
@@ -698,26 +665,27 @@ k.classes.Canvas = function(canvasId){
 		// If the tile isn't dirty: do nothing
 		if(!tile.dirty) return false;
 		
-		// Clear the tile on the bottom layer
-		that.clearTileOnce(tile);
+		if(tile.layer.nr == 1) {
+			// Clear the tile on the bottom layer
+			that.clearTile(tile);
+		}
 		
-		// Is this tile out of bounds? Then draw the background color and return
+		// Is this tile out of bounds?
+		// Then draw the background color if it's on the first layer and return
 		if(tile.coord.lex < 0) {
 				
-			that.buffer.fillStyle = "rgb(0, 0, 0)";
-			that.buffer.fillRect(tile.coord.absX,
-								tile.coord.absY,
-								that.map.tileWidth,
-								that.map.tileHeight);
+			if(tile.layer.nr == 1) {
+				that.buffer.fillStyle = "rgb(0, 0, 0)";
+				that.buffer.fillRect(tile.coord.absX,
+									tile.coord.absY,
+									that.map.tileWidth,
+									that.map.tileHeight);
+			}
 			
 			return false;
-		}
+		}	
 		
-		if(tile.tilegid && tile.properties['draw'] === undefined) {
-			return true;
-		} else {
-			return false;
-		}
+		return true;
 		
 	}
 	

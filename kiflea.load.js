@@ -74,6 +74,10 @@ k.operations.load.processMap = function(xml, sourcename) {
 		oneMap['pixelWidth'] = oneMap['width'] * oneMap['tileWidth'];
 		oneMap['pixelHeight'] = oneMap['height'] * oneMap['tileHeight'];
 		oneMap['name'] = sourcename;
+		oneMap['alias'] = {};
+		
+		// Create the object state array
+		k.state.position[sourcename] = {};
 	
 		debugEcho(sourcename + ' - Create an array for all the layers', false);
 	
@@ -130,6 +134,9 @@ k.operations.load.processMap = function(xml, sourcename) {
 	
 		// Create an array to store all this world's layers in
 		oneMap['layers'] = {};
+		
+		// Keep the layer order in mind
+		var layerOrder = 0;
 	
 		// Iterate through every layer
 		$(this).find('layer').each(function(){
@@ -141,6 +148,8 @@ k.operations.load.processMap = function(xml, sourcename) {
 			// Certain layers have properties. Create another temporary array
 			// to store them in.
 			var properties = {};
+			
+			layerOrder++;
 		
 			// Now iterate through all the properties of this layer.
 			$(this).find('properties').find('property').each(function(){
@@ -153,7 +162,8 @@ k.operations.load.processMap = function(xml, sourcename) {
 				'width': $(this).attr('width'),
 				'height': $(this).attr('height'),
 				'opacity': $(this).attr('opacity'),
-				'properties': properties
+				'properties': properties,
+				'nr': layerOrder
 			};
 	
 		});
@@ -230,6 +240,10 @@ k.operations.load.processMap = function(xml, sourcename) {
 						// Don't break, we want to use the default action too
 						case 'char':
 							k.collections.chars[propertyValue] = tileGid;
+							oneMap.alias[propertyValue] = tileGid;
+						
+						case 'alias':
+							oneMap.alias[propertyValue] = tileGid;
 			
 						// If it's none of the above, just save the value as is
 						default:

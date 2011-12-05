@@ -1,3 +1,12 @@
+--- Monday 2011-12-05 ---
+* A few modest changes. 
+
+--- Sunday 2011-12-04 ---
+* Objects are now drawn on a per-position basis. For every position we see if
+  there is an object there and draw it BEFORE we draw anything else on that
+  layer. Is probably a bit more resource intensive, would have to see what
+  impact it has when lots of objects are on the map.
+
 --- Saturday 2011-12-03 ---
 * New cache layer is so complex it would take days to implement. We'll leave it
   as it is for the moment.

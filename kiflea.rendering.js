@@ -76,7 +76,7 @@ k.operations.renderFrame = function(){
 				// If we've enabled pathfinding debug, draw the testpath array
 				if(debugPathOn == true) drawTestPath();
 	
-				renderObjects(layerName); // Render every object
+				//renderObjects(layerName); // Render every object
 			}
 		};
 	}
@@ -328,8 +328,60 @@ function renderObjects(){
         
         // Draw the effects of this user
         renderEffects(object.id);
+    }
+}
+
+/**
+ * Render an array of given objects
+ */
+k.operations.render.objects = function(objects){
+
+    // Loop through every object
+    for (var object in objects){
+	
+		var object = k.links.getObject(object);
+		var map = object.map;
         
+        // If this object isn't on the same map as our user,
+		// continue to the next object
+        if(object.map != k.sel.map) continue;
         
+		// Get all the coordinates
+		var objC = k.operations.coord.getByMap
+				   (object.position.x, object.position.y);
+        
+        // Loop through all the layers of this object
+		for (var sprite in object.state.tiles){
+            
+			var tile = object.state.tiles[sprite];
+			
+            if(object.id == k.sel.id){
+                debugEchoLfps('Drawing own user ' + object.id + ' layer nr ' +
+							  sprite + ' - namely: ' +
+							  object.tiles[sprite] );
+            }
+			
+			if(object.id == k.sel.id){
+				var objX = objC.absX;
+				var objY = objC.absY + map.tileHeight;
+			} else {
+				var coord = getRealCoordinates(object.id);
+				var objX = coord.x;
+				var objY = coord.y;
+			}
+			
+			// To draw the tile we need to add the tileheight (which we already
+			// did) But to get the coordinates, we need to subtract it again
+			if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
+
+				k.operations.render.drawTile(tile.tilegid,
+						 objX, objY, null, object.id);
+				
+			}
+        }
+        
+        // Draw the effects of this user
+        renderEffects(object.id);
     }
 }
 
@@ -351,26 +403,38 @@ k.operations.renderLayer = function(layerName){
 			
 			var tile = k.links.getTileByCanvas(tileX, tileY, layerName);
 			
+			var so = k.operations.coord.getByMap(k.sel.position.x, k.sel.position.y);
+		
             // Do we have to do something to this tile?
             if(k.links.canvas.prepareTile(tile)){
+				
+				// Draw the object first
+				if(layer.properties['drawUsers']==1){
+					if(k.state.position[k.sel.map.name][tile.coord.lex] !== undefined)
+						k.operations.render.objects(k.state.position[k.sel.map.name][tile.coord.lex]);
+				}
+				
+				if(tile.tilegid && tile.properties['draw'] === undefined) {
 		
-                k.operations.render.drawTile(tile.tilegid,
-                         tile.coord.absX,
-                         tile.coord.absY + k.links.canvas.map.tileHeight);
-            
-                // Draw shadows
-                if(layer.properties['drawShadow']==1){
-                    if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
-						
-                        k.links.canvas.buffer.fillStyle = "rgba(30, 30, 30, 0.5)";
-                        k.links.canvas.buffer.fillRect(tile.coord.absX,
-                                                       tile.coord.absY,
-                                                       k.links.canvas.map.tileWidth/3,
-                                                       k.links.canvas.map.tileHeight);
-                    }
-                }
+					k.operations.render.drawTile(tile.tilegid,
+							 tile.coord.absX,
+							 tile.coord.absY + k.links.canvas.map.tileHeight);
+				
+					// Draw shadows
+					if(layer.properties['drawShadow']==1){
+						if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
+							
+							k.links.canvas.buffer.fillStyle = "rgba(30, 30, 30, 0.5)";
+							k.links.canvas.buffer.fillRect(tile.coord.absX,
+														   tile.coord.absY,
+														   k.links.canvas.map.tileWidth/3,
+														   k.links.canvas.map.tileHeight);
+						}
+					}
+				}
                 
             }
+			
         }
     }
 }
