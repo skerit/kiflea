@@ -45,6 +45,11 @@ k.classes.Canvas = function(canvasId){
 	this.tpc = 0;
 	this.totaltiles = 0;
 	
+	// How many sectors do we show on the canvas?
+	this.spr = 0;
+	this.spc = 0;
+	this.totalsectors = 0;
+	
 	// The background color to draw on the canvas
 	this.background = 'rgb(0,0,0)';
 	
@@ -69,6 +74,7 @@ k.classes.Canvas = function(canvasId){
 	this.dirty = {};
 	this.dirty.buffer = 3;	// Use a buffer of 3 tiles outside of the canvas
 	this.dirty.tiles = {};
+	this.dirty.sectors = {};
 	this.dirty.cleaned = {};
 	this.dirty.get = {};
 	this.dirty.set = {};
@@ -190,9 +196,23 @@ k.classes.Canvas = function(canvasId){
 			that.map = newMap;
 			
 			// Set the tile counts
-			that.tpr = Math.floor(that.width / that.map.tileWidth);
-			that.tpc = Math.floor(that.height / that.map.tileHeight);
+			that.tpr = ~~(that.width / that.map.tileWidth);
+			that.tpc = ~~(that.height / that.map.tileHeight);
 			that.totaltiles = that.tpr * that.tpc;
+			
+			that.spr = Math.ceil(that.tpr / k.settings.engine.SECTORSIZE);
+			that.spc = Math.ceil(that.tpc  / k.settings.engine.SECTORSIZE);
+			that.totalsectors = that.spr * that.spc;
+			
+			// Create the cache object for this map
+			k.cache.map[mapname] = {};
+			
+			// And for every layer object in that map
+			for(var layer in newMap.layers){
+				
+				// Create the layer
+				k.cache.map[mapname][layer] = {};
+			}
 			
 			// Recreate the dirty map
 			that.dirty.set.create();
@@ -281,6 +301,66 @@ k.classes.Canvas = function(canvasId){
 			if(that.dirty.offset < 5) that.dirty.offset += duration;
 		} else {
 			if(that.dirty.offset > 0) that.dirty.offset--;
+		}	
+	}
+	
+	/**
+	 * Set a sector as dirty
+	 * @param	{k.Types.CoordinatesClick}	coord
+	 * @param	{k.Types.Map}				map
+	 * @param	{k.Types.mapLayer}			layer
+	 */
+	this.dirty.set.sector = function(coord, map, layer, duration){
+		
+		// Set the default duration to 1 if none is supplied
+		if(duration === undefined) duration = 1;
+		
+		// Make sure this is not out of bounds:
+		if(that.dirty.sectors[map.name] === undefined)
+			that.dirty.sectors[map.name] = {};
+		
+		if(that.dirty.sectors[map.name][layer.name] === undefined)
+			that.dirty.sectors[map.name][layer.name] = {};
+		
+		if(that.dirty.sectors[map.name][layer.name][coord.sec] === undefined)
+			that.dirty.sectors[map.name][layer.name][coord.sec] = {};
+		
+		var link = that.dirty.sectors[map.name][layer.name][coord.sec];
+		
+		// Increase or decrease the duration
+		// And set the fadeness (for debugging)
+		if(duration){
+			
+			// Set the fade
+			if(link['fade'] > 0){
+				if(link['fade'] < 89){
+					link['fade'] += 5;
+				}
+			} else {
+				link['fade'] = 20;
+			}
+			
+			// Set the dirty duration
+			if(link['dirty'] > 0){
+				
+				// Let's keep it low, at about 4
+				if(link['dirty'] < 5){
+					link['dirty'] += duration;
+				}
+				
+			} else {
+				link['dirty'] = duration;
+			}
+			
+		} else {
+			if(link['fade'] > 0){
+				link['fade']--;
+			}
+			
+			// Decrease the dirtyness if it's over 0
+			if(link['dirty'] > 0){
+				link['dirty']--;
+			}
 		}
 		
 	}
@@ -456,7 +536,34 @@ k.classes.Canvas = function(canvasId){
 		
 		if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0) return true;
 		else return false;
-
+	}
+	
+	/**
+	 * Get a sector's dirtyness
+	 * @param	{k.Types.CoordinatesClick}	coord
+	 * @param	{k.Types.Map}				map
+	 * @param	{k.Types.mapLayer}			layer
+	 */
+	this.dirty.get.sector = function(coord, map, layer){
+		
+		// If dirty rectangles have been disabled, always return true
+		if(!k.settings.engine.dirty) return true;
+		
+		// Make sure this is not out of bounds:
+		if(that.dirty.sectors[map.name] === undefined)
+			return true;
+		
+		if(that.dirty.sectors[map.name][layer.name] === undefined)
+			return true;
+		
+		if(that.dirty.sectors[map.name][layer.name][coord.sec] === undefined)
+			return true;
+		
+		var link = that.dirty.sectors[map.name][layer.name][coord.sec];
+		
+		if(link.dirty > 0) return true;
+		else return false;
+	
 	}
 	
 	/**
@@ -713,9 +820,8 @@ k.classes.Canvas = function(canvasId){
 		} else {
 			return false;
 		}
-		
 	}
-	
+		
 	/**
 	 * Clear the canvas once during this draw
 	 * @param		{string=}	backgroundColor 	The color to draw
@@ -751,7 +857,7 @@ k.classes.Canvas = function(canvasId){
 		that.mouse.upx = e.pageX-this.offsetLeft;
 		that.mouse.upy = e.pageY-this.offsetTop;
 		
-		console.log(getClickedTile(that.mouse.upx, that.mouse.upy));
+		console.log(k.operations.coord.getByMouse(that.mouse.upx, that.mouse.upy));
 
 	});
 

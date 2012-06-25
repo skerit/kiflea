@@ -227,8 +227,63 @@ k.Types.CoordinatesClick = {
 	 * The lexicographical order on the current map
 	 * @type	{Number}
 	 */
-	lex: 0
+	lex: 0,
 	
+	/**
+	 * The lexicographical sector this tile is in on the map
+	 * @type	{Integer}
+	 */
+	sec: 0
+	
+}
+
+/**
+ * A sector object
+ * @typedef	{Object}
+ */
+k.Types.Sector = {
+	
+	/**
+	 * Is this sector dirty (due to movement)
+	 * @type	{Integer}
+	 */
+	dirtyplace: 0,
+	
+	/**
+	 * Is the content of this sector dirty?
+	 * @type	{Integer}
+	 */
+	dirtycontent: 0,
+	
+	/**
+	 * The stored image of this sector's layer
+	 * @type	{HTMLCanvasElement}
+	 */
+	element: {},
+	
+	/**
+	 * The control element
+	 * @type	{CanvasRenderingContext2D}
+	 */
+	ctx: {},
+	
+	/**
+	 * The coord object
+	 * @type	{k.Types.CoordinatesClick}
+	 */
+	coord: {},
+	
+	/**
+	 * The layer this is on
+	 * @type	{k.Types.mapLayer}
+	 */
+	layer: {},
+	
+	/**
+	 * The map this is on
+	 * @type	{k.Types.Map}
+	 */
+	map: {}
 }
 
 /**
@@ -280,6 +335,18 @@ k.Types.Map = {
 	pixelHeight: 0,
 	
 	/**
+	 * The width of the map in sectors
+	 * @type	{Integer}
+	 */
+	sectorWidth: 0,
+	
+	/**
+	 * The height of the map in sectors
+	 * @type	{Integer}
+	 */
+	sectorHeight: 0,
+	
+	/**
 	 * Events on a map
 	 * @type	{Object}
 	 */
@@ -313,7 +380,22 @@ k.Types.Map = {
 	 * Shadowtiles in a map
 	 * @type	{Array}
 	 */
-	shadowTiles: {}
+	shadowTiles: {},
+	
+	/**
+	 * Amount of tiles per row
+	 * @type	{Integer}
+	 */
+	tpr: 0,
+	
+	/**
+	 * Amount of tiles per column
+	 * @type	{Integer}
+	 */
+	tpc: 0,
+	
+	spr: 0,
+	spc: 0
 }
 
 /**
@@ -356,7 +438,13 @@ k.Types.mapLayer = {
 	 * The properties of this layer
 	 * @type	{Object}
 	 */
-	properties: {}
+	properties: {},
+	
+	/**
+	 * A link to the map object
+	 * @type	{k.Types.Map}
+	 */
+	map: {}
 }
 
 /**

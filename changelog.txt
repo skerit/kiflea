@@ -1,3 +1,7 @@
+--- Friday 2011-12-02 ---
+* Decided to add a new cache layer, which fundamentally changes the way the map
+  is drawn.
+
 --- Wednesday 2011-11-30 ---
 * Objects have been moved to the new layout. Still need to fix some things,
   like smooth scrolling.

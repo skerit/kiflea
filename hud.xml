@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hud version="1.0" orientation="bottomleft">
+ <!-- Any images will have to be loaded through the default.tmx.xml file. This saves us some time. It'll be loaded as a tileset, but that's no problem -->
+	<layer name="Background">
+		<data encoding="base64">
+		AAAAAA==
+		</data>
+	</layer>
+
+</hud>

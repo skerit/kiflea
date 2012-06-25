@@ -337,6 +337,101 @@ function renderObjects(){
 k.operations.renderLayer = function(layerName){
 	
 	var layer = k.links.getLayer(layerName);
+	
+	//Go through every canvas sector
+	for (var canvasY = 0 - k.settings.engine.SECTORSIZE;
+		 canvasY <= k.links.canvas.tpr + k.settings.engine.SECTORSIZE;
+		 canvasY += k.settings.engine.SECTORSIZE){
+		
+		for (var canvasX = 0 - k.settings.engine.SECTORSIZE;
+		 canvasX <= k.links.canvas.tpc + k.settings.engine.SECTORSIZE;
+		 canvasX += k.settings.engine.SECTORSIZE){
+			
+			// Get the first (upper left) tile of this sector
+			var tile = k.links.getTileByCanvas(canvasX, canvasY, layerName);
+			
+			// If there is no map here, draw black
+			if(tile.coord.sec < 0) {
+				
+				k.links.canvas.buffer.fillStyle = "rgb(0, 0, 0)";
+				k.links.canvas.buffer.fillRect(tile.coord.absX,
+									tile.coord.absY,
+									k.sel.map.tileWidth * k.settings.engine.SECTORSIZE,
+									k.sel.map.tileHeight * k.settings.engine.SECTORSIZE);
+				
+				continue;
+			}
+			
+			// Get the sector at this position
+			var sector = k.links.getSector(tile.coord, layer);
+			
+			k.operations.prepareLayerSector(sector);
+			
+			k.links.canvas.buffer.drawImage(sector.element, sector.coord.absX, sector.coord.absY);
+			
+		}
+	}
+}
+
+/**
+ * Render a sector
+ * @param    {k.Types.Sector}	sector
+ */
+k.operations.prepareLayerSector = function(sector){
+	
+	var secY = 0;
+	
+	for(var mapY = sector.coord.mapY;
+		mapY < sector.coord.mapY + k.settings.engine.SECTORSIZE;
+		mapY++){
+		
+		var secX = 0;
+		
+		for(var mapX = sector.coord.mapX;
+			mapX < sector.coord.mapX + k.settings.engine.SECTORSIZE;
+			mapX++){
+				
+			var tile = k.links.getTileByMap(mapX, mapY, sector.layer.name);
+			
+			var layer = sector.layer;
+			
+			logOnce('Drawing to sector piece ' + secX + ',' + secY + ' -- ' + sector.coord.sec, 'sec-' + sector.coord.sec + '-' + mapX + '-' + mapY );
+			
+            // Do we have to do something to this tile?
+            if(tile.dirty){
+		
+                k.operations.render.drawTile(tile.tilegid,
+                         secX * sector.map.tileWidth,
+                         secY * sector.map.tileHeight + sector.map.tileWidth,
+						 sector);
+            
+                // Draw shadows
+                if(layer.properties['drawShadow']==1){
+                    if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
+                        
+                        sector.ctx.fillStyle = "rgba(30, 30, 30, 0.5)";
+                        sector.ctx.fillRect(secX * sector.map.tileWidth,
+											secY * sector.map.tileHeight + sector.map.tileWidth,
+											k.sel.map.tileWidth/3,
+											k.sel.map.tileHeight);
+                    }
+                }
+            }
+			
+			secX++;
+        }
+		
+		secY++;
+    }
+}
+
+/**
+ * Render a specific layer of our current map
+ * @param    layerName   {string}    The name of the layer to draw
+ */
+k.operations.renderLayerOld = function(layerName){
+	
+	var layer = k.links.getLayer(layerName);
 
     // Loop through every row (+ the extra rows)
     for (var tileY = 0;
@@ -381,10 +476,8 @@ k.operations.render.calculateOffset = function(){
 	k.state.engine.prevMappOffsetX = k.state.engine.mappOffsetX;
 	k.state.engine.prevMappOffsetY = k.state.engine.mappOffsetY;
 	
-	//if(k.links.canvas.dirty.offset > 0){
+	if(k.links.canvas.dirty.offset > 0){
 		
-        
-        
 		//This has to be floored, because pixels can't have a decimal value
 		//And this would create 1 pixel spacing between the tiles while moving.
 		k.state.engine.mappOffsetX = ~~((k.links.canvas.map.tileWidth *
@@ -399,7 +492,7 @@ k.operations.render.calculateOffset = function(){
             
 			k.links.canvas.dirty.set.all(1);
 		}
-	//}
+	}
 
 
 }
@@ -480,17 +573,15 @@ function getTileProperty(tileSetName, tileNumber, propertyName){
 
 /**
  *Draw an animated tile
- *@param integer   tileNumber  The number of the tile in the tileset
- *@param float     dx          The destination X-coördinate
- *@param float     dy          The destination Y-coördinate
- *@param float     opacity     A number between 0 and 1 (can be 0 and 1)
- *                             Does nothing currently, as canvas does not
- *                             support adjusting the opacity of images.
- *@param integer   tileGidOnMap
- *@param string    objectId    If it's an object, give its ID.
- *@param    extraId     {integer}   If we need more of an ID
+ * @param integer   tileNumber  The number of the tile in the tileset
+ * @param float     dx          The destination X-coördinate
+ * @param float     dy          The destination Y-coördinate
+ * @param {k.Types.Sector}     	sector     The sector
+ * @param integer   tileGidOnMap
+ * @param string    objectId    If it's an object, give its ID.
+ * @param    extraId     {integer}   If we need more of an ID
  */
-function drawAnimated(tileSetName, tileNumber, dx, dy, opacity, tileGidOnMap, objectId, extraId){
+function drawAnimated(tileSetName, tileNumber, dx, dy, sector, tileGidOnMap, objectId, extraId){
     
     // World-animated tiles are identified by their tilenumber (so every instance
     // of one of these tiles has the same ID in the animation. That's what we want)
@@ -552,7 +643,8 @@ function drawAnimated(tileSetName, tileNumber, dx, dy, opacity, tileGidOnMap, ob
                          tileSetName,   // The name of the tileset
                          adjustedFrame, // The number of the tile
                          dx,            // The destination x position
-                         dy             // The destination y position
+                         dy,             // The destination y position
+						 sector
                          );
         
         debugEchoLfps('Animated tile "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>" has been drawn');
@@ -647,19 +739,17 @@ function checkSameFrame(tileSetName, tileGidOnMap, animationId){
 }
 
 /**
- *Draw a tile from the current map
- *@param integer   tileNumber  The number of the tile in the tileset
- *@param float     dx          The destination X-coördinate
- *@param float     dy          The destination Y-coördinate
- *@param float     opacity     A number between 0 and 1 (can be 0 and 1)
- *                             Does nothing currently, as canvas does not
- *                             support adjusting the opacity of images.
- *@param integer   object      If we want to draw an object we have to give
+ * Draw a tile from the current map
+ * @param {integer}   tileNumber  The number of the tile in the tileset
+ * @param {integer}     dx          The destination X-coördinate
+ * @param {integer}     dy          The destination Y-coördinate
+ * @param {k.Types.Sector}     	sector     The sector
+ * @param {string}   object      If we want to draw an object we have to give
  *                             its id
- *@param    extraId      {integer}      An extra id, mainly for animations
+ * @param    extraId      {integer}      An extra id, mainly for animations
  */
 //function(tileNumber, dx, dy, opacity, objectId, extraId) {
-k.operations.render.drawTile = function(tileNumber, dx, dy, opacity, objectId, extraId) {
+k.operations.render.drawTile = function(tileNumber, dx, dy, sector, objectId, extraId) {
 
 	// Declarations
 	var movingObject;    // Is the object moving?
@@ -698,7 +788,7 @@ k.operations.render.drawTile = function(tileNumber, dx, dy, opacity, objectId, e
     if(tileProperties[tileSetName][tileGidOnMap] != undefined &&
        (tileProperties[tileSetName][tileGidOnMap]['beginanimation'] != undefined || movingObject == true)){
         try {
-            drawAnimated(tileSetName, tileNumber, dx,dy, opacity, tileGidOnMap, objectId, extraId);
+            drawAnimated(tileSetName, tileNumber, dx,dy, sector, tileGidOnMap, objectId, extraId);
             
         } catch(error) {
             debugEchoLfps('[drawTile] Error drawing <b>animated</b> tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)'
@@ -707,7 +797,7 @@ k.operations.render.drawTile = function(tileNumber, dx, dy, opacity, objectId, e
     } else {
     
         try {
-            drawTileSpecific(tileSetName, tileNumber, dx,dy, opacity);
+            drawTileSpecific(tileSetName, tileNumber, dx,dy, sector);
         } catch(error) {
             debugEchoLfps('[drawTile] Error drawing tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)');
         }
@@ -907,16 +997,20 @@ function calculateMapTile(mapX, mapY){
 }
 
 /**
- *Draw a single specific tile from a specific tileset to the canvas
- *@param string    tileSetName  The name of the tileset to get the tile out of 
- *@param integer   tileNumber  The number of the tile in the tileset
- *@param float     dx          The destination X-coördinate
- *@param float     dy          The destination Y-coördinate
- *@param float     opacity     A number between 0 and 1 (can be 0 and 1)
- *                             Does nothing currently, as canvas does not
- *                             support adjusting the opacity of images.
+ * Draw a single specific tile from a specific tileset to the canvas
+ * @param string    tileSetName  The name of the tileset to get the tile out of 
+ * @param integer   tileNumber  The number of the tile in the tileset
+ * @param float     dx          The destination X-coördinate
+ * @param float     dy          The destination Y-coördinate
+ * @param {k.Types.Sector}     	sector     The sector
  */
-function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow, tileWidth, tileHeight, addUserCoordinates) {
+function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, tileWidth, tileHeight, addUserCoordinates) {
+	
+	if(sector === undefined){
+		var ctx = k.links.canvas.buffer;
+	} else {
+		var ctx = sector.ctx;
+	}
     
     // This adds the user coördinates to the dx & dy variable. Which isn't actually useful...
     if(addUserCoordinates) {
@@ -934,7 +1028,8 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
 		
 	if(tp) {
 		
-		var coord = k.operations.coord.getByMouse(dx+k.state.engine.mappOffsetX, (dy-ts.tileHeight)+k.state.engine.mappOffsetY);
+		//var coord = k.operations.coord.getByMouse(dx, (dy-ts.tileHeight));
+		//var coord = k.operations.coord.getByMap(dx+(sector.coord.mapX), dy+sector.coord.mapY);
 		
         var sourceimage = getAutoTile(tileSetName, tileNumber, coord.mapX, coord.mapY);
 		
@@ -960,9 +1055,6 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
         tileHeight = tileSet[tileSetName]['tileHeight'];
     }
 
-    // Set opacity to 1 if it's undefined
-    if(!opacity) opacity = 1;
-
     //End the function if no tileNumber is given
     if (!tileNumber) return;
 	
@@ -970,10 +1062,10 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
 	if(!tp){
 
 		// Calculate this tileNumber's source x parameter (sx) on the tileset
-		var sx = (Math.floor((tileNumber - 1) % tilesPerRow) * tileWidth);
+		var sx = (~~((tileNumber - 1) % tilesPerRow) * tileWidth);
 		
 		// Calculate this tileNumber's source y parameter (sy) on the tileset
-		var sy = (Math.floor((tileNumber - 1) / tilesPerRow) * tileHeight);
+		var sy = (~~((tileNumber - 1) / tilesPerRow) * tileHeight);
 		
 		// The image we need to draw from
 		var sourceimage = tileSet[tileSetName]["image"];
@@ -981,7 +1073,7 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, opacity, tilesPerRow,
     
     try {
         // Draw the tile on the canvas
-        k.links.canvas.buffer.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
+        ctx.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
     } catch (error) {
         debugEchoLfps('[drawTileSpecific] Error: ' + error.code + ' - ' +
                       error.message + '<br/>'+
