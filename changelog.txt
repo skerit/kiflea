@@ -1,3 +1,6 @@
+--- Monday 2012-06-25 ---
+* Mergin the old sector changes with the new ones in the sector branch
+
 --- Monday 2011-12-05 ---
 * A few modest changes. 
 

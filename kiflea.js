@@ -204,6 +204,12 @@ k.settings.engine.MAPS = ['map.tmx', k.settings.engine.DEFAULTSPRITES];
 k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea/';
 
 /**
+ * How big can a map sector be?
+ * @define	{integer}
+ */
+k.settings.engine.SECTORSIZE = 4;
+
+/**
  * The id of the canvas element
  * @define {string}
  */
@@ -349,6 +355,11 @@ k.cache.coord = {};
 k.cache.coord.canvas = [];
 k.cache.coord.mouse = [];
 k.cache.coord.map = [];
+
+/**
+ * The map cache
+ */
+k.cache.map = {};
 
 k.cache.autotile = {};
 
@@ -587,8 +598,46 @@ k.links.getLayer = function(layername, mapname){
 	if(mapname === undefined) var map = k.links.canvas.map;
 	else var map = k.links.getMap(mapname);
 	
+	if(map.layers[layername]['map'] === undefined)
+		map.layers[layername]['map'] = map;
+	
 	return map.layers[layername];
 	
+}
+
+/**
+ * Get a certain sector
+ * @param	{k.Types.CoordinatesClick}	coord
+ * @param	{k.Types.mapLayer}			layer
+ * @returns	{k.Types.Sector}
+ */
+k.links.getSector = function(coord, layer){
+
+	var base = k.cache.map[layer.map.name][layer.name];
+	
+	if(base[coord.sec] === undefined) {
+	
+		var selement = document.createElement('canvas');
+	
+		// Set the resolution of the buffer element
+		selement.width = layer.map.sectorWidth;
+		selement.height = layer.map.sectorHeight;
+	
+		// Get the buffer context
+		var sctx = selement.getContext('2d');
+		
+		k.cache.map[layer.map.name][layer.name][coord.sec] = {
+										element: selement,
+										ctx: sctx,
+										dirtyplace: 1,
+										dirtycontent: 1,
+										coord: coord,
+										map: layer.map,
+										layer: layer
+									};
+	}
+
+	return base[coord.sec];
 }
 
 /**

@@ -352,7 +352,7 @@ k.operations.interface.mouseDown = function(x, y){
  * @param    y   {integer}   The Y coordinate of the mouseclick
  * @returns      {k.Types.CoordinatesClick}
  */
-function getClickedTile(mouseX, mouseY){
+function dgetClickedTile(mouseX, mouseY){
     
     var tileX = Math.floor(mouseX / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileWidth']);
     var tileY = Math.floor(mouseY / k.collections.maps[animatedObjects[userPosition.uid]['map']]['tileHeight']);
@@ -390,15 +390,21 @@ k.operations.coord.getByCanvas = function(canvasX, canvasY, mapname){
 	if(mapX < 0 || mapX > map.width ||
 	   mapY < 0 || mapY > map.height){
 		var lex = -1;
+		var sec = -1;
 	} else {
 		var lex = mapX + mapY * k.links.canvas.map.width;
+		
+		var secX = Math.ceil(mapX / k.settings.engine.SECTORSIZE);
+		var secY = Math.ceil(mapY / k.settings.engine.SECTORSIZE);
+		
+		var sec = secX + secY * map.spr;
 	}
 	
 	return {'mapX': mapX, 'mapY': mapY,
 			'mouseX': absX, 'mouseY': absY,
 			'canvasX': canvasX, 'canvasY': canvasY,
 			'absX': absX, 'absY': absY,
-			'lex': lex};
+			'lex': lex, 'sec': sec};
 
 }
 
@@ -421,14 +427,19 @@ k.operations.coord.getByMap = function(mapX, mapY, mapname){
 	var canvasX = (mapX - k.sel.position.x) + ~~(k.links.canvas.tpr / 2);
 	var canvasY = (mapY - k.sel.position.y) + ~~(k.links.canvas.tpc / 2) -1;
 	
-	var absX = canvasX * map.tileWidth;
-	var absY = canvasY * map.tileHeight;
+	var absX = canvasX * map.tileWidth - k.state.engine.mappOffsetX;
+	var absY = canvasY * map.tileHeight - k.state.engine.mappOffsetY;
+	
+	var secX = ~~(mapX / k.settings.engine.SECTORSIZE);
+	var secY = ~~(mapY / k.settings.engine.SECTORSIZE);
+	
+	var sec = secX + secY * map.spr;
 	   
     return {'mapX': mapX, 'mapY': mapY,
 			'mouseX': absX, 'mouseY': absY,
 			'canvasX': canvasX, 'canvasY': canvasY,
 			'absX': absX, 'absY': absY,
-			'lex': lex};
+			'lex': lex, 'sec': sec};
 }
 
 /**
@@ -445,8 +456,8 @@ k.operations.coord.getByMouse = function(mouseX, mouseY, mapname){
 		var map = k.links.getMap(mapname);
 	}
 	
-    var canvasX = Math.floor(mouseX / map.tileWidth);
-    var canvasY = Math.floor(mouseY / map.tileHeight);
+    var canvasX = ~~(mouseX / map.tileWidth);
+    var canvasY = ~~(mouseY / map.tileHeight);
     
 	var mapX = k.sel.position.x + canvasX + ~~(k.links.canvas.tpr / 2) + 1
 				  - k.links.canvas.tpr;
@@ -454,16 +465,21 @@ k.operations.coord.getByMouse = function(mouseX, mouseY, mapname){
 	var mapY = k.sel.position.y + canvasY + ~~(k.links.canvas.tpc / 2) + 2
 				  - k.links.canvas.tpc;
 				  
-	var absX = canvasX * map.tileWidth;
-	var absY = canvasY * map.tileHeight;
+	var absX = canvasX * map.tileWidth - k.state.engine.mappOffsetX;
+	var absY = canvasY * map.tileHeight - k.state.engine.mappOffsetY;
 	
 	var lex = mapX + mapY * map.width;
+	
+	var secX = ~~(mapX / k.settings.engine.SECTORSIZE);
+	var secY = ~~(mapY / k.settings.engine.SECTORSIZE);
+	
+	var sec = secX + secY * map.spr;
 	
     return {'mapX': mapX, 'mapY': mapY,
 		    'mouseX': mouseX, 'mouseY': mouseY,
 			'canvasX': canvasX, 'canvasY': canvasY,
 			'absX': absX, 'absY': absY,
-			'lex': lex};
+			'lex': lex, 'sec': sec};
 }
 
 /**
@@ -485,14 +501,19 @@ k.operations.coord.getByLex = function(lex, mapname){
 	var canvasX = (mapX - k.sel.position.x) + ~~(k.links.canvas.tpr / 2);
 	var canvasY = (mapY - k.sel.position.y) + ~~(k.links.canvas.tpc / 2) -1;
 
-	var absX = canvasX * map.tileWidth;
-	var absY = canvasY * map.tileHeight;
+	var absX = canvasX * map.tileWidth - k.state.engine.mappOffsetX;
+	var absY = canvasY * map.tileHeight - k.state.engine.mappOffsetY;
+	
+	var secX = ~~(mapX / k.settings.engine.SECTORSIZE);
+	var secY = ~~(mapY / k.settings.engine.SECTORSIZE);
+	
+	var sec = secX + secY * map.spr;
 
 	return {'mapX': mapX, 'mapY': mapY,
 			'mouseX': absX, 'mouseY': absY,
 			'canvasX': canvasX, 'canvasY': canvasY,
 			'absX': absX, 'absY': absY,
-			'lex': lex};
+			'lex': lex, 'sec': sec};
 
 }
 

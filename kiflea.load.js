@@ -73,6 +73,12 @@ k.operations.load.processMap = function(xml, sourcename) {
 		oneMap['tileHeight'] = parseInt($(this).attr('tileheight'));
 		oneMap['pixelWidth'] = oneMap['width'] * oneMap['tileWidth'];
 		oneMap['pixelHeight'] = oneMap['height'] * oneMap['tileHeight'];
+		oneMap['sectorWidth'] = Math.ceil(oneMap['pixelWidth'] / k.settings.engine.SECTORSIZE);
+		oneMap['sectorHeight'] = Math.ceil(oneMap['pixelHeight'] / k.settings.engine.SECTORSIZE);
+		oneMap['tpr'] = oneMap['width'];
+		oneMap['tpc'] = oneMap['height'];
+		oneMap['spr'] = oneMap['width'] / k.settings.engine.SECTORSIZE;
+		oneMap['spc'] = oneMap['height'] / k.settings.engine.SECTORSIZE;
 		oneMap['name'] = sourcename;
 		oneMap['alias'] = {};
 		
