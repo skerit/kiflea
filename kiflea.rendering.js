@@ -1122,14 +1122,15 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
 	
 	var tileNumberMap = parseInt(tileNumber) + (parseInt(ts.firstgid)-1);
 	
-	var tp = getTileProperty(tileSetName, tileNumberMap, "autotile");
+	// Is this tile an autotile?
+	var autotile = getTileProperty(tileSetName, tileNumberMap, "autotile");
+	
+	if(autotile) {
 		
-	if(tp) {
-		
-		//var coord = k.operations.coord.getByMouse(dx, (dy-ts.tileHeight));
-		//var coord = k.operations.coord.getByMap(dx+(sector.coord.mapX), dy+sector.coord.mapY);
-		
-        var sourceimage = getAutoTile(tileSetName, tileNumber, sector.coord.mapX, sector.coord.mapY);
+		var coord = k.operations.coord.getByMouse(sector.coord.absX + dx + k.state.engine.mappOffsetX,
+												  sector.coord.absY + dy - ts.tileHeight + k.state.engine.mappOffsetY);
+
+        var sourceimage = getAutoTile(tileSetName, tileNumber, coord.mapX, coord.mapY);
 		
 		var sx = 0;
 		var sy = 0;
@@ -1157,7 +1158,7 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
     if (!tileNumber) return;
 	
 	// Get our data from somewhere else if it's not a autotile
-	if(!tp){
+	if(!autotile){
 
 		// Calculate this tileNumber's source x parameter (sx) on the tileset
 		var sx = (~~((tileNumber - 1) % tilesPerRow) * tileWidth);
@@ -1171,9 +1172,8 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
     
     try {
         // Draw the tile on the canvas
-		dc.fillRect(dx,dy,20,20);
         ctx.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
-		dc.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+
     } catch (error) {
         debugEchoLfps('[drawTileSpecific] Error: ' + error.code + ' - ' +
                       error.message + '<br/>'+

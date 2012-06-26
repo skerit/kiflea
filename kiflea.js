@@ -637,6 +637,9 @@ k.links.getSector = function(coord, layer){
 					map: layer.map,
 					layer: layer
 				};
+	} else {
+		// Update the coord information!
+		base[coord.sec]['coord'] = coord;
 	}
 
 	return base[coord.sec];
