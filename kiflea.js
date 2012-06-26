@@ -22,6 +22,8 @@
  */
 var k = {};
 
+var dc = {};
+
 k = {
 	settings:{		
 		debug:{},
@@ -153,7 +155,7 @@ k.settings.server.ADDRESS = "ws://kipdola.be";
  * What's our target FPS?
  * @define {integer}
  */
-k.settings.engine.fps = 25;
+k.settings.engine.fps = 10;
 
 /**
  * The default background color to draw on the canvas
@@ -626,15 +628,15 @@ k.links.getSector = function(coord, layer){
 		// Get the buffer context
 		var sctx = selement.getContext('2d');
 		
-		k.cache.map[layer.map.name][layer.name][coord.sec] = {
-										element: selement,
-										ctx: sctx,
-										dirtyplace: 1,
-										dirtycontent: 1,
-										coord: coord,
-										map: layer.map,
-										layer: layer
-									};
+		base[coord.sec] = {
+					element: selement,
+					ctx: sctx,
+					dirtyplace: 1,
+					dirtycontent: 1,
+					coord: coord,
+					map: layer.map,
+					layer: layer
+				};
 	}
 
 	return base[coord.sec];

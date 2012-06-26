@@ -405,6 +405,14 @@ k.operations.renderLayer = function(layerName){
 			// Get the first (upper left) tile of this sector
 			var tile = k.links.getTileByCanvas(canvasX, canvasY, layerName);
 			
+			// Debug: Highlight the upper left tile
+			/*k.links.canvas.buffer.fillStyle = "rgba(0, 255, 0, 0.5)";
+			k.links.canvas.buffer.fillRect(tile.coord.absX,
+								tile.coord.absY,
+								k.sel.map.tileWidth,
+								k.sel.map.tileHeight);
+			*/
+			
 			// If there is no map here, draw black
 			if(tile.coord.sec < 0) {
 				
@@ -422,10 +430,21 @@ k.operations.renderLayer = function(layerName){
 			
 			k.operations.prepareLayerSector(sector);
 			
-			k.links.canvas.buffer.drawImage(sector.element, sector.coord.absX, sector.coord.absY);
+			var ux = ((k.sel.position.x % k.settings.engine.SECTORSIZE) * 32) + k.state.engine.mappOffsetX;
+			var uy = (((k.sel.position.y + 1) % k.settings.engine.SECTORSIZE) * 32) + k.state.engine.mappOffsetY;
+			
+			k.links.canvas.buffer.drawImage(sector.element, (canvasX*32) -ux, (canvasY*32) -uy);
 			
 		}
 	}
+}
+
+des = function(x, y) {
+
+	dc.fillRect(0, 0, 400, 400);
+	
+	sector = k.links.getSector(k.links.getTileByCanvas(x, y,"Ground")['coord'], k.links.getTileByCanvas(0,0,"Ground")["layer"]);
+	dc.drawImage(sector.element, 100, 100);
 }
 
 /**
@@ -450,16 +469,14 @@ k.operations.prepareLayerSector = function(sector){
 			
 			var layer = sector.layer;
 			
-			logOnce('Drawing to sector piece ' + secX + ',' + secY + ' -- ' + sector.coord.sec, 'sec-' + sector.coord.sec + '-' + mapX + '-' + mapY );
-			
             // Do we have to do something to this tile?
             if(tile.dirty){
-		
-                k.operations.render.drawTile(tile.tilegid,
+				
+				k.operations.render.drawTile(tile.tilegid,
                          secX * sector.map.tileWidth,
                          secY * sector.map.tileHeight + sector.map.tileWidth,
 						 sector);
-            
+				
                 // Draw shadows
                 if(layer.properties['drawShadow']==1){
                     if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
@@ -1078,18 +1095,10 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
 	} else {
 		var ctx = sector.ctx;
 	}
-    
-    // This adds the user coördinates to the dx & dy variable. Which isn't actually useful...
-    if(addUserCoordinates) {
-        dx = dx + (userPosition.x * defaultTileWidth);
-        dy = dy + (userPosition.y * defaultTileHeight);
-    }
-	
+
 	var ts = k.links.getTilesetByName(tileSetName);
 	
 	var tileNumberMap = parseInt(tileNumber) + (parseInt(ts.firstgid)-1);
-	
-	// 823 > 825 > 827
 	
 	var tp = getTileProperty(tileSetName, tileNumberMap, "autotile");
 		
@@ -1098,7 +1107,7 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
 		//var coord = k.operations.coord.getByMouse(dx, (dy-ts.tileHeight));
 		//var coord = k.operations.coord.getByMap(dx+(sector.coord.mapX), dy+sector.coord.mapY);
 		
-        var sourceimage = getAutoTile(tileSetName, tileNumber, coord.mapX, coord.mapY);
+        var sourceimage = getAutoTile(tileSetName, tileNumber, sector.coord.mapX, sector.coord.mapY);
 		
 		var sx = 0;
 		var sy = 0;
@@ -1140,7 +1149,9 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
     
     try {
         // Draw the tile on the canvas
+		dc.fillRect(dx,dy,20,20);
         ctx.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
+		dc.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
     } catch (error) {
         debugEchoLfps('[drawTileSpecific] Error: ' + error.code + ' - ' +
                       error.message + '<br/>'+

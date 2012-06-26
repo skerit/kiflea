@@ -839,6 +839,11 @@ k.classes.Canvas = function(canvasId){
 		that.mouse.upy = e.pageY-this.offsetTop;
 		
 		console.log(k.operations.coord.getByMouse(that.mouse.upx, that.mouse.upy));
+		var sector = k.links.getSector(k.operations.coord.getByMouse(that.mouse.upx, that.mouse.upy), k.links.canvas.map.layers.Ground);
+		console.log(sector);
+		
+		
+		dc.drawImage(sector.element, 100, 100);
 
 	});
 
@@ -847,6 +852,7 @@ k.classes.Canvas = function(canvasId){
 	if(this.ctx) {
 		this.loaded = true;
 		debugEcho('Canvas has been initialized');
+		dc = document.getElementById('debugcanvas').getContext('2d');
 	} else {
 		this.loaded = false;
 	}
