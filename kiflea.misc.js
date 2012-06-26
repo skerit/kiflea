@@ -652,3 +652,29 @@ function range(numbers) {
     numbers.sort();
     return [numbers[0], numbers[numbers.length - 1]];
 }
+
+/**
+ * Sector browser
+ * k.cache.map[layer.map.name][layer.name];
+ */
+drawSectorDebug = function(sectornumber) {
+
+	dc.fillRect(200, 200, 400, 400);
+	
+	// Loop through every map
+	for (var map in k.cache.map) {
+		
+		// And every layer
+		for (var layer in k.cache.map[map]){
+
+			if (k.cache.map[map][layer][sectornumber] !== undefined){
+				//k.cache.map[map][layer][sectornumber]['element']
+
+				dc.drawImage(k.cache.map[map][layer][sectornumber]['element'], 200, 200);
+			}
+		}
+	}
+	
+	//sector = k.links.getSector(k.links.getTileByCanvas(x, y,"Ground")['coord'], k.links.getTileByCanvas(0,0,"Ground")["layer"]);
+	//dc.drawImage(sector.element, 100, 100);
+}

@@ -1,3 +1,7 @@
+--- Tuesday 2012-06-26 ---
+* The map is now rendered in the correct place, sectors work perfectly.
+* Added some debug functions for displaying sectors in the debug canvas.
+
 --- Monday 2012-06-25 ---
 * Mergin the old sector changes with the new ones in the sector branch
 

@@ -161,6 +161,24 @@ k.classes.Canvas = function(canvasId){
             that.ctx.lineTo(col*that.map.tileHeight, that.height);
             that.ctx.stroke();
         }
+		
+		that.ctx.strokeStyle = "rgba(0, 255, 0, 0.7)";  
+        
+        // Draw horizontal lines
+        for(var row = 0; row < (that.width/that.map.tileWidth*k.settings.engine.SECTORSIZE); row++ ){
+            that.ctx.beginPath();
+            that.ctx.moveTo(0, row*that.map.tileWidth*k.settings.engine.SECTORSIZE);  
+            that.ctx.lineTo(that.width, row*that.map.tileWidth*k.settings.engine.SECTORSIZE);
+            that.ctx.stroke();
+        }
+        
+        // Draw vertical lines
+        for(var col = 0; col < (that.height/that.map.tileHeight*k.settings.engine.SECTORSIZE); col++ ){
+            that.ctx.beginPath();
+            that.ctx.moveTo(col*that.map.tileHeight*k.settings.engine.SECTORSIZE, 0);  
+            that.ctx.lineTo(col*that.map.tileHeight*k.settings.engine.SECTORSIZE, that.height);
+            that.ctx.stroke();
+        }
     }
     
     /**

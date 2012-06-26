@@ -191,7 +191,17 @@
 				<img title="Trac" alt="trac_logo_mini.png" src="http://kipdola.be/trac/repos/chrome/common/trac_logo_mini.png"></a>
 				A <a href="http://www.kipdola.be">Kipdola Studios production.</a>
 			<hr>
-			<canvas id="debugcanvas" width="480" height="480" style="position:absolute;right:20px;top:100px;border:1px solid black;"></canvas>
+			<div style="position:absolute;right:20px;top:100px;">
+				<canvas id="debugcanvas" width="480" height="480" style="border:1px solid black;"></canvas><br/>
+				<input id="sectornr" type="number" value="0"/>
+			</div>
+			<script type="text/javascript">
+				$('#sectornr').change(function(){
+					nr = $('#sectornr').val();
+					drawSectorDebug(nr);
+				});
+			</script>
+			
 			<div id="frameecho"></div>
 			<div id="echo"></div>
 			<div id="debug"></div>

@@ -443,7 +443,7 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
 k.operations.load.finished = function(){
 	
 	// Set our object
-	k.me = k.links.createObject("U00001", 9, 13, "template.tmx");
+	k.me = k.links.createObject("U00001", 1,1, "template.tmx");
 	k.collections.objects["U00001"] = k.me;
 	k.sel = k.me;
 	

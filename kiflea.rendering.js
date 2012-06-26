@@ -76,10 +76,18 @@ k.operations.renderFrame = function(){
 				// If we've enabled pathfinding debug, draw the testpath array
 				if(debugPathOn == true) drawTestPath();
 	
-				//renderObjects(layerName); // Render every object
+				renderObjects(layerName); // Render every object
 			}
 		};
 	}
+	
+	// Draw user at 7,6 canvas
+	var uc = k.operations.coord.getByCanvas(7,6);
+	k.links.canvas.buffer.fillStyle = "rgba(0, 0, 200, 0.7)";
+	k.links.canvas.buffer.fillRect(uc.absX,
+						uc.absY,
+						k.sel.map.tileWidth,
+						k.sel.map.tileHeight);
 
     // Clear the sameFrame variable, used by animated tiles
     sameFrame = {};
@@ -318,7 +326,8 @@ function renderObjects(){
 			
 			// To draw the tile we need to add the tileheight (which we already
 			// did) But to get the coordinates, we need to subtract it again
-			if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
+			//if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
+			if(1){
 
 				k.operations.render.drawTile(tile.tilegid,
 						 objX, objY, null, object.id);
@@ -393,25 +402,35 @@ k.operations.renderLayer = function(layerName){
 	
 	var layer = k.links.getLayer(layerName);
 	
-	//Go through every canvas sector
-	for (var canvasY = 0 - k.settings.engine.SECTORSIZE;
-		 canvasY <= k.links.canvas.tpr + k.settings.engine.SECTORSIZE;
-		 canvasY += k.settings.engine.SECTORSIZE){
+	/**
+	 * Since canvas sectors can differ from map sectors we have to calculate
+	 * the map coordinates from the starting position of the canvas
+	 */
+	var coord = k.operations.coord.getByCanvas(0, 0);
+	
+	// Get the first possible starter sector tile coordinates
+	upX = coord.mapX - (coord.mapX % k.settings.engine.SECTORSIZE);
+	upY = coord.mapY - (coord.mapY % k.settings.engine.SECTORSIZE);
+	
+	// Go through every map sector
+	for (var mapY = upY - k.settings.engine.SECTORSIZE;
+		 mapY <= upY + k.links.canvas.tpr + k.settings.engine.SECTORSIZE;
+		 mapY += k.settings.engine.SECTORSIZE){
 		
-		for (var canvasX = 0 - k.settings.engine.SECTORSIZE;
-		 canvasX <= k.links.canvas.tpc + k.settings.engine.SECTORSIZE;
-		 canvasX += k.settings.engine.SECTORSIZE){
+		for (var mapX = upX - k.settings.engine.SECTORSIZE;
+		 mapX <= upX + k.links.canvas.tpc + k.settings.engine.SECTORSIZE;
+		 mapX += k.settings.engine.SECTORSIZE){
 			
 			// Get the first (upper left) tile of this sector
-			var tile = k.links.getTileByCanvas(canvasX, canvasY, layerName);
+			var tile = k.links.getTileByMap(mapX, mapY, layerName);
 			
 			// Debug: Highlight the upper left tile
-			/*k.links.canvas.buffer.fillStyle = "rgba(0, 255, 0, 0.5)";
+			k.links.canvas.buffer.fillStyle = "rgba(0, 255, 0, 0.5)";
 			k.links.canvas.buffer.fillRect(tile.coord.absX,
 								tile.coord.absY,
 								k.sel.map.tileWidth,
 								k.sel.map.tileHeight);
-			*/
+			
 			
 			// If there is no map here, draw black
 			if(tile.coord.sec < 0) {
@@ -430,10 +449,13 @@ k.operations.renderLayer = function(layerName){
 			
 			k.operations.prepareLayerSector(sector);
 			
-			var ux = ((k.sel.position.x % k.settings.engine.SECTORSIZE) * 32) + k.state.engine.mappOffsetX;
-			var uy = (((k.sel.position.y + 1) % k.settings.engine.SECTORSIZE) * 32) + k.state.engine.mappOffsetY;
+			var ux = k.state.engine.mappOffsetX;
+			var uy = k.state.engine.mappOffsetY;
 			
-			k.links.canvas.buffer.drawImage(sector.element, (canvasX*32) -ux, (canvasY*32) -uy);
+			//k.links.canvas.buffer.drawImage(sector.element, (tile.coord.canvasX*32) -ux, (tile.coord.canvasY*32) -uy);
+			k.links.canvas.buffer.drawImage(sector.element, tile.coord.absX, tile.coord.absY);
+			
+			
 			
 		}
 	}
