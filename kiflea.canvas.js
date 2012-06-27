@@ -278,152 +278,51 @@ k.classes.Canvas = function(canvasId){
 	}
 	
 	/**
-	 * Set a sector as dirty
-	 * @param	{k.Types.CoordinatesClick}	coord
-	 * @param	{k.Types.Map}				map
-	 * @param	{k.Types.mapLayer}			layer
+	 * Set a sector, and its top sectors, flagged for a redraw
+	 * @param	{k.Types.Sector}	sector
 	 */
-	this.dirty.set.sector = function(coord, map, layer, duration){
+	this.dirty.set.sectorFamily = function(sector, duration){
 		
-		// Set the default duration to 1 if none is supplied
 		if(duration === undefined) duration = 1;
 		
-		// Make sure this is not out of bounds:
-		if(that.dirty.sectors[map.name] === undefined)
-			that.dirty.sectors[map.name] = {};
-		
-		if(that.dirty.sectors[map.name][layer.name] === undefined)
-			that.dirty.sectors[map.name][layer.name] = {};
-		
-		if(that.dirty.sectors[map.name][layer.name][coord.sec] === undefined)
-			that.dirty.sectors[map.name][layer.name][coord.sec] = {};
-		
-		var link = that.dirty.sectors[map.name][layer.name][coord.sec];
-		
-		// Increase or decrease the duration
-		// And set the fadeness (for debugging)
-		if(duration){
+		// Loop through every layer in this sector's map
+		for(var layername in sector.map.layers){
 			
-			// Set the fade
-			if(link['fade'] > 0){
-				if(link['fade'] < 89){
-					link['fade'] += 5;
+			// For some reason, this fails upon starting up. Maybe the layers aren't ready yet.
+			try {
+				var nsec = k.links.getSector(sector.coord, sector.map.layers[layername]);
+			} catch(error) {
+				
+			}
+			
+			if (duration){
+				// Increase the sector's data if it's the first time
+				if (!nsec.dirty.self.increased){
+					nsec.dirty.self.increased = true;
+					
+					if (nsec.dirty.self.counter < 5){
+						nsec.dirty.self.counter += duration;
+					}
+					
+					if (nsec.fade.self.counter < 89){
+						nsec.fade.self.counter++;
+					}
 				}
 			} else {
-				link['fade'] = 20;
-			}
-			
-			// Set the dirty duration
-			if(link['dirty'] > 0){
-				
-				// Let's keep it low, at about 4
-				if(link['dirty'] < 5){
-					link['dirty'] += duration;
+				// Decrease the sector's data if it's the first time
+				if (!nsec.dirty.self.decreased){
+					nsec.dirty.self.decreased = true;
+					
+					if (nsec.dirty.self.counter > 0){
+						nsec.dirty.self.counter--;
+					}
+					
+					if (nsec.fade.self.counter > 0){
+						nsec.fade.self.counter--;
+					}
 				}
-				
-			} else {
-				link['dirty'] = duration;
-			}
-			
-		} else {
-			if(link['fade'] > 0){
-				link['fade']--;
-			}
-			
-			// Decrease the dirtyness if it's over 0
-			if(link['dirty'] > 0){
-				link['dirty']--;
 			}
 		}
-		
-	}
-	
-	/**
-	 * Set a certain tile as dirty by its canvas coordinates
-	 */
-	this.dirty.set.byCanvas = function(canvasX, canvasY, duration){
-
-		// Set the default duration to 1 if none is supplied
-		if(duration === undefined) duration = 1;
-		
-		// Make sure this is not out of bounds:
-		if(that.dirty.tiles[canvasX] === undefined) return;
-		if(that.dirty.tiles[canvasX][canvasY] === undefined) return;
-		
-		var coord = k.operations.coord.getByCanvas(canvasX, canvasY);
-
-		// Increase or decrease the duration
-		// And set the fadeness (for debugging)
-		if(duration){
-			
-			// Set the fade
-			if(that.dirty.tiles[canvasX][canvasY]['fade'] > 0){
-				if(that.dirty.tiles[canvasX][canvasY]['fade'] < 89){
-					that.dirty.tiles[canvasX][canvasY]['fade'] += 5;
-				}
-			} else {
-				that.dirty.tiles[canvasX][canvasY]['fade'] = 20;
-			}
-			
-			// Set the dirty duration
-			if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0){
-				
-				// Let's keep it low, at about 4
-				if(that.dirty.tiles[canvasX][canvasY]['dirty'] < 5){
-					that.dirty.tiles[canvasX][canvasY]['dirty'] += duration;
-				}
-				
-			} else {
-				that.dirty.tiles[canvasX][canvasY]['dirty'] = duration;
-			}
-			
-		} else {
-			if(that.dirty.tiles[canvasX][canvasY]['fade'] > 0){
-				that.dirty.tiles[canvasX][canvasY]['fade']--;
-			}
-			
-			// Decrease the dirtyness if it's over 0
-			if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0){
-				that.dirty.tiles[canvasX][canvasY]['dirty']--;
-			}
-		}
-
-	}
-	
-	/**
-	 * Set a certain tile as dirty by its map coordinates
-	 * 
-	 * @param   {Integer} mapX     The x-coordinate on the entire map
-	 * @param   {Integer} mapY     The y-coordinate on the entire map
-	 * @param   {Integer} duration How many frames we want it to be dirty
-	 * 
-	 */
-	this.dirty.set.byMap = function(mapX, mapY, duration){
-		
-		// Get the canvas coordinates
-		var coord = k.operations.coord.getByMap(mapX, mapY);
-		
-		// Use the canvas coordinates to set the tile as dirty
-		that.dirty.set.byCanvas(coord.canvasX, coord.canvasY);
-		
-	}
-	
-	/**
-	 * Set a certain tile as dirty by its absolute canvas coordinates
-	 * 
-	 * @param   {Integer} absX     The x-coordinate on the entire map
-	 * @param   {Integer} absY     The y-coordinate on the entire map
-	 * @param   {Integer} duration How many frames we want it to be dirty
-	 * 
-	 */
-	this.dirty.set.byAbsolute = function(absX, absY, duration){
-		
-		// Get the canvas coordinates
-		var coord = k.operations.coord.getByMouse(absX, absY);
-		
-		// Use the canvas coordinates to set the tile as dirty
-		that.dirty.set.byCanvas(coord.canvasX, coord.canvasY, duration);
-		
 	}
 	
 	/**
@@ -493,12 +392,41 @@ k.classes.Canvas = function(canvasId){
 	}
 	
 	/**
+	 * Flag an animated tile as dirty
+	 * @param	{k.Types.Tile}	tile
+	 * @param	{k.Types.CoordinatesClick}	coord
+	 * @param	{k.Types.Sector}	sector
+	 */
+	this.dirty.set.byAnimationCoord = function(tile, coord, sector){
+		
+		// This works
+		that.dirty.set.byCoordSector(coord, sector, 5);
+		
+		/*
+		var ts = tile.tileset;
+		// This doesn't yet, and is needed for animated tiles that are bigger
+		// Than the standard tilesize
+		for(var x = 0; x < ts.tileWidth; x = x + that.map.tileWidth){
+			
+			for(var y = 0; y < ts.tileHeight; y = y + that.map.tileHeight){
+				
+				//var ncoord = k.operations.coord.getByMouse(absX+x, absY+y - ts.tileHeight);
+				var ncoord = k.operations.coord.getByMouse(coord.absX + x, coord.absY+y - ts.tileHeight);
+				//var ncoord = k.operations.coord.getByMap(coord.mapX + (x % that.map.tileWidth),
+				//										 coord.mapY + (y % that.map.tileHeight))
+				
+				that.dirty.set.byCoordSector(ncoord, sector, 5);
+			}
+		}*/
+	}
+	
+	/**
 	 * Set a certain tile as dirty by its coord
 	 * @param	{k.Types.CoordinatesClick}	coord
 	 * @param	{k.Types.Sector}			sector
 	 */
 	this.dirty.set.byCoordSector = function(coord, sector, duration){
-
+		
 		// Set the default duration to 1 if none is supplied
 		if(duration === undefined) duration = 1;
 		
@@ -527,19 +455,6 @@ k.classes.Canvas = function(canvasId){
 				sector.dirty.tiles[coord.secLex] = duration;
 			}
 			
-			// Increase the sector's data if it's the first time
-			if (!sector.dirty.self.increased){
-				sector.dirty.self.increased = true;
-				
-				if (sector.dirty.self.counter < 5){
-					sector.dirty.self.counter++;
-				}
-				
-				if (sector.fade.self.counter < 89){
-					sector.fade.self.counter++;
-				}
-			}
-			
 		} else {
 			if(sector.fade.tiles[coord.secLex] > 0){
 				sector.fade.tiles[coord.secLex]--;
@@ -550,17 +465,10 @@ k.classes.Canvas = function(canvasId){
 				sector.dirty.tiles[coord.secLex]--;
 			}
 			
-			// Decrease the sector's data if it's the first time
-			if (!sector.dirty.self.decreased){
-				if (sector.dirty.self.counter > 0){
-					sector.dirty.self.counter--;
-				}
-				
-				if (sector.fade.self.counter > 0){
-					sector.fade.self.counter--;
-				}
-			}
 		}
+		
+		// Set the sector's dirtyness
+		that.dirty.set.sectorFamily(sector, duration);
 
 	}
 	
@@ -577,6 +485,10 @@ k.classes.Canvas = function(canvasId){
 		if(!k.settings.engine.dirty) return true;
 		
 		var dirty = sector.dirty.tiles[coord.secLex];
+		
+		if(coord.mapX == 14 && coord.mapY == 25){
+			//debugArray(sector.dirty);
+		}
 		
 		if(dirty > 0) return true;
 		else return false;
@@ -757,7 +669,7 @@ k.classes.Canvas = function(canvasId){
 	}
 	
 	this.drawFadeness = function(){
-		
+		/*
 		for(var x in that.dirty.tiles){
 			for(var y in that.dirty.tiles[x]){
 				
@@ -767,6 +679,46 @@ k.classes.Canvas = function(canvasId){
 				
 				that.ctx.fillStyle = "rgba(0,150,150," + fade + ")";
 				that.ctx.fillRect(coord.absX, coord.absY, that.map.tileWidth, that.map.tileHeight);
+			}
+		}*/
+		var coord = k.operations.coord.getByCanvas(0, 0);
+	
+		// Get the first possible starter sector tile coordinates
+		upX = coord.mapX - (coord.mapX % k.settings.engine.SECTORSIZE);
+		upY = coord.mapY - (coord.mapY % k.settings.engine.SECTORSIZE);
+		
+		// Go through every map sector
+		for (var mapY = upY - k.settings.engine.SECTORSIZE;
+			 mapY <= upY + k.links.canvas.tpr + k.settings.engine.SECTORSIZE;
+			 mapY += k.settings.engine.SECTORSIZE){
+			
+			for (var mapX = upX - k.settings.engine.SECTORSIZE;
+			 mapX <= upX + k.links.canvas.tpc + k.settings.engine.SECTORSIZE;
+			 mapX += k.settings.engine.SECTORSIZE){
+				
+				// Get the first (upper left) tile of this sector
+				var tile = k.links.getTileByMap(mapX, mapY, "Ground");
+				
+				// If there is no map here, draw black
+				if(tile.coord.sec < 0) {
+					continue;
+				}
+				
+				// Get the sector at this position
+				var sector = k.links.getSector(tile.coord, tile.layer);
+				
+				for(var seclex = 0; seclex < 15; seclex++){
+				
+					var coord = k.operations.coord.getBySecLex(sector, seclex);
+					
+					fade = sector.fade.tiles[seclex] / 100;
+					
+					that.ctx.fillStyle = "rgba(0,150,150," + fade + ")";
+					that.ctx.fillRect(coord.absX, coord.absY, that.map.tileWidth, that.map.tileHeight);
+					
+				}
+				
+				
 			}
 		}
 		

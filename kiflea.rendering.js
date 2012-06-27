@@ -428,8 +428,8 @@ k.operations.renderLayer = function(layerName){
 			k.links.canvas.buffer.fillStyle = "rgba(0, 255, 0, 0.5)";
 			k.links.canvas.buffer.fillRect(tile.coord.absX,
 								tile.coord.absY,
-								k.sel.map.tileWidth,
-								k.sel.map.tileHeight);
+								10,
+								10);
 			
 			
 			// If there is no map here, draw black
@@ -495,9 +495,6 @@ k.operations.prepareLayerSector = function(sector){
 			mapX < sector.coord.mapX + k.settings.engine.SECTORSIZE;
 			mapX++){
 			
-			// Old methid	
-			//var tile = k.links.getTileByMap(mapX, mapY, sector.layer.name);
-			
 			// New method
 			var coord = k.operations.coord.getByMap(mapX, mapY, sector.map.name);
 			
@@ -506,14 +503,8 @@ k.operations.prepareLayerSector = function(sector){
 			var layer = sector.layer;
 			
             // Do we have to do something to this tile?
-            if(tile.dirty){
-				
-				// Old way
-				/*k.operations.render.drawTile(tile.tilegid,
-                         secX * sector.map.tileWidth,
-                         secY * sector.map.tileHeight + sector.map.tileWidth,
-						 sector);*/
-				
+            if(tile.dirty && tile.properties.draw === undefined){
+
 				k.operations.render.drawTileNew(tile, coord, sector);
 				
 				k.state.debug.tilesDrawn++;
@@ -704,8 +695,10 @@ function getTileProperty(tileSetName, tileNumber, propertyName){
  * @param integer   tileGidOnMap
  * @param string    objectId    If it's an object, give its ID.
  * @param    extraId     {integer}   If we need more of an ID
+ * @param	{k.Types.CoordinatesClick}	coord
+ * @param	{k.Types.tile}	tile
  */
-function drawAnimated(tileSetName, tileNumber, dx, dy, sector, tileGidOnMap, objectId, extraId){
+function drawAnimated(tileSetName, tileNumber, dx, dy, sector, tileGidOnMap, objectId, extraId, coord, tile){
     
     // World-animated tiles are identified by their tilenumber (so every instance
     // of one of these tiles has the same ID in the animation. That's what we want)
@@ -715,7 +708,8 @@ function drawAnimated(tileSetName, tileNumber, dx, dy, sector, tileGidOnMap, obj
 	
 	// Flag this tile for dirtyness due to being animated
 	if(k.settings.engine.dirty)
-	k.links.canvas.dirty.set.byAnimation(dx, dy, tileSetName);
+	k.links.canvas.dirty.set.byAnimationCoord(tile, coord, sector);
+	//k.links.canvas.dirty.set.byAnimation(dx, dy, tileSetName);
     
     // Now let's decide which one it is
     if(objectId === undefined) {
@@ -947,7 +941,7 @@ k.operations.render.drawTileNew = function(tile, coord, sector, objectId, extraI
 	
     if(tile.properties['beginanimation'] != undefined || movingObject == true){
         try {
-            drawAnimated(tile.tileset.name, tile.tilenr, dx,dy, sector, tile.tilegid, objectId, extraId);
+            drawAnimated(tile.tileset.name, tile.tilenr, dx,dy, sector, tile.tilegid, objectId, extraId, coord, tile);
             
         } catch(error) {
             logOnce('[drawTile] Error drawing <b>animated</b> tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)', tile.tilegid);
@@ -1152,6 +1146,88 @@ function isTileHere(mapX, mapY, tileNumber){
 function calculateMapTile(mapX, mapY){
 	
     return mapY * k.collections.maps[k.links.canvas.mapName]['width'] + mapX;
+}
+
+/**
+ * Draw a single specific tile from a specific tileset to the canvas
+ * @param string    tileSetName  The name of the tileset to get the tile out of 
+ * @param integer   tileNumber  The number of the tile in the tileset
+ * @param float     dx          The destination X-coördinate
+ * @param float     dy          The destination Y-coördinate
+ * @param {k.Types.Sector}     	sector     The sector
+ */
+function drawTileSpecificNew(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, tileWidth, tileHeight, addUserCoordinates) {
+	
+	if(sector === undefined){
+		var ctx = k.links.canvas.buffer;
+	} else {
+		var ctx = sector.ctx;
+	}
+
+	var ts = k.links.getTilesetByName(tileSetName);
+	
+	var tileNumberMap = parseInt(tileNumber) + (parseInt(ts.firstgid)-1);
+	
+	// Is this tile an autotile?
+	var autotile = getTileProperty(tileSetName, tileNumberMap, "autotile");
+	
+	if(autotile) {
+		
+		var coord = k.operations.coord.getByMouse(sector.coord.absX + dx + k.state.engine.mappOffsetX,
+												  sector.coord.absY + dy - ts.tileHeight + k.state.engine.mappOffsetY);
+
+        var sourceimage = getAutoTile(tileSetName, tileNumber, coord.mapX, coord.mapY);
+		
+		var sx = 0;
+		var sy = 0;
+    }
+	
+    // Temporary located here: adjusting the dy parameter
+    dy -= parseInt(tileSet[tileSetName]['tileHeight']);
+
+    // Fetch the tilesPerRow from the tileset array
+    if(!tilesPerRow){
+        tilesPerRow = tileSet[tileSetName]['tpr'];
+    }
+    
+    // Fetch the width of a tile
+    if(!tileWidth){
+        tileWidth = tileSet[tileSetName]['tileWidth'];
+    }
+
+    // Fetch the height of a tile
+    if(!tileHeight){
+        tileHeight = tileSet[tileSetName]['tileHeight'];
+    }
+
+    //End the function if no tileNumber is given
+    if (!tileNumber) return;
+	
+	// Get our data from somewhere else if it's not a autotile
+	if(!autotile){
+
+		// Calculate this tileNumber's source x parameter (sx) on the tileset
+		var sx = (~~((tileNumber - 1) % tilesPerRow) * tileWidth);
+		
+		// Calculate this tileNumber's source y parameter (sy) on the tileset
+		var sy = (~~((tileNumber - 1) / tilesPerRow) * tileHeight);
+		
+		// The image we need to draw from
+		var sourceimage = tileSet[tileSetName]["image"];
+	}
+    
+    try {
+        // Draw the tile on the canvas
+        ctx.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
+
+    } catch (error) {
+        debugEchoLfps('[drawTileSpecific] Error: ' + error.code + ' - ' +
+                      error.message + '<br/>'+
+                      'Error drawing tilenumber <b>' + tileNumber + '</b> from tileSet <b>' + tileSetName + '</b> ' +
+                      'from coordinates (' + sx + ',' + sy + ') to (' + dx + ',' + dy + ') with tpr: ' + tilesPerRow + ' - tileWidth: ' + tileWidth +
+                      ' - tileHeight: ' + tileHeight);
+    }
+	
 }
 
 /**

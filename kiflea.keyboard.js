@@ -364,6 +364,19 @@ function dgetClickedTile(mouseX, mouseY){
 }
 
 /**
+ * Get the coordinates by sector and seclex
+ * @param	{k.Types.Sector}	sector
+ * @param	{integer}	seclex
+ */
+k.operations.coord.getBySecLex = function(sector, seclex){
+	
+	x = sector.coord.mapX + ((seclex % k.settings.engine.SECTORSIZE));
+	y = sector.coord.mapY + ~~(seclex / k.settings.engine.SECTORSIZE);
+	
+	return k.operations.coord.getByMap(x, y);
+}
+
+/**
  * Get the tilenumber based on the canvas tile numbers
  * @param    x   {integer}   The x-tile number on the canvas
  * @param    y   {integer}   The y-tile number on the canvas
