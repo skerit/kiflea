@@ -73,8 +73,8 @@ k.operations.load.processMap = function(xml, sourcename) {
 		oneMap['tileHeight'] = parseInt($(this).attr('tileheight'));
 		oneMap['pixelWidth'] = oneMap['width'] * oneMap['tileWidth'];
 		oneMap['pixelHeight'] = oneMap['height'] * oneMap['tileHeight'];
-		oneMap['sectorWidth'] = Math.ceil(oneMap['pixelWidth'] / k.settings.engine.SECTORSIZE);
-		oneMap['sectorHeight'] = Math.ceil(oneMap['pixelHeight'] / k.settings.engine.SECTORSIZE);
+		oneMap['sectorWidth'] = k.settings.engine.SECTORSIZE * oneMap['tileWidth'];
+		oneMap['sectorHeight'] = k.settings.engine.SECTORSIZE * oneMap['tileHeight'];
 		oneMap['tpr'] = oneMap['width'];
 		oneMap['tpc'] = oneMap['height'];
 		oneMap['spr'] = oneMap['width'] / k.settings.engine.SECTORSIZE;
@@ -443,7 +443,7 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
 k.operations.load.finished = function(){
 	
 	// Set our object
-	k.me = k.links.createObject("U00001", 1,1, "template.tmx");
+	k.me = k.links.createObject("U00001", 9,24, "template.tmx");
 	k.collections.objects["U00001"] = k.me;
 	k.sel = k.me;
 	

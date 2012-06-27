@@ -447,15 +447,23 @@ k.operations.renderLayer = function(layerName){
 			// Get the sector at this position
 			var sector = k.links.getSector(tile.coord, layer);
 			
-			k.operations.prepareLayerSector(sector);
+			if(k.state.engine.mappOffsetX > 0 || k.state.engine.mappOffsetY > 0 || sector.dirty.self.counter > 0){
 			
-			var ux = k.state.engine.mappOffsetX;
-			var uy = k.state.engine.mappOffsetY;
-			
-			//k.links.canvas.buffer.drawImage(sector.element, (tile.coord.canvasX*32) -ux, (tile.coord.canvasY*32) -uy);
-			k.links.canvas.buffer.drawImage(sector.element, tile.coord.absX, tile.coord.absY);
-			
-			
+				k.operations.prepareLayerSector(sector);
+				
+				var ux = k.state.engine.mappOffsetX;
+				var uy = k.state.engine.mappOffsetY;
+				
+				//k.links.canvas.buffer.drawImage(sector.element, (tile.coord.canvasX*32) -ux, (tile.coord.canvasY*32) -uy);
+				k.links.canvas.buffer.drawImage(sector.element, tile.coord.absX, tile.coord.absY);
+				
+				// Increase the sector's drawn counter
+				k.state.debug.sectorsDrawn++;
+				
+				// Reset the sector dirty booleans
+				sector.dirty.self.increased = false;
+				sector.dirty.self.decreased = false;
+			}
 			
 		}
 	}
@@ -500,10 +508,15 @@ k.operations.prepareLayerSector = function(sector){
             // Do we have to do something to this tile?
             if(tile.dirty){
 				
-				k.operations.render.drawTile(tile.tilegid,
+				// Old way
+				/*k.operations.render.drawTile(tile.tilegid,
                          secX * sector.map.tileWidth,
                          secY * sector.map.tileHeight + sector.map.tileWidth,
-						 sector);
+						 sector);*/
+				
+				k.operations.render.drawTileNew(tile, coord, sector);
+				
+				k.state.debug.tilesDrawn++;
 				
                 // Draw shadows
                 if(layer.properties['drawShadow']==1){
@@ -857,9 +870,8 @@ function checkSameFrame(tileSetName, tileGidOnMap, animationId){
  *                             its id
  * @param    extraId      {integer}      An extra id, mainly for animations
  */
-//function(tileNumber, dx, dy, opacity, objectId, extraId) {
 k.operations.render.drawTile = function(tileNumber, dx, dy, sector, objectId, extraId) {
-
+	
 	// Declarations
 	var movingObject;    // Is the object moving?
     
@@ -909,6 +921,43 @@ k.operations.render.drawTile = function(tileNumber, dx, dy, sector, objectId, ex
             drawTileSpecific(tileSetName, tileNumber, dx,dy, sector);
         } catch(error) {
             debugEchoLfps('[drawTile] Error drawing tile "<b>' + tileNumber + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)');
+        }
+    }
+
+}
+
+/**
+ * Draw a tile from the current map
+ * @param	{k.Types.Tile}	tile
+ * @param	{k.Types.CoordinatesClick} coord
+ * @param	{k.Types.Sector}	sector
+ */
+k.operations.render.drawTileNew = function(tile, coord, sector, objectId, extraId){
+
+	// Declarations
+	var movingObject;    // Is the object moving?
+
+    // If this isn't an object the sourcemap is the current map we're on
+    if(objectId !== undefined) {
+	    if(k.collections.objects[objectId].path.length > (k.state.walk.indexNow + 1)) movingObject = true;
+    }
+	
+	dx = coord.secX * sector.map.tileWidth;
+	dy = coord.secY * sector.map.tileHeight + sector.map.tileHeight;
+	
+    if(tile.properties['beginanimation'] != undefined || movingObject == true){
+        try {
+            drawAnimated(tile.tileset.name, tile.tilenr, dx,dy, sector, tile.tilegid, objectId, extraId);
+            
+        } catch(error) {
+            logOnce('[drawTile] Error drawing <b>animated</b> tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)', tile.tilegid);
+        }
+    } else {
+    
+        try {
+            drawTileSpecific(tile.tileset.name, tile.tilenr+1, dx,dy, sector);
+        } catch(error) {
+            logOnce('[drawTile] Error drawing tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)', tile.tilegid);
         }
     }
 
@@ -1184,8 +1233,6 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
                       'from coordinates (' + sx + ',' + sy + ') to (' + dx + ',' + dy + ') with tpr: ' + tilesPerRow + ' - tileWidth: ' + tileWidth +
                       ' - tileHeight: ' + tileHeight);
     }
-	
-
 	
 }
 

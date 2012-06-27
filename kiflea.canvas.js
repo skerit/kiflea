@@ -70,6 +70,9 @@ k.classes.Canvas = function(canvasId){
 	this.state.msfTimer = now();
 	this.state.msrTimer = now();
 	
+	// Are we moving, which indicates we need to redraw the sectors onto the map?
+	this.moving = true;
+	
 	// Variables containing dirty settings
 	this.dirty = {};
 	this.dirty.buffer = 3;	// Use a buffer of 3 tiles outside of the canvas
@@ -194,7 +197,9 @@ k.classes.Canvas = function(canvasId){
 		mc.strokeStyle = "white";  
 		mc.font = "12px monospace";
 		mc.strokeText('User: ' + precise(k.sel.position.x.toPrecision(2)) + ','
-							   + precise(k.sel.position.y.toPrecision(2)) + ' ', 5, 20);
+							   + precise(k.sel.position.y.toPrecision(2)) + ' '
+					+ 'Tiles Drawn: ' + precise(k.state.debug.tilesDrawn.toPrecision(8)) + ' '
+					+ 'Sect Drawn: ' + precise(k.state.debug.sectorsDrawn.toPrecision(8)), 5, 20);
 	}
     
     /**
@@ -502,34 +507,58 @@ k.classes.Canvas = function(canvasId){
 		if(duration){
 			
 			// Set the fade
-			if(sector.fadeTiles[coord.secLex] > 0){
-				if(sector.fadeTiles[coord.secLex] < 89){
-					sector.fadeTiles[coord.secLex] += 5;
+			if(sector.fade.tiles[coord.secLex] > 0){
+				if(sector.fade.tiles[coord.secLex] < 89){
+					sector.fade.tiles[coord.secLex] += 5;
 				}
 			} else {
-				sector.fadeTiles[coord.secLex] = 20;
+				sector.fade.tiles[coord.secLex] = 20;
 			}
 			
 			// Set the dirty duration
-			if(sector.dirtyTiles[coord.secLex] > 0){
+			if(sector.dirty.tiles[coord.secLex] > 0){
 				
 				// Let's keep it low, at about 4
-				if(sector.dirtyTiles[coord.secLex] < 5){
-					sector.dirtyTiles[coord.secLex] += duration;
+				if(sector.dirty.tiles[coord.secLex] < 5){
+					sector.dirty.tiles[coord.secLex] += duration;
 				}
 				
 			} else {
-				sector.dirtyTiles[coord.secLex] = duration;
+				sector.dirty.tiles[coord.secLex] = duration;
+			}
+			
+			// Increase the sector's data if it's the first time
+			if (!sector.dirty.self.increased){
+				sector.dirty.self.increased = true;
+				
+				if (sector.dirty.self.counter < 5){
+					sector.dirty.self.counter++;
+				}
+				
+				if (sector.fade.self.counter < 89){
+					sector.fade.self.counter++;
+				}
 			}
 			
 		} else {
-			if(sector.fadeTiles[coord.secLex] > 0){
-				sector.fadeTiles[coord.secLex]--;
+			if(sector.fade.tiles[coord.secLex] > 0){
+				sector.fade.tiles[coord.secLex]--;
 			}
 			
 			// Decrease the dirtyness if it's over 0
-			if(sector.dirtyTiles[coord.secLex] > 0){
-				sector.dirtyTiles[coord.secLex]--;
+			if(sector.dirty.tiles[coord.secLex] > 0){
+				sector.dirty.tiles[coord.secLex]--;
+			}
+			
+			// Decrease the sector's data if it's the first time
+			if (!sector.dirty.self.decreased){
+				if (sector.dirty.self.counter > 0){
+					sector.dirty.self.counter--;
+				}
+				
+				if (sector.fade.self.counter > 0){
+					sector.fade.self.counter--;
+				}
 			}
 		}
 
@@ -547,7 +576,7 @@ k.classes.Canvas = function(canvasId){
 		// If dirty rectangles have been disabled, always return true
 		if(!k.settings.engine.dirty) return true;
 		
-		var dirty = sector.dirtyTiles[coord.secLex];
+		var dirty = sector.dirty.tiles[coord.secLex];
 		
 		if(dirty > 0) return true;
 		else return false;

@@ -156,7 +156,7 @@ k.settings.server.ADDRESS = "ws://kipdola.be";
  * What's our target FPS?
  * @define {integer}
  */
-k.settings.engine.fps = 300;
+k.settings.engine.fps = 50;
 
 /**
  * The default background color to draw on the canvas
@@ -250,6 +250,16 @@ k.state.debug.once = {};
  * @define {integer}
  */
 k.state.debug.counter = 0;
+
+/**
+ * Number of tiles drawn
+ */
+k.state.debug.tilesDrawn = 0;
+
+/**
+ * Number of sectors drawn
+ */
+k.state.debug.sectorsDrawn = 0;
 
 /**
  * Are we connected to the server?
@@ -632,44 +642,55 @@ k.links.getSector = function(coord, layer){
 		base[coord.sec] = {
 					element: selement,
 					ctx: sctx,
-					dirtyplace: 1,		// Deprecated
-					dirtycontent: 1,	// Deprecated
-					dirty: 1,
-					dirtyTiles: {
-							0: 1,
-							1: 1,
-							2: 1,
-							3: 1,
-							4: 1,
-							5: 1,
-							6: 1,
-							7: 1,
-							8: 1,
-							9: 1,
-							10: 1,
-							11: 1,
-							12: 1,
-							13: 1,
-							14: 1,
-							15: 1
+					dirty: {
+						self: {
+							increased: false,
+							decreased: false,
+							counter: 1
+						},
+						tiles: {
+								0: 1,
+								1: 1,
+								2: 1,
+								3: 1,
+								4: 1,
+								5: 1,
+								6: 1,
+								7: 1,
+								8: 1,
+								9: 1,
+								10: 1,
+								11: 1,
+								12: 1,
+								13: 1,
+								14: 1,
+								15: 1
+						}
 					},
-					fadeTiles: {
-						0: 1,
-						1: 1,
-						2: 1,
-						3: 1,
-						4: 1,
-						5: 1,
-						6: 1,
-						7: 1,
-						8: 1,
-						9: 1,
-						10: 1,
-						11: 1,
-						12: 1,
-						13: 1,
-						14: 1,
-						15: 1
+					fade: {
+						self: {
+							increased: false,
+							decreased: false,
+							counter: 1
+						},
+						tiles: {
+								0: 1,
+								1: 1,
+								2: 1,
+								3: 1,
+								4: 1,
+								5: 1,
+								6: 1,
+								7: 1,
+								8: 1,
+								9: 1,
+								10: 1,
+								11: 1,
+								12: 1,
+								13: 1,
+								14: 1,
+								15: 1
+						}
 					},
 					coord: coord,
 					map: layer.map,

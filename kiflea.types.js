@@ -261,67 +261,103 @@ k.Types.CoordinatesClick = {
 k.Types.Sector = {
 	
 	/**
-	 * Is this sector dirty (due to movement)
-	 * @type	{Integer}
-	 */
-	dirtyplace: 0,
-	
-	/**
-	 * Is the content of this sector dirty?
-	 * @type	{Integer}
-	 */
-	dirtycontent: 0,
-	
-	/**
-	 * Dirty
-	 * @type	{Integer}
-	 */
-	dirty: 0,
-	
-	/**
-	 * Individual tile dirtyness
+	 * Store all dirty information in here
 	 * @type	{Object}
 	 */
-	dirtyTiles: {
-		0: 1,
-		1: 1,
-		2: 1,
-		3: 1,
-		4: 1,
-		5: 1,
-		6: 1,
-		7: 1,
-		8: 1,
-		9: 1,
-		10: 1,
-		11: 1,
-		12: 1,
-		13: 1,
-		14: 1,
-		15: 1
+	dirty: {
+		
+		/**
+		 * Dirty info of the sector itself
+		 * @type	{Object}
+		 */
+		self: {
+			
+			/**
+			 * Has the counter been increased this draw?
+			 * @type	{Boolean}
+			 */
+			increased: false,
+			
+			/**
+			 * Has the counter been decreased this draw?
+			 * @type	{Boolean}
+			 */
+			decreased: false,
+			
+			/**
+			 * The actual dirty counter
+			 * @type	{Integer}
+			 */
+			counter: 0
+			
+		},
+		
+		/**
+		 * All the tiles in this sector, by their seclex
+		 * @type	{Object}
+		 */
+		tiles: {
+			0: 1,
+			1: 1,
+			2: 1,
+			3: 1,
+			4: 1,
+			5: 1,
+			6: 1,
+			7: 1,
+			8: 1,
+			9: 1,
+			10: 1,
+			11: 1,
+			12: 1,
+			13: 1,
+			14: 1,
+			15: 1
+		}
 	},
 	
 	/**
-	 * Individual tile fadeness
+	 * Store all fade information in here
 	 * @type	{Object}
 	 */
-	fadeTiles: {
-		0: 1,
-		1: 1,
-		2: 1,
-		3: 1,
-		4: 1,
-		5: 1,
-		6: 1,
-		7: 1,
-		8: 1,
-		9: 1,
-		10: 1,
-		11: 1,
-		12: 1,
-		13: 1,
-		14: 1,
-		15: 1
+	fade: {
+		
+		/**
+		 * Fade info of the sector itself
+		 * @type	{Object}
+		 */
+		self: {
+		
+			/**
+			 * The actual dirty counter
+			 * @type	{Integer}
+			 */
+			counter: 0
+			
+		},
+		
+		/**
+		 * All the tiles in this sector, by their seclex
+		 * @type	{Object}
+		 */
+		tiles: {
+			0: 1,
+			1: 1,
+			2: 1,
+			3: 1,
+			4: 1,
+			5: 1,
+			6: 1,
+			7: 1,
+			8: 1,
+			9: 1,
+			10: 1,
+			11: 1,
+			12: 1,
+			13: 1,
+			14: 1,
+			15: 1
+		}
 	},
 	
 	/**
