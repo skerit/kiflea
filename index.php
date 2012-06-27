@@ -185,6 +185,7 @@
 		</div>
 		
 		<div id="info">
+			<canvas id="moredebugcanvas" width="400" height="40" style="border:1px solid black;position:absolute;left:750px;"></canvas>
             <a class="FlattrButton" style="display:none;"
             href="http://www.kipdola.be/en/blog/skerit/126-presenting-kiflea-canvas-game-engine-html5"></a>
 			<a href="http://kipdola.be/trac/repos/" style="padding: 0pt; border: medium none;">

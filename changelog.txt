@@ -1,3 +1,7 @@
+--- Wednesday 2012-06-27 ---
+* Added inner sector coordinates to the coordinate functions
+* Added new dirtyness functions, seems to be working.
+
 --- Tuesday 2012-06-26 ---
 * The map is now rendered in the correct place, sectors work perfectly.
 * Added some debug functions for displaying sectors in the debug canvas.

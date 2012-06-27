@@ -136,6 +136,9 @@ k.classes.Canvas = function(canvasId){
         
         // Draw the FPS information if we want it
         if(k.settings.debug.FPS == true) that.drawFps();
+		
+		// Draw more debug info
+		if(k.settings.debug.FPS == true) that.drawMoreDebug();
         
 	}
     
@@ -180,6 +183,19 @@ k.classes.Canvas = function(canvasId){
             that.ctx.stroke();
         }
     }
+	
+	/**
+	 * Draw more debug information
+	 */
+	this.drawMoreDebug = function() {
+		
+		mc.fillStyle = "rgba(20, 20, 20, 0.7)";  
+		mc.fillRect (2, 4, 400, 20);
+		mc.strokeStyle = "white";  
+		mc.font = "12px monospace";
+		mc.strokeText('User: ' + precise(k.sel.position.x.toPrecision(2)) + ','
+							   + precise(k.sel.position.y.toPrecision(2)) + ' ', 5, 20);
+	}
     
     /**
      * Draw FPS information on the canvas itself
@@ -242,71 +258,6 @@ k.classes.Canvas = function(canvasId){
 		}
 	}
 	
-	/**
-	 * Create the dirty rectangles object
-	 */
-	this.dirty.set.create = function(){
-		
-		// The starting x coordinates, from left to right
-		var cx = 0 - that.dirty.buffer;
-		
-		for(var x = 0 - (that.map.tileWidth*that.dirty.buffer);
-			x <= that.width + (that.map.tileWidth*that.dirty.buffer);
-			x = x + that.map.tileWidth){
-			
-			// Create the x-axis object
-			that.dirty.tiles[cx] = {};
-			
-			var cy = 0 - that.dirty.buffer;
-			
-			for(var y = 0 - (that.map.tileHeight*that.dirty.buffer);
-				y <= that.height  + (that.map.tileHeight*that.dirty.buffer);
-				y = y + that.map.tileHeight){
-				
-				// Create the y-axis object
-				that.dirty.tiles[cx][cy] = {dirty: 1, fade: 40}
-				
-				cy++;
-			}
-			cx++;
-		}
-		
-	}
-	
-	/**
-	 * Set every tile as dirty
-	 * 
-	 * @param   {number} [duration] How long something is dirty. Default = 1
-	 * 
-	 */
-	this.dirty.set.all = function(duration){
-		
-		// Set the default duration to 1 if none is supplied
-		if(duration === undefined) duration = 1;
-		
-		// The starting x coordinates, from left to right
-		var cx = 0 - that.dirty.buffer;
-		
-		// Set the offset dirtyness
-		that.dirty.set.offset(duration);
-		
-		for(var x = 0 - (that.map.tileWidth*that.dirty.buffer);
-			x <= that.width + (that.map.tileWidth*that.dirty.buffer);
-			x = x + that.map.tileWidth){
-			
-			var cy = 0 - that.dirty.buffer;
-			
-			for(var y = 0 - (that.map.tileHeight*that.dirty.buffer);
-				y <= that.height  + (that.map.tileHeight*that.dirty.buffer);
-				y = y + that.map.tileHeight){
-				
-				that.dirty.set.byCanvas(cx, cy, duration);
-				
-				cy++;
-			}
-			cx++;
-		}
-	}
 	
 	/**
 	 * Set the offset dirtyness
@@ -476,7 +427,7 @@ k.classes.Canvas = function(canvasId){
 	 * @param	{integer}			duration	How long it's dirty
 	 */
 	this.dirty.set.byObject = function(object, duration){
-		
+		return;
 		// Set the default duration to 1 if none is supplied
 		if(duration === undefined) duration = 1;
 
@@ -537,92 +488,104 @@ k.classes.Canvas = function(canvasId){
 	}
 	
 	/**
-	 * Is this tile dirty, by its canvas coordinates
+	 * Set a certain tile as dirty by its coord
+	 * @param	{k.Types.CoordinatesClick}	coord
+	 * @param	{k.Types.Sector}			sector
+	 */
+	this.dirty.set.byCoordSector = function(coord, sector, duration){
+
+		// Set the default duration to 1 if none is supplied
+		if(duration === undefined) duration = 1;
+		
+		// Increase or decrease the duration
+		// And set the fadeness (for debugging)
+		if(duration){
+			
+			// Set the fade
+			if(sector.fadeTiles[coord.secLex] > 0){
+				if(sector.fadeTiles[coord.secLex] < 89){
+					sector.fadeTiles[coord.secLex] += 5;
+				}
+			} else {
+				sector.fadeTiles[coord.secLex] = 20;
+			}
+			
+			// Set the dirty duration
+			if(sector.dirtyTiles[coord.secLex] > 0){
+				
+				// Let's keep it low, at about 4
+				if(sector.dirtyTiles[coord.secLex] < 5){
+					sector.dirtyTiles[coord.secLex] += duration;
+				}
+				
+			} else {
+				sector.dirtyTiles[coord.secLex] = duration;
+			}
+			
+		} else {
+			if(sector.fadeTiles[coord.secLex] > 0){
+				sector.fadeTiles[coord.secLex]--;
+			}
+			
+			// Decrease the dirtyness if it's over 0
+			if(sector.dirtyTiles[coord.secLex] > 0){
+				sector.dirtyTiles[coord.secLex]--;
+			}
+		}
+
+	}
+	
+	/**
+	 * Is this tile dirty, by its coordinates
 	 * 
-	 * @param   {Integer} canvasX    The x-tile number on the canvas
-	 * @param   {Integer} canvasY    The y-tile number on the canvas
+	 * @param	{k.Types.CoordinatesClick}	coord
+	 * @param	{k.Types.Sector}			sector
 	 * 
 	 */
-	this.dirty.get.byCanvas = function(canvasX, canvasY){
+	this.dirty.get.byCoordSector = function(coord, sector){
 		
 		// If dirty rectangles have been disabled, always return true
 		if(!k.settings.engine.dirty) return true;
 		
-		// FIXME: When out of bounds, these should return false, but that
-		// currently gives us empty tiles underneath objects.
+		var dirty = sector.dirtyTiles[coord.secLex];
 		
-		// Return false for anything out of bounds
-		if(that.dirty.tiles[canvasX] === undefined)	return true;
-		
-		if(that.dirty.tiles[canvasX][canvasY] === undefined) return true;
-		
-		if(that.dirty.tiles[canvasX][canvasY]['dirty'] > 0) return true;
+		if(dirty > 0) return true;
 		else return false;
 	}
 	
 	/**
 	 * Get a sector's dirtyness
 	 * @param	{k.Types.CoordinatesClick}	coord
-	 * @param	{k.Types.Map}				map
-	 * @param	{k.Types.mapLayer}			layer
+	 * @param	{k.Types.Map}				mapOrName
+	 * @param	{k.Types.mapLayer}			layerOrName
 	 */
-	this.dirty.get.sector = function(coord, map, layer){
+	this.dirty.get.sector = function(coord, mapOrName, layerOrName){
+		
+		if(typeof mapOrName == "string") mapname = mapOrName;
+		else mapname = map.name;
+		
+		if(typeof layerOrName == "string") layername = layerOrName;
+		else layername = layer.name;
 		
 		// If dirty rectangles have been disabled, always return true
 		if(!k.settings.engine.dirty) return true;
-		
+
 		// Make sure this is not out of bounds:
-		if(that.dirty.sectors[map.name] === undefined)
+		if(that.dirty.sectors[mapname] === undefined)
 			return true;
 		
-		if(that.dirty.sectors[map.name][layer.name] === undefined)
+		if(that.dirty.sectors[mapname][layername] === undefined)
 			return true;
 		
-		if(that.dirty.sectors[map.name][layer.name][coord.sec] === undefined)
+		if(that.dirty.sectors[mapname][layername][coord.sec] === undefined)
 			return true;
 		
-		var link = that.dirty.sectors[map.name][layer.name][coord.sec];
+		var link = that.dirty.sectors[mapname][layername][coord.sec];
 		
 		if(link.dirty > 0) return true;
 		else return false;
-	
 	}
 	
-	/**
-	 * Is this tile dirty, by its map coordinates
-	 * 
-	 * @param   {Integer} mapX    The x-tile number on the canvas
-	 * @param   {Integer} mapY    The y-tile number on the canvas
-	 * 
-	 */
-	this.dirty.get.byMap = function(mapX, mapY){
-		
-		// If dirty rectangles have been disabled, always return true
-		if(!k.settings.engine.dirty) return true;
-		
-		// Get the canvas coordinates
-		var coord = k.operations.coord.getByMap(mapX, mapY);
-		
-		return that.dirty.get.byCanvas(coord.canvasX, coord.canvasY);
-	}
-	
-	/**
-	 * Is this tile dirty, by its absolute coordinates
-	 * 
-	 * @param   {Integer} absX    The absolute x coordinate on the canvas
-	 * @param   {Integer} absY    The absolute y coordinate on the canvas
-	 * 
-	 */
-	this.dirty.get.byAbsolute = function(absX, absY){
-		
-		// If dirty rectangles have been disabled, always return true
-		if(!k.settings.engine.dirty) return true;
-		
-		// Get the canvas coordinates
-		var coord = k.operations.coord.getByMouse(absX, absY);
-		
-		return that.dirty.get.byCanvas(coord.canvasX, coord.canvasY);
-	}
 	
 	/**
 	 * Queue loading message
@@ -687,9 +650,6 @@ k.classes.Canvas = function(canvasId){
 		that.once.clear = false;
 		that.once.messages = [];
 		that.drawWorld = true;
-
-		// Set every tile as clean
-		that.dirty.set.all(0);
 		
 		// If the array is getting too long, remove the first element
 		if(that.state.fpsf.length > 25) that.state.fpsf.shift();
@@ -871,6 +831,7 @@ k.classes.Canvas = function(canvasId){
 		this.loaded = true;
 		debugEcho('Canvas has been initialized');
 		dc = document.getElementById('debugcanvas').getContext('2d');
+		mc = document.getElementById('moredebugcanvas').getContext('2d');
 	} else {
 		this.loaded = false;
 	}

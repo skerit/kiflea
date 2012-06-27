@@ -486,8 +486,14 @@ k.operations.prepareLayerSector = function(sector){
 		for(var mapX = sector.coord.mapX;
 			mapX < sector.coord.mapX + k.settings.engine.SECTORSIZE;
 			mapX++){
-				
-			var tile = k.links.getTileByMap(mapX, mapY, sector.layer.name);
+			
+			// Old methid	
+			//var tile = k.links.getTileByMap(mapX, mapY, sector.layer.name);
+			
+			// New method
+			var coord = k.operations.coord.getByMap(mapX, mapY, sector.map.name);
+			
+			var tile = k.links.getTileByCoordSector(coord, sector);
 			
 			var layer = sector.layer;
 			
@@ -510,7 +516,13 @@ k.operations.prepareLayerSector = function(sector){
 											k.sel.map.tileHeight);
                     }
                 }
+				
+				//k.links.canvas.dirty.set.byMap(mapX, mapY, 0);
+				//k.links.canvas.dirty.set.sector(sector.coord, sector.map, sector.layer, 0);
             }
+			
+			// Decrease the tile dirtyness
+			k.links.canvas.dirty.set.byCoordSector(coord, sector, 0);
 			
 			secX++;
         }
@@ -591,13 +603,6 @@ k.operations.render.calculateOffset = function(){
 		
 		k.state.engine.mappOffsetY = ~~((k.links.canvas.map.tileHeight *
 					decimal(k.sel.position.zy)));
-		
-		// If we're moving, redraw everything
-		if(k.state.engine.mappOffsetX != k.state.engine.prevMappOffsetX ||
-		   k.state.engine.mappOffsetY != k.state.engine.prevMappOffsetY){
-            
-			k.links.canvas.dirty.set.all(1);
-		}
 	}
 
 
@@ -806,8 +811,6 @@ function drawAnimated(tileSetName, tileNumber, dx, dy, sector, tileGidOnMap, obj
             }
         }
     }
-    
-    debugEchoLfps('Finished drawing animated frame');
 }
 
 /**

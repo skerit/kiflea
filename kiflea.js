@@ -23,6 +23,7 @@
 var k = {};
 
 var dc = {};
+var mc = {};
 
 k = {
 	settings:{		
@@ -155,7 +156,7 @@ k.settings.server.ADDRESS = "ws://kipdola.be";
  * What's our target FPS?
  * @define {integer}
  */
-k.settings.engine.fps = 10;
+k.settings.engine.fps = 300;
 
 /**
  * The default background color to draw on the canvas
@@ -608,7 +609,7 @@ k.links.getLayer = function(layername, mapname){
 }
 
 /**
- * Get a certain sector
+ * Get a certain sector, and create it if it does not exist
  * @param	{k.Types.CoordinatesClick}	coord
  * @param	{k.Types.mapLayer}			layer
  * @returns	{k.Types.Sector}
@@ -631,8 +632,45 @@ k.links.getSector = function(coord, layer){
 		base[coord.sec] = {
 					element: selement,
 					ctx: sctx,
-					dirtyplace: 1,
-					dirtycontent: 1,
+					dirtyplace: 1,		// Deprecated
+					dirtycontent: 1,	// Deprecated
+					dirty: 1,
+					dirtyTiles: {
+							0: 1,
+							1: 1,
+							2: 1,
+							3: 1,
+							4: 1,
+							5: 1,
+							6: 1,
+							7: 1,
+							8: 1,
+							9: 1,
+							10: 1,
+							11: 1,
+							12: 1,
+							13: 1,
+							14: 1,
+							15: 1
+					},
+					fadeTiles: {
+						0: 1,
+						1: 1,
+						2: 1,
+						3: 1,
+						4: 1,
+						5: 1,
+						6: 1,
+						7: 1,
+						8: 1,
+						9: 1,
+						10: 1,
+						11: 1,
+						12: 1,
+						13: 1,
+						14: 1,
+						15: 1
+					},
 					coord: coord,
 					map: layer.map,
 					layer: layer
@@ -656,6 +694,7 @@ k.links.getTileByCanvas = function(canvasX, canvasY, layername, mapname){
 
 }
 
+
 /**
  * Get a tile by its map position
  */
@@ -664,17 +703,6 @@ k.links.getTileByMap = function(mapX, mapY, layername, mapname){
 	var coord = k.operations.coord.getByMap(mapX, mapY, mapname);
     
     return k.links.getTileByCoord(coord, layername, mapname);
-    
-}
-
-/**
- * Get a tile by its lexicographic order
- */
-k.links.getTileByLex = function(lex, layername, mapname){
-    	
-	var coord = k.operations.coord.getByLex(lex, mapname);
-	
-	return k.links.getTileByCoord(coord, layername, mapname);
     
 }
 
@@ -749,6 +777,73 @@ k.links.getTileByAlias = function(alias, mapname){
 }
 
 /**
+ * Get a tile by it's coord and sector
+ * @param	{k.Types.CoordinatesClick}	coord		The coordinate of the map
+ * @param	{k.Types.Sector}			sector		The sector
+ * @returns	{k.Types.Tile}
+ */
+k.links.getTileByCoordSector = function(coord, sector){
+	
+	var layer = sector.layer;
+	var map = sector.map;
+	
+	/**
+	 * The return object
+	 * @type	{k.Types.tile}
+	 */
+	var r = {};
+	
+	// Get the gid by the lexicographical order
+	r.tilegid = layer.data[coord.lex];
+	    
+	if(r.tilegid > 0) {
+		// The tileset object
+		r.tileset = k.collections.tilegid[map.name][r.tilegid];
+		
+		// Get the number of the tile on the tileset
+		r.tilenr = r.tilegid - r.tileset.firstgid;
+		
+		// Get the properties of this tile
+		r.properties = k.collections.tileproperties[r.tileset.name][r.tilegid] ||
+					   {};
+		
+	} else {
+		
+		// There's no tile here
+		r.tileset = {};
+		r.tilenr = 0;
+		r.properties = {};
+	}
+	
+	// Is this tile dirty?
+	r.dirty = k.links.canvas.dirty.get.byCoordSector(coord, sector);
+	
+	// The layer of this tile
+	r.layer = sector.layer;
+	
+	// Set the coord of this tile on this map
+	r.coord = coord;
+    
+    return r;
+}
+
+/**
+ * Get a tile with the coord object already delivered
+ * @param	{k.Types.CoordinatesClick}	coord		The coordinate of the map
+ * @param	{string}					layername	The name of the layer
+ * @param	{string}					mapname		What map it's on
+ * @returns	{k.Types.Tile}
+ *//*
+k.links.getTileByCoord = function(coord, layername, mapname){
+	
+	var layer = k.links.getLayer(layername);
+
+	var sector = k.links.getSector(coord, layer);
+	
+	return k.links.getTileByCoordSector(coord, sector);
+    
+}*/
+/**
  * Get a tile with the coord object already delivered
  * @param	{k.Types.CoordinatesClick}	coord		The coordinate of the map
  * @param	{string}					layername	The name of the layer
@@ -791,7 +886,8 @@ k.links.getTileByCoord = function(coord, layername, mapname){
 	}
 	
 	// Is this tile dirty?
-	r.dirty=k.links.canvas.dirty.get.byCanvas(coord.canvasX, coord.canvasY);
+	//r.dirty=k.links.canvas.dirty.get.byCanvas(coord.canvasX, coord.canvasY);
+	r.dirty = true;
 	
 	// The layer of this itle
 	r.layer = k.links.getLayer(layername, mapname);

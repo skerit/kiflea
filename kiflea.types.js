@@ -233,8 +233,25 @@ k.Types.CoordinatesClick = {
 	 * The lexicographical sector this tile is in on the map
 	 * @type	{Integer}
 	 */
-	sec: 0
+	sec: 0,
 	
+	/**
+	 * The X coordinate of this tile in its sector
+	 * @type	{Integer}
+	 */
+	secX: 0,
+	
+	/**
+	 * The Y coordinate of this tile in its sector
+	 * @type	{Integer}
+	 */
+	secY: 0,
+	
+	/**
+	 * The lexographic order of this tile in its sector
+	 * @type	{Integer}
+	 */
+	secLex: 0
 }
 
 /**
@@ -254,6 +271,58 @@ k.Types.Sector = {
 	 * @type	{Integer}
 	 */
 	dirtycontent: 0,
+	
+	/**
+	 * Dirty
+	 * @type	{Integer}
+	 */
+	dirty: 0,
+	
+	/**
+	 * Individual tile dirtyness
+	 * @type	{Object}
+	 */
+	dirtyTiles: {
+		0: 1,
+		1: 1,
+		2: 1,
+		3: 1,
+		4: 1,
+		5: 1,
+		6: 1,
+		7: 1,
+		8: 1,
+		9: 1,
+		10: 1,
+		11: 1,
+		12: 1,
+		13: 1,
+		14: 1,
+		15: 1
+	},
+	
+	/**
+	 * Individual tile fadeness
+	 * @type	{Object}
+	 */
+	fadeTiles: {
+		0: 1,
+		1: 1,
+		2: 1,
+		3: 1,
+		4: 1,
+		5: 1,
+		6: 1,
+		7: 1,
+		8: 1,
+		9: 1,
+		10: 1,
+		11: 1,
+		12: 1,
+		13: 1,
+		14: 1,
+		15: 1
+	},
 	
 	/**
 	 * The stored image of this sector's layer
