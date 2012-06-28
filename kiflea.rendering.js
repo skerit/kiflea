@@ -447,15 +447,16 @@ k.operations.renderLayer = function(layerName){
 			// Get the sector at this position
 			var sector = k.links.getSector(tile.coord, layer);
 			
-			if(k.state.engine.mappOffsetX > 0 || k.state.engine.mappOffsetY > 0 || sector.dirty.self.counter > 0){
+			if(k.state.engine.mappOffsetX != 0 || k.state.engine.mappOffsetY != 0 || sector.dirty.self.counter > 0){
+			
+				// Set this sector as dirty for another 3 frames if we're moving
+				if(k.state.engine.mappOffsetX != 0 || k.state.engine.mappOffsetY != 0){
+					k.links.canvas.dirty.set.sectorFamily(sector, 3); 
+				}
 			
 				k.operations.prepareLayerSector(sector);
-				
-				var ux = k.state.engine.mappOffsetX;
-				var uy = k.state.engine.mappOffsetY;
-				
-				//k.links.canvas.buffer.drawImage(sector.element, (tile.coord.canvasX*32) -ux, (tile.coord.canvasY*32) -uy);
-				k.links.canvas.buffer.drawImage(sector.element, tile.coord.absX, tile.coord.absY);
+
+				k.links.canvas.buffer.drawImage(sector.element, sector.coord.absX, sector.coord.absY);
 				
 				// Increase the sector's drawn counter
 				k.state.debug.sectorsDrawn++;

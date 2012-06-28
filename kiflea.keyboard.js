@@ -378,9 +378,9 @@ k.operations.coord.getBySecLex = function(sector, seclex){
 
 /**
  * Get the tilenumber based on the canvas tile numbers
- * @param    x   {integer}   The x-tile number on the canvas
- * @param    y   {integer}   The y-tile number on the canvas
- * @returns      {k.Types.CoordinatesClick}
+ * @param    {integer}   x	The x-tile number on the canvas
+ * @param    {integer}   y	The y-tile number on the canvas
+ * @returns  {k.Types.CoordinatesClick}
  */
 k.operations.coord.getByCanvas = function(canvasX, canvasY, mapname){
 	
@@ -428,11 +428,12 @@ k.operations.coord.getByCanvas = function(canvasX, canvasY, mapname){
 
 /**
  * Get the tilenumber based on the canvas tile numbers
- * @param    x   {integer}   The x-tile number on the canvas
- * @param    y   {integer}   The y-tile number on the canvas
- * @returns      {k.Types.CoordinatesClick}
+ * @param    {integer}	x   The x-tile number on the canvas
+ * @param    {integer}  y	The y-tile number on the canvas
+ * @returns	 {k.Types.CoordinatesClick}
  */
 k.operations.coord.getByMap = function(mapX, mapY, mapname){
+
 	
 	if(mapname === undefined) {
 		var map = k.links.canvas.map;
@@ -467,8 +468,9 @@ k.operations.coord.getByMap = function(mapX, mapY, mapname){
 
 /**
  * Get the coordinates based on the clicked mouse coordinates
- * @param    x   {integer}   The X coordinate of the mouseclick
- * @param    y   {integer}   The Y coordinate of the mouseclick
+ * @param    {integer}   mouseX	The X coordinate of the mouseclick
+ * @param    {integer}   mouseY	The Y coordinate of the mouseclick
+ * @param	 {string}	 mapname
  * @returns      {k.Types.CoordinatesClick}
  */
 k.operations.coord.getByMouse = function(mouseX, mouseY, mapname){
@@ -512,7 +514,8 @@ k.operations.coord.getByMouse = function(mouseX, mouseY, mapname){
 
 /**
  * Get the coordinates based on the lexicographic order on the map
- * @param    lex {integer}   The lexicographic order
+ * @param    {integer}	lex		The lexicographic order
+ * @param	{string}	mapname
  * @returns      {k.Types.CoordinatesClick}
  */
 k.operations.coord.getByLex = function(lex, mapname){
