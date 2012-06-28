@@ -278,6 +278,43 @@ k.classes.Canvas = function(canvasId){
 	}
 	
 	/**
+	 * Set a single sector as dirty
+	 * @param	{k.Types.Sector}	sector
+	 * @param	{integer}			duration
+	 */
+	this.dirty.set.sector = function(sector, duration){
+		
+		
+		if (duration){
+			// Increase the sector's data if it's the first time
+			if (!sector.dirty.self.increased){
+				sector.dirty.self.increased = true;
+				
+				if (sector.dirty.self.counter < 5){
+					sector.dirty.self.counter += duration;
+				}
+				
+				if (sector.fade.self.counter < 89){
+					sector.fade.self.counter++;
+				}
+			}
+		} else {
+			// Decrease the sector's data if it's the first time
+			if (!sector.dirty.self.decreased){
+				sector.dirty.self.decreased = true;
+				
+				if (sector.dirty.self.counter > 0){
+					sector.dirty.self.counter--;
+				}
+				
+				if (sector.fade.self.counter > 0){
+					sector.fade.self.counter--;
+				}
+			}
+		}
+	}
+	
+	/**
 	 * Set a sector, and its top sectors, flagged for a redraw
 	 * @param	{k.Types.Sector}	sector
 	 */
@@ -295,33 +332,9 @@ k.classes.Canvas = function(canvasId){
 				
 			}
 			
-			if (duration){
-				// Increase the sector's data if it's the first time
-				if (!nsec.dirty.self.increased){
-					nsec.dirty.self.increased = true;
-					
-					if (nsec.dirty.self.counter < 5){
-						nsec.dirty.self.counter += duration;
-					}
-					
-					if (nsec.fade.self.counter < 89){
-						nsec.fade.self.counter++;
-					}
-				}
-			} else {
-				// Decrease the sector's data if it's the first time
-				if (!nsec.dirty.self.decreased){
-					nsec.dirty.self.decreased = true;
-					
-					if (nsec.dirty.self.counter > 0){
-						nsec.dirty.self.counter--;
-					}
-					
-					if (nsec.fade.self.counter > 0){
-						nsec.fade.self.counter--;
-					}
-				}
-			}
+			// Set this sector's dirtyness
+			that.dirty.set.sector(nsec, duration);
+			
 		}
 	}
 	
@@ -455,6 +468,11 @@ k.classes.Canvas = function(canvasId){
 				sector.dirty.tiles[coord.secLex] = duration;
 			}
 			
+			/**
+			 * Set this sector's (and all its affiliated sectors') dirtyness
+			 */
+			that.dirty.set.sectorFamily(sector, duration);
+			
 		} else {
 			if(sector.fade.tiles[coord.secLex] > 0){
 				sector.fade.tiles[coord.secLex]--;
@@ -465,11 +483,14 @@ k.classes.Canvas = function(canvasId){
 				sector.dirty.tiles[coord.secLex]--;
 			}
 			
+			/**
+			 * Decrease this sector's dirtyness, but only this sector,
+			 * not its affiliated layers, because they still need to be drawn
+			 */
+			that.dirty.set.sector(sector, duration);
+			
 		}
 		
-		// Set the sector's dirtyness
-		that.dirty.set.sectorFamily(sector, duration);
-
 	}
 	
 	/**
