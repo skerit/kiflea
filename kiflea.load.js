@@ -209,7 +209,6 @@ k.operations.load.processMap = function(xml, sourcename) {
 			k.collections.tileproperties[tileSetName] = {};
 	
 			// Add new tileset to the animatedTiles array
-			animatedTiles[tileSetName] = {};	// Deprecated
 			k.state.animation.tiles[tileSetName] = {};
 	
 			// Create a temporary array to store this tileset's properties in
@@ -413,7 +412,6 @@ k.operations.load.loadTileSet = function(source, storeAsName, imageTileWidth,
 		}
 		
 		// Make an entrance in the animatedBegins object
-		animatedBegins[storeAsName] = {};
 		k.state.animation.begins[storeAsName] = {};
 
         // Increase the loaded counters

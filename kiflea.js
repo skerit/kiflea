@@ -394,8 +394,6 @@ k.cache.clear.coord = function(){
 
 var tileSet = [];       // All the tilesets are stored in this array
 var animation = [];
-var animatedTiles = {}; // This array keeps a progress of animated tiles. The first level of tilesetnames are defined at loading
-var animatedBegins = {};
 
 var sameFrame = {};
 var tileProperties = {};
@@ -832,9 +830,6 @@ k.links.getAnimation = function(tile, objectId, extraId){
             'currentframe': tile.tilegid,
             'nextframe': tile.properties['nextframe']
         };
-		
-		// Deprecated
-		animatedTiles[tile.tileset.name][animationId] =  k.state.animation.tiles[tile.tileset.name][animationId];
 		
     }
 	

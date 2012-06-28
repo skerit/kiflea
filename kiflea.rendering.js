@@ -805,8 +805,7 @@ function checkSameFrame(tileSetName, tileGidOnMap, animationId){
         sameFrame[tileSetName][animationId] = true;
         
         // Add a frame to the counter
-        animatedTiles[tileSetName][animationId]["framessince"]++; // Deprecated
-		k.state.animation.tiles[tile.tileset.name][animationId]['framessince']++;
+		k.state.animation.tiles[tileSetName][animationId]['framessince']++;
         
     }
 }

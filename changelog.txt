@@ -6,6 +6,7 @@
 * Started a whole new mess by redesigning drawTile and drawTileSpecific
 * Map-animations work again. Tiles that shouldn't be drawn aren't.
 * Sectors are now correctly drawn when moving, resulting in smooth motion.
+* Started moving the drawAnimation function over to the new design
 
 --- Tuesday 2012-06-26 ---
 * The map is now rendered in the correct place, sectors work perfectly.
