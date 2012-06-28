@@ -398,10 +398,7 @@ k.operations.coord.getByCanvas = function(canvasX, canvasY, mapname){
 	
 	var mapY = k.sel.position.y + canvasY + ~~(k.links.canvas.tpc / 2) + 2
 				  - k.links.canvas.tpc;
-				  
-	var secInX = mapX % k.settings.engine.SECTORSIZE;
-	var secInY = mapY % k.settings.engine.SECTORSIZE;
-	var secLex = secInX + secInY * k.settings.engine.SECTORSIZE;
+
 	
 	// Coordinates beyond the map can't give a good lex value
 	if(mapX < 0 || mapX > map.width ||
@@ -415,6 +412,15 @@ k.operations.coord.getByCanvas = function(canvasX, canvasY, mapname){
 		var secY = Math.ceil(mapY / k.settings.engine.SECTORSIZE);
 		
 		var sec = secX + secY * map.spr;
+		
+		var secInX = mapX % k.settings.engine.SECTORSIZE;
+		var secInY = mapY % k.settings.engine.SECTORSIZE;
+		var secLex = secInX + secInY * k.settings.engine.SECTORSIZE;
+		
+		// The absolute position INSIDE the sector
+		var secAbsX = secInX * map.tileWidth;
+		var secAbsY = secInY * map.tileHeight + map.tileHeight;
+	
 	}
 	
 	return {'mapX': mapX, 'mapY': mapY,
@@ -422,7 +428,8 @@ k.operations.coord.getByCanvas = function(canvasX, canvasY, mapname){
 			'canvasX': canvasX, 'canvasY': canvasY,
 			'absX': absX, 'absY': absY,
 			'lex': lex, 'sec': sec, 'secLex': secLex,
-			'secX' : secInX, 'secY': secInY};
+			'secX' : secInX, 'secY': secInY,
+			'secAbsX' : secAbsX, 'secAbsY' : secAbsY};
 
 }
 
@@ -441,29 +448,41 @@ k.operations.coord.getByMap = function(mapX, mapY, mapname){
 		var map = k.links.getMap(mapname);
 	}
 	
-	var lex = mapX + mapY * map.width;
-	
 	var canvasX = (mapX - k.sel.position.x) + ~~(k.links.canvas.tpr / 2);
 	var canvasY = (mapY - k.sel.position.y) + ~~(k.links.canvas.tpc / 2) -1;
 	
 	var absX = canvasX * map.tileWidth - k.state.engine.mappOffsetX;
 	var absY = canvasY * map.tileHeight - k.state.engine.mappOffsetY;
 	
-	var secX = ~~(mapX / k.settings.engine.SECTORSIZE);
-	var secY = ~~(mapY / k.settings.engine.SECTORSIZE);
+	// Coordinates beyond the map can't give a good lex value
+	if(mapX < 0 || mapX > map.width ||
+	   mapY < 0 || mapY > map.height){
+		var lex = -1;
+		var sec = -1;
+	} else {
+		var lex = mapX + mapY * map.width;
+		
+		var secX = ~~(mapX / k.settings.engine.SECTORSIZE);
+		var secY = ~~(mapY / k.settings.engine.SECTORSIZE);
 	
-	var sec = secX + secY * map.spr;
-	
-	var secInX = mapX % k.settings.engine.SECTORSIZE;
-	var secInY = mapY % k.settings.engine.SECTORSIZE;
-	var secLex = secInX + secInY * k.settings.engine.SECTORSIZE;
+		var sec = secX + secY * map.spr;
+		
+		var secInX = mapX % k.settings.engine.SECTORSIZE;
+		var secInY = mapY % k.settings.engine.SECTORSIZE;
+		var secLex = secInX + secInY * k.settings.engine.SECTORSIZE;
+		
+		// The absolute position INSIDE the sector
+		var secAbsX = secInX * map.tileWidth;
+		var secAbsY = secInY * map.tileHeight + map.tileHeight;
+	}
 	   
     return {'mapX': mapX, 'mapY': mapY,
 			'mouseX': absX, 'mouseY': absY,
 			'canvasX': canvasX, 'canvasY': canvasY,
 			'absX': absX, 'absY': absY,
 			'lex': lex, 'sec': sec, 'secLex': secLex,
-			'secX' : secInX, 'secY': secInY};
+			'secX' : secInX, 'secY': secInY,
+			'secAbsX' : secAbsX, 'secAbsY' : secAbsY};
 }
 
 /**
@@ -492,24 +511,38 @@ k.operations.coord.getByMouse = function(mouseX, mouseY, mapname){
 				  
 	var absX = canvasX * map.tileWidth - k.state.engine.mappOffsetX;
 	var absY = canvasY * map.tileHeight - k.state.engine.mappOffsetY;
+
+	// Coordinates beyond the map can't give a good lex value
+	if(mapX < 0 || mapX > map.width ||
+	   mapY < 0 || mapY > map.height){
+		var lex = -1;
+		var sec = -1;
+	} else {
+		var lex = mapX + mapY * map.width;
+		
+		// Needed to calculate the sector number
+		var secX = ~~(mapX / k.settings.engine.SECTORSIZE);
+		var secY = ~~(mapY / k.settings.engine.SECTORSIZE);
 	
-	var lex = mapX + mapY * map.width;
-	
-	var secX = ~~(mapX / k.settings.engine.SECTORSIZE);
-	var secY = ~~(mapY / k.settings.engine.SECTORSIZE);
-	
-	var sec = secX + secY * map.spr;
-	
-	var secInX = mapX % k.settings.engine.SECTORSIZE;
-	var secInY = mapY % k.settings.engine.SECTORSIZE;
-	var secLex = secInX + secInY * k.settings.engine.SECTORSIZE;
+		var sec = secX + secY * map.spr;
+		
+		var secInX = mapX % k.settings.engine.SECTORSIZE;
+		var secInY = mapY % k.settings.engine.SECTORSIZE;
+		var secLex = secInX + secInY * k.settings.engine.SECTORSIZE;
+		
+		// The absolute position INSIDE the sector
+		var secAbsX = secInX * map.tileWidth;
+		var secAbsY = secInY * map.tileHeight + map.tileHeight;
+		
+	}
 	
     return {'mapX': mapX, 'mapY': mapY,
 		    'mouseX': mouseX, 'mouseY': mouseY,
 			'canvasX': canvasX, 'canvasY': canvasY,
 			'absX': absX, 'absY': absY,
 			'lex': lex, 'sec': sec, 'secLex': secLex,
-			'secX' : secInX, 'secY': secInY};
+			'secX' : secInX, 'secY': secInY,
+			'secAbsX' : secAbsX, 'secAbsY' : secAbsY};
 }
 
 /**
@@ -540,6 +573,10 @@ k.operations.coord.getByLex = function(lex, mapname){
 	
 	var sec = secX + secY * map.spr;
 	
+	// The absolute position INSIDE the sector
+	var secAbsX = secX * map.tileWidth;
+	var secAbsY = secY * map.tileHeight + map.tileHeight;
+	
 	var secInX = mapX % k.settings.engine.SECTORSIZE;
 	var secInY = mapY % k.settings.engine.SECTORSIZE;
 	var secLex = secInX + secInY * k.settings.engine.SECTORSIZE;
@@ -549,7 +586,8 @@ k.operations.coord.getByLex = function(lex, mapname){
 			'canvasX': canvasX, 'canvasY': canvasY,
 			'absX': absX, 'absY': absY,
 			'lex': lex, 'sec': sec, 'secLex': secLex,
-			'secX' : secInX, 'secY': secInY};
+			'secX' : secInX, 'secY': secInY,
+			'secAbsX' : secAbsX, 'secAbsY' : secAbsY};
 
 }
 

@@ -248,6 +248,18 @@ k.Types.CoordinatesClick = {
 	secY: 0,
 	
 	/**
+	 * The absolute X coordinate of this tile in its sector
+	 * @type	{Integer}
+	 */
+	secAbsX: 0,
+	
+	/**
+	 * The absolute Y coordinate of this tile in its sector
+	 * @type	{Integer}
+	 */
+	secAbsY: 0,
+	
+	/**
 	 * The lexographic order of this tile in its sector
 	 * @type	{Integer}
 	 */
@@ -657,6 +669,12 @@ k.Types.Tile = {
 	coord: {},
 	
 	/**
+	 * The sector of this tile (if on a map)
+	 * @type	{k.Types.Sector}
+	 */
+	sector: {},
+	
+	/**
 	 * If the space where this tile is in is dirty
 	 * @type	{Bool}
 	 */
@@ -740,6 +758,55 @@ k.Types.Object = {
 		selected: []
 		
 	}
+}
+
+/**
+ * An animation object
+ * @typedef	{Object}
+ */
+k.Types.Animation = {
+	
+	/**
+	 * The ID of this animation
+	 */
+	id: '',
+	
+	/**
+	 * The tileset of this animation
+	 * @type	{k.Types.tileSetInfo}
+	 */
+	tileset: {},
+	
+	/**
+	 * An optional objectid
+	 */
+	objectId: '',
+	
+	/**
+	 * How many times this has played
+	 * @type	{integer}
+	 */
+	played: 0,
+	
+	framessince: 0,
+	
+	/**
+	 * The fps of this animation
+	 */
+	fps: 0,
+	
+	replay: 0,
+	
+	/**
+	 * The current frame we're showing of this animation
+	 */
+	currentframe: 0,
+	
+	/**
+	 * The next frame of this animation
+	 */
+	nextframe: 0
+
 }
 
 /**

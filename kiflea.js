@@ -325,7 +325,9 @@ k.state.walk.indexPrev = 0;		// The position of our previous coördinates in our
 k.state.walk.indexNow = 1;		// The position of our current coördinates in our user object. Recalculated at startEngine
 k.state.walk.indexNext = 2;		// The position of our next coördinates in our user object. Recalculated at startEngine
 
-k.state.animation.sameframe = {};	// In order to correctly draw world-animated tiles we need to know if we're still on the same frame 
+k.state.animation.sameframe = {};	// In order to correctly draw world-animated tiles we need to know if we're still on the same frame
+k.state.animation.tiles = {};
+k.state.animation.begins = {};
 
 k.state.server.timedifference = 0;	// The difference between the time on the server and the client
 
@@ -798,6 +800,54 @@ k.links.getTileByAlias = function(alias, mapname){
 }
 
 /**
+ * Get an animation cache object or create one
+ * @param	{k.Types.Tile}	tile
+ * @returns	{k.Types.Animation}
+ */
+k.links.getAnimation = function(tile, objectId, extraId){
+	
+	/**
+	 * World-animated tiles are identified by their tilenumber (so every instance
+	 * of one of these tiles has the same ID in the animation. That's what we want)
+	 * Object-animated tiles are identified by their objectId.
+	 * We need something to store one or the other in
+	 */
+    if(objectId === undefined) {
+        var animationId = tile.tilegid;
+    } else {
+        var animationId = objectId + '-' + extraId + '-' + tile.tilegid;
+    }
+	
+    // Check if this tile already exists in the array
+    if(k.state.animation.tiles[tile.tileset.name][animationId] === undefined){
+
+        k.state.animation.tiles[tile.tileset.name][animationId] = {
+			'id': animationId,
+			'tileset': tile.tileset,
+			'objectId': objectId,
+            'played': 0,
+            'framessince': 0,
+            'fps': tile.properties['fps'],
+            'replay': tile.properties['replay'],
+            'currentframe': tile.tilegid,
+            'nextframe': tile.properties['nextframe']
+        };
+		
+		// Deprecated
+		animatedTiles[tile.tileset.name][animationId] =  k.state.animation.tiles[tile.tileset.name][animationId];
+		
+    }
+	
+	var an = k.state.animation.tiles[tile.tileset.name][animationId];
+	
+	// Make an entrance in animatedBegins
+	if(k.state.animation.begins[tile.tileset.name][an['currentframe']] === undefined)
+		k.state.animation.begins[tile.tileset.name][an['currentframe']] = animationId;
+	
+	return  k.state.animation.tiles[tile.tileset.name][animationId];
+}
+
+/**
  * Get a tile by it's coord and sector
  * @param	{k.Types.CoordinatesClick}	coord		The coordinate of the map
  * @param	{k.Types.Sector}			sector		The sector
@@ -845,6 +895,9 @@ k.links.getTileByCoordSector = function(coord, sector){
 	// Set the coord of this tile on this map
 	r.coord = coord;
     
+	// Set the map of this tile
+	r.sector = sector;
+	
     return r;
 }
 

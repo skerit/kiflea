@@ -76,7 +76,7 @@ k.operations.renderFrame = function(){
 				// If we've enabled pathfinding debug, draw the testpath array
 				if(debugPathOn == true) drawTestPath();
 	
-				renderObjects(layerName); // Render every object
+				//renderObjects(layerName); // Render every object
 			}
 		};
 	}
@@ -506,7 +506,7 @@ k.operations.prepareLayerSector = function(sector){
             // Do we have to do something to this tile?
             if(tile.dirty && tile.properties.draw === undefined){
 
-				k.operations.render.drawTileNew(tile, coord, sector);
+				k.operations.render.drawTile(tile, coord, sector);
 				
 				k.state.debug.tilesDrawn++;
 				
@@ -522,8 +522,6 @@ k.operations.prepareLayerSector = function(sector){
                     }
                 }
 				
-				//k.links.canvas.dirty.set.byMap(mapX, mapY, 0);
-				//k.links.canvas.dirty.set.sector(sector.coord, sector.map, sector.layer, 0);
             }
 			
 			// Decrease the tile dirtyness
@@ -688,138 +686,95 @@ function getTileProperty(tileSetName, tileNumber, propertyName){
 }
 
 /**
- *Draw an animated tile
- * @param integer   tileNumber  The number of the tile in the tileset
- * @param float     dx          The destination X-coördinate
- * @param float     dy          The destination Y-coördinate
- * @param {k.Types.Sector}     	sector     The sector
- * @param integer   tileGidOnMap
- * @param string    objectId    If it's an object, give its ID.
- * @param    extraId     {integer}   If we need more of an ID
- * @param	{k.Types.CoordinatesClick}	coord
- * @param	{k.Types.tile}	tile
+ * Draw an animated tile
+ * @param	{k.Types.Tile}	tile
+ * @param	{string}		objectId
+ * @param	{string}		extraId
  */
-function drawAnimated(tileSetName, tileNumber, dx, dy, sector, tileGidOnMap, objectId, extraId, coord, tile){
-    
-    // World-animated tiles are identified by their tilenumber (so every instance
-    // of one of these tiles has the same ID in the animation. That's what we want)
-    // Object-animated tiles are identified by their objectId.
-    // We need something to store one or the other in
-    var animationId;
-	
+k.operations.render.drawAnimated = function(tile, objectId, extraId){
+
 	// Flag this tile for dirtyness due to being animated
 	if(k.settings.engine.dirty)
-	k.links.canvas.dirty.set.byAnimationCoord(tile, coord, sector);
-	//k.links.canvas.dirty.set.byAnimation(dx, dy, tileSetName);
-    
-    // Now let's decide which one it is
-    if(objectId === undefined) {
-        animationId = tileGidOnMap;
-    } else {
-        animationId = objectId + '-' + extraId + '-' + tileGidOnMap;
-    }
-    
-    // Check if this tile already exists in the array
-    if(animatedTiles[tileSetName][animationId] === undefined){
-
-        debugEchoLfps('Initiate new animated tile: ' + animationId);
-        
-        animatedTiles[tileSetName][animationId] = {
-            "played": 0,
-            "framessince": 0,
-            "fps": tileProperties[tileSetName][tileGidOnMap]['fps'],
-            "replay": tileProperties[tileSetName][tileGidOnMap]['replay'],
-            "currentframe": tileGidOnMap,
-            "nextframe": tileProperties[tileSetName][tileGidOnMap]['nextframe']
-        };
-		
-    } else { // This isn't a new animation. We're continuing...
-        // If the currentframe is zero it means this animation is over!
-        if(animatedTiles[tileSetName][animationId]["currentframe"] == 0){
-            return;
-        } else { //If the animation isn't done, load some variables!
-            // Nothing needs to be done
-        }
-    }
+	k.links.canvas.dirty.set.byAnimationCoord(tile, tile.coord, tile.sector);
+	
+	// Get the animated object state
+	var animation = k.links.getAnimation(tile, objectId, extraId);
+	
+	if(animation.currentframe == 0) return;
     
     // Create a variable to hold our currentFrame
-    var currentFrame = animatedTiles[tileSetName][animationId]["currentframe"];
+    var currentFrame = animation.currentframe;
 	
-	// Make an entrance in animatedBegins
-	if(animatedBegins[tileSetName][currentFrame] === undefined)
-		animatedBegins[tileSetName][currentFrame] = animationId;
-    
-    debugEchoLfps('Going to draw animated tile "<b>' + currentFrame + '</b>"!');
-    
     // We used to adjust tilenumber with their firstgid in drawTileSpecific, but that didn't make drawTileSpecific very specific.
     // Now we put one in drawTile and drawTileAnimated. Ideally we would stop using the tileGidOnMap for tileproperties, but
     // hey, this works.
-    var adjustedFrame = currentFrame - (tileSet[tileSetName]['firstgid']-1);
+    var adjustedFrame = currentFrame - (animation.tileset.firstgid - 1);
 	
-    try {
+    //try {
         // Draw the current frame
         drawTileSpecific(
-                         tileSetName,   // The name of the tileset
+                         animation.tileset.name,   // The name of the tileset
                          adjustedFrame, // The number of the tile
-                         dx,            // The destination x position
-                         dy,             // The destination y position
-						 sector
+                         tile.coord.secAbsX,            // The destination x position
+                         tile.coord.secAbsY,             // The destination y position
+						 tile.sector
                          );
-        
-        debugEchoLfps('Animated tile "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>" has been drawn');
-        
-    } catch(error) {
+                
+   /* } catch(error) {
         debugEchoLfps('[drawAnimated] Error drawing <b>animated</b> tile "<b>' + animatedTiles[tileSetName][animationId]['currentframe'] + '</b>" from tileSet "<b>' + tileSetName + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)');
-    }
+    }*/
     
-    checkSameFrame(tileSetName, tileGidOnMap, animationId); // See if we've already drawn this animation during this frame
+    checkSameFrame(tile.tileset.name, tile.tilegid, animation.id); // See if we've already drawn this animation during this frame
         
     // Count the ammount of frames that need to pass before showing the next one
-    frameWait = (k.state.engine.fpsr / animatedTiles[tileSetName][animationId]["fps"]);
+    frameWait = (k.state.engine.fpsr / animation.fps);
         
     // If there have been more frames than we should wait ...
-    if(animatedTiles[tileSetName][animationId]["framessince"] >= frameWait){
+    if(animation.framessince >= frameWait){
 
         // This animation is ready for the next frame!
-        animatedTiles[tileSetName][animationId]["currentframe"] = animatedTiles[tileSetName][animationId]["nextframe"];
+        animation.currentframe = animation.nextframe;
         
-        animatedTiles[tileSetName][animationId]["framessince"] = 0; // Reset the framessince
+        animation.framessince = 0; // Reset the framessince
 
         // If there is no new nextframe, end or loop back
-        if(getTileProperty(tileSetName, currentFrame, "nextframe") === undefined){
+        if(getTileProperty(tile.tileset.name, currentFrame, "nextframe") === undefined){
             
-            animatedTiles[tileSetName][animationId]["played"]++;        // Add a play to the counter
+            animation.played++;        // Add a play to the counter
 
             // If the replay of the animation is not equal to one it's not done yet
-            if(animatedTiles[tileSetName][animationId]["replay"] != 1){
+            if(animation.replay != 1){
 
                 // If the animation is bigger than zero (and one, as seen above) decrease the counter
-                if(animatedTiles[tileSetName][animationId]["replay"]>0) animatedTiles[tileSetName][animationId]["replay"]--;
+                if(animation.replay>0) animation.replay--;
                 
                 // Don't forget to set the first tile again
-                animatedTiles[tileSetName][animationId]['currentframe'] = tileGidOnMap;
+                animation.currentframe = tile.tilegid;
                 
             } else{
                 // Setting the currentframe to zero will stop the animation the next time
-                animatedTiles[tileSetName][animationId]["currentframe"] = 0;
+                animation.currentframe = 0;
             }
             
-            animatedTiles[tileSetName][animationId]["framessince"] = 0; // Reset the framessince
+            animation.framessince = 0; // Reset the framessince
             
         }else { // If there IS a nextframe, set it!
             
             // Without this IF everything still worked, but an error would still be thrown
             // because sometimes "tileProperties[tileSetName][currentFrame]" wouldn't exist.
-            if(tileProperties[tileSetName][currentFrame] !==undefined){
-                var tempNextFrame = tileProperties[tileSetName][currentFrame]['nextframe']; // Great, I forgot why this is different from the nextframe in the "if" outside this if. Look it up.
+            if(tileProperties[tile.tileset.name][currentFrame] !==undefined){
+                var tempNextFrame = tileProperties[tile.tileset.name][currentFrame]['nextframe']; // Great, I forgot why this is different from the nextframe in the "if" outside this if. Look it up.
                 
                 // Set the new nextframe: back to the beginning or end it all?
-                animatedTiles[tileSetName][animationId]['currentframe'] = tempNextFrame;
+                animation.currentframe = tempNextFrame;
                 
             }
         }
     }
+	
 }
+
+
 
 /**
  *Has this animation been drawn already this frame?
@@ -850,7 +805,8 @@ function checkSameFrame(tileSetName, tileGidOnMap, animationId){
         sameFrame[tileSetName][animationId] = true;
         
         // Add a frame to the counter
-        animatedTiles[tileSetName][animationId]["framessince"]++;
+        animatedTiles[tileSetName][animationId]["framessince"]++; // Deprecated
+		k.state.animation.tiles[tile.tileset.name][animationId]['framessince']++;
         
     }
 }
@@ -865,7 +821,7 @@ function checkSameFrame(tileSetName, tileGidOnMap, animationId){
  *                             its id
  * @param    extraId      {integer}      An extra id, mainly for animations
  */
-k.operations.render.drawTile = function(tileNumber, dx, dy, sector, objectId, extraId) {
+k.operations.render.drawTileOld = function(tileNumber, dx, dy, sector, objectId, extraId) {
 	
 	// Declarations
 	var movingObject;    // Is the object moving?
@@ -927,7 +883,7 @@ k.operations.render.drawTile = function(tileNumber, dx, dy, sector, objectId, ex
  * @param	{k.Types.CoordinatesClick} coord
  * @param	{k.Types.Sector}	sector
  */
-k.operations.render.drawTileNew = function(tile, coord, sector, objectId, extraId){
+k.operations.render.drawTile = function(tile, coord, sector, objectId, extraId){
 
 	// Declarations
 	var movingObject;    // Is the object moving?
@@ -936,23 +892,20 @@ k.operations.render.drawTileNew = function(tile, coord, sector, objectId, extraI
     if(objectId !== undefined) {
 	    if(k.collections.objects[objectId].path.length > (k.state.walk.indexNow + 1)) movingObject = true;
     }
-	
-	dx = coord.secX * sector.map.tileWidth;
-	dy = coord.secY * sector.map.tileHeight + sector.map.tileHeight;
-	
+
     if(tile.properties['beginanimation'] != undefined || movingObject == true){
+		
         try {
-            drawAnimated(tile.tileset.name, tile.tilenr, dx,dy, sector, tile.tilegid, objectId, extraId, coord, tile);
-            
+			k.operations.render.drawAnimated(tile, objectId, extraId);
         } catch(error) {
-            logOnce('[drawTile] Error drawing <b>animated</b> tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)', tile.tilegid);
+            logOnce('[drawTile] Error drawing <b>animated</b> tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + tile.coord.secAbsX + '</b>,<b>' + tile.coord.secAbsY + '</b>)', tile.tilegid);
         }
     } else {
     
         try {
-            drawTileSpecific(tile.tileset.name, tile.tilenr+1, dx,dy, sector);
+            drawTileSpecific(tile.tileset.name, tile.tilenr+1, tile.coord.secAbsX, tile.coord.secAbsY, sector);
         } catch(error) {
-            logOnce('[drawTile] Error drawing tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + dx + '</b>,<b>' + dy + '</b>)', tile.tilegid);
+            logOnce('[drawTile] Error drawing tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + tile.coord.secAbsX + '</b>,<b>' + tile.coord.secAbsY + '</b>)', tile.tilegid);
         }
     }
 
@@ -1005,8 +958,8 @@ function getAutoTile(tileSetName, tileNumber, mapX, mapY){
 	tileNumber = parseInt(ts.firstgid) + tileNumber - 1;
 	
 	// Check to see if it's animated (might have a different beginning)
-	if(animatedBegins[tileSetName][tileNumber] !== undefined)
-		tileNumber = animatedBegins[tileSetName][tileNumber];
+	if(k.state.animation.begins[tileSetName][tileNumber] !== undefined)
+		tileNumber = k.state.animation.begins[tileSetName][tileNumber];
     
 	var sprites = {};
 	
