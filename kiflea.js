@@ -63,6 +63,11 @@ k = {
 		step: {}
 	},
 	
+	/**
+	 * A collection of debug functions
+	 */
+	debug: {},
+	
 	events: {},
 	actions: {},
 	cache: {},
@@ -260,6 +265,11 @@ k.state.debug.tilesDrawn = 0;
  * Number of sectors drawn
  */
 k.state.debug.sectorsDrawn = 0;
+
+/**
+ * A collection of debug messages
+ */
+k.state.debug.messages = {};
 
 /**
  * Are we connected to the server?
@@ -543,6 +553,8 @@ k.links.createObject = function(id, x, y, mapname){
 	// Set the map
 	r.map = map;
 	
+	var coord = k.operations.coord.getByMap(x, y);
+	
 	// Create fake previous steps
 	var step = {
 		time: {
@@ -552,7 +564,8 @@ k.links.createObject = function(id, x, y, mapname){
 		},
 		position: {
 			x: x,
-			y:y
+			y:y,
+			coord: coord
 		},
 		properties: {
 			walkable: true,
@@ -877,7 +890,7 @@ k.links.getTileByCoordSector = function(coord, sector){
 		
 		// There's no tile here
 		r.tileset = {};
-		r.tilenr = 0;
+		r.tilenr = -1;
 		r.properties = {};
 	}
 	

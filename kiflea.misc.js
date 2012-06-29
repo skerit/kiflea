@@ -678,3 +678,54 @@ drawSectorDebug = function(sectornumber) {
 	//sector = k.links.getSector(k.links.getTileByCanvas(x, y,"Ground")['coord'], k.links.getTileByCanvas(0,0,"Ground")["layer"]);
 	//dc.drawImage(sector.element, 100, 100);
 }
+
+/**
+ * A simple string hashing function
+ * @param	{string}	string
+ * @returns	{integer}	A hash number
+ */
+k.debug.hash = function(string) {
+	
+	var res = 0,
+		len = string.length;
+		
+	for (var i = 0; i < len; i++) {
+		res = res * 31 + string.charCodeAt(i);
+	}
+	
+	return res;
+}
+
+/**
+ * Log an error
+ */
+k.debug.log = function(message, error, id){
+	
+	if(id === undefined) id = k.debug.hash(message);
+	if(error === undefined) error = {'message': '', 'number': ''};
+	
+	if(k.state.debug.messages[id] === undefined){
+		
+		k.state.debug.messages[id] = {
+			id: id,
+			count: 0,
+			message: message,
+			error: {'message': error.message,
+					'number': error.number},
+			caller: arguments.callee.caller
+		}
+		
+		var output = '<p id="p' + id + '">[<span id="count' + id + '" class="msi"></span>]' + message + '</p>';
+		
+		// Add the error to the output
+		k.links.echo.innerHTML = output + k.links.echo.innerHTML;
+	}
+	
+	k.state.debug.messages[id].count++;
+	
+	var cspan =  document.getElementById('count'+id);
+	
+	cspan.innerHTML = k.state.debug.messages[id].count;
+	
+	
+}

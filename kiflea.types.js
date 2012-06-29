@@ -979,3 +979,29 @@ k.Types.oldObject = {
 	x: 0,
 	y: 0
 }
+
+/**
+ * A debug message
+ */
+k.Types.DebugMessage = {
+	
+	/**
+	 * The ID of the message text itself
+	 */
+	id: 0,
+	
+	/**
+	 * The count, how many times it has occured
+	 */
+	count: 0,
+	
+	/**
+	 * The message itself
+	 */
+	message: '',
+	
+	/**
+	 * The error, if applicable
+	 */
+	error: {}
+}

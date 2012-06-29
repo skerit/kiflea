@@ -149,40 +149,68 @@ k.classes.Canvas = function(canvasId){
      *Draw a grid on the canvas
      */
     this.drawGrid = function(){
+		
+		// A variable to store temporary sizes in
+		var size = 0;
         
+		// Start with the tile grid
         that.ctx.strokeStyle = "rgba(20, 20, 20, 0.7)";  
         
         // Draw horizontal lines
         for(var row = 0; row < (that.width/that.map.tileWidth); row++ ){
+			
+			size = row*that.map.tileWidth;
+			
             that.ctx.beginPath();
-            that.ctx.moveTo(0, row*that.map.tileWidth);  
-            that.ctx.lineTo(that.width, row*that.map.tileWidth);
+            that.ctx.moveTo(0, size);  
+            that.ctx.lineTo(that.width, size);
             that.ctx.stroke();
         }
         
         // Draw vertical lines
         for(var col = 0; col < (that.height/that.map.tileHeight); col++ ){
+			
+			size = col*that.map.tileHeight;
+			
             that.ctx.beginPath();
-            that.ctx.moveTo(col*that.map.tileHeight, 0);  
-            that.ctx.lineTo(col*that.map.tileHeight, that.height);
+            that.ctx.moveTo(size, 0);  
+            that.ctx.lineTo(size, that.height);
             that.ctx.stroke();
         }
 		
-		that.ctx.strokeStyle = "rgba(0, 255, 0, 0.7)";  
+		// Now draw the sector grid
+		that.ctx.strokeStyle = "rgba(0, 255, 0, 0.9)";
+		
+		// Get the upper left tile of the canvas
+		for(var newposition = 0;
+			newposition < (that.width / k.settings.engine.SECTORSIZE);
+			newposition += k.settings.engine.SECTORSIZE){
+			
+			coord = k.operations.coord.getByCanvas(newposition,newposition);
+			
+			// Break out if we've found a correct one, not outside of the bound
+			if(coord.sec > -1) break;
+		}
         
         // Draw horizontal lines
         for(var row = 0; row < (that.width/that.map.tileWidth*k.settings.engine.SECTORSIZE); row++ ){
+			
+			size = row*that.map.tileWidth*k.settings.engine.SECTORSIZE-(coord.secY * that.map.tileWidth)-k.state.engine.mappOffsetY;
+			
             that.ctx.beginPath();
-            that.ctx.moveTo(0, row*that.map.tileWidth*k.settings.engine.SECTORSIZE);  
-            that.ctx.lineTo(that.width, row*that.map.tileWidth*k.settings.engine.SECTORSIZE);
+            that.ctx.moveTo(0, size);  
+            that.ctx.lineTo(that.width, size);
             that.ctx.stroke();
         }
         
         // Draw vertical lines
         for(var col = 0; col < (that.height/that.map.tileHeight*k.settings.engine.SECTORSIZE); col++ ){
+			
+			size = col*that.map.tileHeight*k.settings.engine.SECTORSIZE-(coord.secX * that.map.tileHeight)-k.state.engine.mappOffsetX;
+			
             that.ctx.beginPath();
-            that.ctx.moveTo(col*that.map.tileHeight*k.settings.engine.SECTORSIZE, 0);  
-            that.ctx.lineTo(col*that.map.tileHeight*k.settings.engine.SECTORSIZE, that.height);
+            that.ctx.moveTo(size, 0);  
+            that.ctx.lineTo(size, that.height);
             that.ctx.stroke();
         }
     }
@@ -251,9 +279,6 @@ k.classes.Canvas = function(canvasId){
 				// Create the layer
 				k.cache.map[mapname][layer] = {};
 			}
-			
-			// Recreate the dirty map
-			that.dirty.set.create();
 			
 			// Set the background color
 			if(that.map.properties.backgroundcolor !== undefined){

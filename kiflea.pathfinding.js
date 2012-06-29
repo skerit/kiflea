@@ -690,7 +690,6 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 	// Flag this object as dirty
 	k.links.canvas.dirty.set.byObject(object, 1);
 	
-	
 	return walkAnotherStep;
 
 }

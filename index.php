@@ -47,8 +47,8 @@
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 	
 	<script type="text/javascript" src="kiflea.unpacking.js"></script>
-    <script type="text/javascript" src="kiflea.misc.js"></script>
-	<script type="text/javascript" src="kiflea.js"></script>
+    <script type="text/javascript" src="kiflea.js"></script>
+	<script type="text/javascript" src="kiflea.misc.js"></script>
 	<script type="text/javascript" src="kiflea.load.js"></script>
 	<script type="text/javascript" src="kiflea.canvas.js"></script>
 	<script type="text/javascript" src="kiflea.rendering.js"></script>
