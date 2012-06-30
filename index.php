@@ -15,6 +15,7 @@
 		.cc {font-size:small;}
 		ul.cc {padding-left: 15px;margin:0;}
 		p.cc {padding-top: 5px;}
+		.one {display:none;}
 		#footer {
 			width:99%;
 			height:35px;   /* Height of the footer */
@@ -166,7 +167,7 @@
 			
 			<canvas id="flatearth" width="480" height="480"></canvas>
 			<br/>
-			<button id="clearecho" onclick="k.links.echo = '';">Clear echo div</button>
+			<button id="clearecho" onclick="k.links.echo.innerHTML = '';">Clear echo div</button>
 			<button id="toggleengine" onclick="k.operations.toggleEngine();">Toggle engine</button>
 			<button id="togglegrid" onclick="k.settings.debug.GRID=!k.settings.debug.GRID;">Toggle grid</button>
 			<button id="togglefps" onclick="k.settings.debug.FPS=!k.settings.debug.FPS;">Toggle FPS</button><br/>
@@ -191,15 +192,17 @@
 			<a href="http://kipdola.be/trac/repos/" style="padding: 0pt; border: medium none;">
 				<img title="Trac" alt="trac_logo_mini.png" src="http://kipdola.be/trac/repos/chrome/common/trac_logo_mini.png"></a>
 				A <a href="http://www.kipdola.be">Kipdola Studios production.</a>
+				<a href="#" onclick="$('.one').toggle();">Toggle single errors</a>
 			<hr>
 			<div style="position:absolute;right:20px;top:100px;">
 				<canvas id="debugcanvas" width="480" height="480" style="border:1px solid black;"></canvas><br/>
-				<input id="sectornr" type="number" value="0"/>
+				<input id="sectornr" type="number" value="153"/>
 			</div>
 			<script type="text/javascript">
+				var debugnr = 153;
 				$('#sectornr').change(function(){
-					nr = $('#sectornr').val();
-					drawSectorDebug(nr);
+					debugnr = $('#sectornr').val();
+					k.debug.drawSector(debugnr);
 				});
 			</script>
 			

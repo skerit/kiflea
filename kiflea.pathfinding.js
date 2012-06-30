@@ -574,6 +574,8 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 			object.position.zx = stepNow.position.x;
 			object.position.zy = stepNow.position.y;
 			
+			object.position.coord = stepNow.position.coord;
+			
 		}
 		
 	}
@@ -590,6 +592,9 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 			if(stepNext.state.direction < 0){
 				object.position.x = stepNext.position.x;
 				object.position.y = stepNext.position.y;
+				
+				object.position.coord = stepNext.position.coord;
+				
 			}
 		}
 		
@@ -650,6 +655,8 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 			
 			object.position.x = stepNext.position.x;
 			object.position.y = stepNext.position.y;
+			
+			object.position.coord = stepNext.position.coord;
 
 			// Move the queue up by one
 			object.path.splice(0, 1);
@@ -688,7 +695,8 @@ k.operations.walk.step = function(object, stepNow, stepNext, futRequestTime, kee
 	}
 
 	// Flag this object as dirty
-	k.links.canvas.dirty.set.byObject(object, 1);
+	k.links.canvas.dirty.set.byObject(object, 2);
+
 	
 	return walkAnotherStep;
 

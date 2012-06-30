@@ -81,12 +81,12 @@ k.operations.renderFrame = function(){
 		};
 		
 		// Draw user at 7,6 canvas
-		var uc = k.operations.coord.getByCanvas(7,6);
+		/*var uc = k.operations.coord.getByCanvas(7,6);
 		k.links.canvas.buffer.fillStyle = "rgba(0, 0, 200, 0.7)";
 		k.links.canvas.buffer.fillRect(uc.absX,
 							uc.absY,
 							k.sel.map.tileWidth,
-							k.sel.map.tileHeight);
+							k.sel.map.tileHeight);*/
 	}
 
     // Clear the sameFrame variable, used by animated tiles
@@ -283,14 +283,16 @@ return;
 }
 
 /**
- *Render every object
+ * Render an array of given objects
+ * @param	{array}			objects	An array of objectids
+ * @param	{k.Types.Sector}	sector
  */
-function renderObjects(){
+k.operations.render.objects = function(objectIds, sector){
 
     // Loop through every object
-    for (var object in k.collections.objects){
-	
-		var object = k.links.getObject(object);
+    for (var objectId in objectIds){
+		
+		var object = k.links.getObject(objectId);
 		var map = object.map;
         
         // If this object isn't on the same map as our user,
@@ -300,11 +302,8 @@ function renderObjects(){
 		// Get all the coordinates
 		var objC = k.operations.coord.getByMap
 				   (object.position.x, object.position.y);
-        
+		
         // Loop through all the layers of this object
-        /*for (var spriteNr = 0;
-			spriteNr < object.tiles.length;
-			spriteNr++){*/
 		for (var sprite in object.state.tiles){
             
 			var tile = object.state.tiles[sprite];
@@ -327,70 +326,15 @@ function renderObjects(){
 			// To draw the tile we need to add the tileheight (which we already
 			// did) But to get the coordinates, we need to subtract it again
 			//if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
-			if(1){
 
-				k.operations.render.drawTile(tile.tilegid,
-						 objX, objY, null, object.id);
+				//k.operations.render.drawTile(tile, objX, objY, object.id);
+				k.operations.render.drawTile(tile, objC, sector, object);
 				
-			}
+			//}
         }
         
         // Draw the effects of this user
-        renderEffects(object.id);
-    }
-}
-
-/**
- * Render an array of given objects
- */
-k.operations.render.objects = function(objects){
-
-    // Loop through every object
-    for (var object in objects){
-	
-		var object = k.links.getObject(object);
-		var map = object.map;
-        
-        // If this object isn't on the same map as our user,
-		// continue to the next object
-        if(object.map != k.sel.map) continue;
-        
-		// Get all the coordinates
-		var objC = k.operations.coord.getByMap
-				   (object.position.x, object.position.y);
-        
-        // Loop through all the layers of this object
-		for (var sprite in object.state.tiles){
-            
-			var tile = object.state.tiles[sprite];
-			
-            if(object.id == k.sel.id){
-                debugEchoLfps('Drawing own user ' + object.id + ' layer nr ' +
-							  sprite + ' - namely: ' +
-							  object.tiles[sprite] );
-            }
-			
-			if(object.id == k.sel.id){
-				var objX = objC.absX;
-				var objY = objC.absY + map.tileHeight;
-			} else {
-				var coord = getRealCoordinates(object.id);
-				var objX = coord.x;
-				var objY = coord.y;
-			}
-			
-			// To draw the tile we need to add the tileheight (which we already
-			// did) But to get the coordinates, we need to subtract it again
-			if(k.links.canvas.dirty.get.byAbsolute(objX, objY - map.tileHeight)){
-
-				k.operations.render.drawTile(tile.tilegid,
-						 objX, objY, null, object.id);
-				
-			}
-        }
-        
-        // Draw the effects of this user
-        renderEffects(object.id);
+        //renderEffects(object.id);
     }
 }
 
@@ -445,18 +389,24 @@ k.operations.renderLayer = function(layerName){
 				if(k.state.engine.mappOffsetX != 0 || k.state.engine.mappOffsetY != 0){
 					k.links.canvas.dirty.set.sectorFamily(sector, 3); 
 				}
-			
+				
 				// Prepare the sector: redraw tiles if needed
 				k.operations.prepareLayerSector(sector);
 
 				// Draw the sector onto the buffer
-				k.links.canvas.buffer.drawImage(sector.element, sector.coord.absX, sector.coord.absY);
+				k.links.canvas.buffer.drawImage(sector.element,
+												tile.coord.absX,
+												tile.coord.absY);
 				
-				/*// Draw the object first
-				if(layer.properties['drawUsers']==1){
-					if(k.state.position[k.sel.map.name][tile.coord.lex] !== undefined)
-						k.operations.render.objects(k.state.position[k.sel.map.name][tile.coord.lex]);
-				}*/
+				// BUG: This shouldn't happen, but it does.
+				// The sector coordinate gets overwritten somewhere along this process.
+				if(tile.coord.absX !== sector.coord.absX) {
+					logOnce(tile, 'bug01tile');
+					logOnce(sector, 'bug01sector');
+				}
+				
+				// Draw it to the debug screen if it's selected
+				if(debugnr == sector.coord.sec) k.debug.drawSector(debugnr);
 				
 				// Increase the sector's drawn counter
 				k.state.debug.sectorsDrawn++;
@@ -503,9 +453,23 @@ k.operations.prepareLayerSector = function(sector){
 			var layer = sector.layer;
 			
             // Do we have to do something to this tile?
-            if(tile.tilenr >= 0 && tile.dirty && tile.properties.draw === undefined){
-
-				k.operations.render.drawTile(tile, coord, sector);
+            if(tile.dirty && tile.properties.draw === undefined){
+				
+				// Clear the tile
+				sector.ctx.clearRect(coord.secAbsX,
+									coord.secAbsY-sector.map.tileHeight,
+									sector.map.tileWidth,
+									sector.map.tileHeight);
+				
+				// Draw the object first
+				if(sector.layer.properties['drawUsers']==1){
+					if(k.state.position[k.sel.map.name][tile.coord.lex] !== undefined) {
+						k.debug.log('Drawing object to ' + coord.sec + ' on layer ' + sector.layer.name);
+						k.operations.render.objects(k.state.position[k.sel.map.name][tile.coord.lex], sector);
+					}
+				}
+				
+				if(tile.tilenr >= 0) k.operations.render.drawTile(tile, coord, sector);
 				
 				k.state.debug.tilesDrawn++;
 				
@@ -518,7 +482,6 @@ k.operations.prepareLayerSector = function(sector){
 											coord.secAbsY-k.sel.map.tileHeight,
 											k.sel.map.tileWidth/3,
 											k.sel.map.tileHeight);
-						
                     }
                 }
             }
@@ -632,19 +595,27 @@ function getTileProperty(tileSetName, tileNumber, propertyName){
 
 /**
  * Draw an animated tile
- * @param	{k.Types.Tile}	tile
- * @param	{string}		objectId
- * @param	{string}		extraId
+ * @param	{k.Types.Tile}		tile
+ * @param	{k.Types.Object}	object
+ * @param	{string}			extraId
  */
-k.operations.render.drawAnimated = function(tile, objectId, extraId){
+k.operations.render.drawAnimated = function(tile, object, extraId){
+
+	if(object !== undefined) {
+		var layer = k.links.getLayer('Walkinglayer', object.map.name);
+		var sector = k.links.getSector(object.position.coord, layer);
+		var coord = object.position.coord;
+	} else {
+		var sector = tile.sector;
+		var coord = tile.coord;
+	}
 
 	// Flag this tile for dirtyness due to being animated
 	if(k.settings.engine.dirty)
-	k.links.canvas.dirty.set.byAnimationCoord(tile, tile.coord, tile.sector);
+	k.links.canvas.dirty.set.byAnimationCoord(tile, coord, sector);
 	
 	// Get the animated object state
-	var animation = k.links.getAnimation(tile, objectId, extraId);
-	
+	var animation = k.links.getAnimation(tile, object, extraId);
 	if(animation.currentframe == 0) return;
     
     // Create a variable to hold our currentFrame
@@ -657,16 +628,17 @@ k.operations.render.drawAnimated = function(tile, objectId, extraId){
 	
     try {
         // Draw the current frame
-        drawTileSpecific(
+        k.operations.render.drawTileSpecific(
                          animation.tileset.name,   // The name of the tileset
                          adjustedFrame, // The number of the tile
-                         tile.coord.secAbsX,            // The destination x position
-                         tile.coord.secAbsY,             // The destination y position
-						 tile.sector
+                         coord.secAbsX,            // The destination x position
+                         coord.secAbsY,             // The destination y position
+						 sector,
+						 object
                          );
                 
     } catch(error) {
-		k.debug.log('Animation: ' + animation.currentframe + ' - from ts ' + tile.tileset.name + ' to coord (' + tile.coord.absX + ',' + tile.coord.absY + ')', error);
+		k.debug.log(animation.currentframe + ' - from ts ' + tile.tileset.name + ' to coord (' + coord.absX + ',' + coord.absY + ')', error);
     }
     
     checkSameFrame(tile.tileset.name, tile.tilegid, animation.id); // See if we've already drawn this animation during this frame
@@ -716,7 +688,6 @@ k.operations.render.drawAnimated = function(tile, objectId, extraId){
             }
         }
     }
-	
 }
 
 
@@ -760,31 +731,32 @@ function checkSameFrame(tileSetName, tileGidOnMap, animationId){
  * @param	{k.Types.Tile}	tile
  * @param	{k.Types.CoordinatesClick} coord
  * @param	{k.Types.Sector}	sector
+ * @param	{k.Types.Object}	object
  */
-k.operations.render.drawTile = function(tile, coord, sector, objectId, extraId){
+k.operations.render.drawTile = function(tile, coord, sector, object, extraId){
 
 	// Declarations
 	var movingObject;    // Is the object moving?
 
     // If this isn't an object the sourcemap is the current map we're on
-    if(objectId !== undefined) {
-	    if(k.collections.objects[objectId].path.length > (k.state.walk.indexNow + 1)) movingObject = true;
+    if(object !== undefined) {
+	    if(object.path.length > (k.state.walk.indexNow + 1)) movingObject = true;
+		tile.coord = deepCopy(coord);
     }
 
     if(tile.properties['beginanimation'] != undefined || movingObject == true){
 		
         try {
-			k.operations.render.drawAnimated(tile, objectId, extraId);
+			k.operations.render.drawAnimated(tile, object, extraId);
         } catch(error) {
 			k.debug.log('[drawTile] Error drawing animated tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + tile.coord.secAbsX + '</b>,<b>' + tile.coord.secAbsY + '</b>)', error);
         }
     } else {
     
         try {
-            drawTileSpecific(tile.tileset.name, tile.tilenr+1, tile.coord.secAbsX, tile.coord.secAbsY, sector);
+            k.operations.render.drawTileSpecific(tile.tileset.name, tile.tilenr+1, tile.coord.secAbsX, tile.coord.secAbsY, sector, object);
         } catch(error) {
-            logOnce('[drawTile] Error drawing tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + tile.coord.secAbsX + '</b>,<b>' + tile.coord.secAbsY + '</b>)', tile.tilegid);
-			k.debug.log('[drawTile] Error drawing tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + tile.coord.secAbsX + '</b>,<b>' + tile.coord.secAbsY + '</b>)', error);
+			k.debug.log('Error drawing tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + tile.coord.secAbsX + '</b>,<b>' + tile.coord.secAbsY + '</b>)', error);
         }
     }
 
@@ -987,92 +959,10 @@ function calculateMapTile(mapX, mapY){
  * @param integer   tileNumber  The number of the tile in the tileset
  * @param float     dx          The destination X-coördinate
  * @param float     dy          The destination Y-coördinate
- * @param {k.Types.Sector}     	sector     The sector
+ * @param	{k.Types.Sector}     	sector     The sector
+ * @param	{k.Types.Object}		object
  */
-function drawTileSpecificNew(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, tileWidth, tileHeight, addUserCoordinates) {
-	
-	if(sector === undefined){
-		var ctx = k.links.canvas.buffer;
-	} else {
-		var ctx = sector.ctx;
-	}
-
-	var ts = k.links.getTilesetByName(tileSetName);
-	
-	var tileNumberMap = parseInt(tileNumber) + (parseInt(ts.firstgid)-1);
-	
-	// Is this tile an autotile?
-	var autotile = getTileProperty(tileSetName, tileNumberMap, "autotile");
-	
-	if(autotile) {
-		
-		var coord = k.operations.coord.getByMouse(sector.coord.absX + dx + k.state.engine.mappOffsetX,
-												  sector.coord.absY + dy - ts.tileHeight + k.state.engine.mappOffsetY);
-
-        var sourceimage = getAutoTile(tileSetName, tileNumber, coord.mapX, coord.mapY);
-		
-		var sx = 0;
-		var sy = 0;
-    }
-	
-    // Temporary located here: adjusting the dy parameter
-    dy -= parseInt(tileSet[tileSetName]['tileHeight']);
-
-    // Fetch the tilesPerRow from the tileset array
-    if(!tilesPerRow){
-        tilesPerRow = tileSet[tileSetName]['tpr'];
-    }
-    
-    // Fetch the width of a tile
-    if(!tileWidth){
-        tileWidth = tileSet[tileSetName]['tileWidth'];
-    }
-
-    // Fetch the height of a tile
-    if(!tileHeight){
-        tileHeight = tileSet[tileSetName]['tileHeight'];
-    }
-
-    //End the function if no tileNumber is given
-    if (!tileNumber) return;
-	
-	// Get our data from somewhere else if it's not a autotile
-	if(!autotile){
-
-		// Calculate this tileNumber's source x parameter (sx) on the tileset
-		var sx = (~~((tileNumber - 1) % tilesPerRow) * tileWidth);
-		
-		// Calculate this tileNumber's source y parameter (sy) on the tileset
-		var sy = (~~((tileNumber - 1) / tilesPerRow) * tileHeight);
-		
-		// The image we need to draw from
-		var sourceimage = tileSet[tileSetName]["image"];
-	}
-	
-    try {
-        // Draw the tile on the canvas
-        ctx.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
-
-    } catch (error) {
-        k.debug.log('[drawTileSpecific] Error: ' + error.code + ' - ' +
-                      error.message + '<br/>'+
-                      'Error drawing tilenumber <b>' + tileNumber + '</b> from tileSet <b>' + tileSetName + '</b> ' +
-                      'from coordinates (' + sx + ',' + sy + ') to (' + dx + ',' + dy + ') with tpr: ' + tilesPerRow + ' - tileWidth: ' + tileWidth +
-                      ' - tileHeight: ' + tileHeight);
-		
-    }
-	
-}
-
-/**
- * Draw a single specific tile from a specific tileset to the canvas
- * @param string    tileSetName  The name of the tileset to get the tile out of 
- * @param integer   tileNumber  The number of the tile in the tileset
- * @param float     dx          The destination X-coördinate
- * @param float     dy          The destination Y-coördinate
- * @param {k.Types.Sector}     	sector     The sector
- */
-function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, tileWidth, tileHeight, addUserCoordinates) {
+k.operations.render.drawTileSpecific = function(tileSetName, tileNumber, dx, dy, sector, object) {
 	
 	if(sector === undefined){
 		var ctx = k.links.canvas.buffer;
@@ -1102,22 +992,22 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
     dy -= parseInt(tileSet[tileSetName]['tileHeight']);
 
     // Fetch the tilesPerRow from the tileset array
-    if(!tilesPerRow){
-        tilesPerRow = tileSet[tileSetName]['tpr'];
-    }
+	tilesPerRow = tileSet[tileSetName]['tpr'];
     
     // Fetch the width of a tile
-    if(!tileWidth){
-        tileWidth = tileSet[tileSetName]['tileWidth'];
-    }
+    tileWidth = tileSet[tileSetName]['tileWidth'];
 
     // Fetch the height of a tile
-    if(!tileHeight){
-        tileHeight = tileSet[tileSetName]['tileHeight'];
-    }
+    tileHeight = tileSet[tileSetName]['tileHeight'];
 
     //End the function if no tileNumber is given
     if (!tileNumber) return;
+	
+	// Adjust the coordinates if it's an object, these are drawn on the canvas directly
+	/*if(object !== undefined){
+		dx += sector.coord.absX;
+		dy += sector.coord.absY;
+	}*/
 	
 	// Get our data from somewhere else if it's not a autotile
 	if(!autotile){
@@ -1131,8 +1021,9 @@ function drawTileSpecific(tileSetName, tileNumber, dx, dy, sector, tilesPerRow, 
 		// The image we need to draw from
 		var sourceimage = tileSet[tileSetName]["image"];
 	}
-    
+	
     try {
+		
         // Draw the tile on the canvas
         ctx.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
 

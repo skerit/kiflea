@@ -369,7 +369,7 @@ k.classes.Canvas = function(canvasId){
 	 * @param	{integer}			duration	How long it's dirty
 	 */
 	this.dirty.set.byObject = function(object, duration){
-		return;
+
 		// Set the default duration to 1 if none is supplied
 		if(duration === undefined) duration = 1;
 
@@ -387,6 +387,8 @@ k.classes.Canvas = function(canvasId){
 		var stepNow = object.path[k.state.walk.indexNow];
 		var stepNext = object.path[k.state.walk.indexNext];
 		
+		var layer = k.links.getLayer('Walkinglayer', k.sel.map.name);
+		
 		// Do this for every tile this sprite is wide
 		for(var width = 0;
 			width < (tileSet.tileWidth/that.map.tileWidth);
@@ -396,6 +398,28 @@ k.classes.Canvas = function(canvasId){
 				height < (tileSet.tileHeight/that.map.tileHeight);
 				height += 1){
 				
+				var coord = k.operations.coord.getByMap(stepPrev.position.x + width,
+														stepPrev.position.y - height)
+				
+				var sector = k.links.getSector(coord, layer);
+				that.dirty.set.byCoordSector(coord, sector, duration);
+				
+				var coord = k.operations.coord.getByMap(stepNow.position.x + width,
+														stepNow.position.y - height)
+				
+				var sector = k.links.getSector(coord, layer);
+				that.dirty.set.byCoordSector(coord, sector, duration);
+				
+				if(stepNext) {
+					
+					var coord = k.operations.coord.getByMap(stepNext.position.x + width,
+														stepNext.position.y - height)
+					
+					var sector = k.links.getSector(coord, layer);
+					that.dirty.set.byCoordSector(coord, sector, duration);
+				}
+				
+				/*
 				that.dirty.set.byMap(stepPrev.position.x + width,
 									 stepPrev.position.y - height, duration);
 				
@@ -405,7 +429,7 @@ k.classes.Canvas = function(canvasId){
 				if(stepNext) {
 					that.dirty.set.byMap(stepNext.position.x + width,
 										 stepNext.position.y - height,duration);
-				}
+				}*/
 			}
 		}
 	}
@@ -531,10 +555,6 @@ k.classes.Canvas = function(canvasId){
 		if(!k.settings.engine.dirty) return true;
 		
 		var dirty = sector.dirty.tiles[coord.secLex];
-		
-		if(coord.mapX == 14 && coord.mapY == 25){
-			//debugArray(sector.dirty);
-		}
 		
 		if(dirty > 0) return true;
 		else return false;

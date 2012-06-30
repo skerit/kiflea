@@ -655,23 +655,51 @@ function range(numbers) {
 
 /**
  * Sector browser
- * k.cache.map[layer.map.name][layer.name];
+ * @param	{integer}	A sector number
  */
-drawSectorDebug = function(sectornumber) {
+k.debug.drawSector = function(sectornumber) {
 
-	dc.fillRect(200, 200, 400, 400);
+	dc.clearRect(0, 0, 480, 480);
 	
-	// Loop through every map
-	for (var map in k.cache.map) {
+	var nr = 1;
+	var nry = 0;
+	map = k.sel.map.name;
+	
+	// Loop through every layer
+	for (var layer in k.cache.map[map]){
 		
-		// And every layer
-		for (var layer in k.cache.map[map]){
+		if (k.cache.map[map][layer][sectornumber] !== undefined){
+			
+			// Draw a full image here
+			dc.drawImage(k.cache.map[map][layer][sectornumber]['element'], 10, 10);
+			
+			// And separate layers over the rest of the canvas
+			var x = 10 + 10*nr + (nr * k.settings.engine.SECTORSIZE * 32);
+			var y = 10 + 10*nry + (nry * k.settings.engine.SECTORSIZE * 32);
+			dc.fillStyle = 'rgba(100,100,100,0.6)';
+			dc.fillRect(x, y, k.settings.engine.SECTORSIZE * 32, k.settings.engine.SECTORSIZE * 32)
+			dc.drawImage(k.cache.map[map][layer][sectornumber]['element'], x, y);
+			
+			// Get the dirty tiles
+			var fade = k.cache.map[map][layer][sectornumber].fade.tiles;
+			
+			// Draw dirtyness
+			for(var tile in fade){
+				var opa = fade[tile]/100;
 
-			if (k.cache.map[map][layer][sectornumber] !== undefined){
-				//k.cache.map[map][layer][sectornumber]['element']
-
-				dc.drawImage(k.cache.map[map][layer][sectornumber]['element'], 200, 200);
+				dc.fillStyle = 'rgba(255,0,0,' + opa + ')';
+				
+				var tx = 10 + (tile % k.settings.engine.SECTORSIZE) * 32;
+				var ty = 10 + ~~(tile/k.settings.engine.SECTORSIZE) * 32;
+				dc.fillRect(tx, ty, 32, 32);
 			}
+		}
+		
+		nr++;
+		
+		if(nr == 3) {
+			nr = 0;
+			nry++;
 		}
 	}
 	
@@ -688,10 +716,21 @@ k.debug.hash = function(string) {
 	
 	var res = 0,
 		len = string.length;
+	
+	var numbers = '';
 		
 	for (var i = 0; i < len; i++) {
 		res = res * 31 + string.charCodeAt(i);
+		
+		var chr = string.substring(i, i+1);
+		
+		// This didn't make it unique enough, prepend numbers
+		if(!isNaN(chr) && chr !== ' '){
+			numbers += string.substring(i, i+1).toString();
+		}
 	}
+	
+	res = numbers.toString() + res.toString();
 	
 	return res;
 }
@@ -736,13 +775,13 @@ k.debug.callerInfo = function(){
  */
 k.debug.log = function(message, error, id){
 	
-	if(id === undefined) id = k.debug.hash(message);
+	var info = k.debug.callerInfo();
+	
+	if(id === undefined) id = k.debug.hash(info.callerName + message);
 	if(error === undefined) {
 		error = {'message': '',
 				 'number': ''};
 	}
-	
-	var info = k.debug.callerInfo();
 	
 	if(k.state.debug.messages[id] === undefined){
 		
@@ -760,7 +799,7 @@ k.debug.log = function(message, error, id){
 					'number': error.number}
 		}
 		
-		var output = '<p id="p' + id + '">[<span id="count' + id + '" class="msi"></span>] [' + info.callerName + ':' + info.line + '] ' + message + '</p>';
+		var output = '<p id="p' + id + '" class="one">[<span id="count' + id + '" class="msi"></span>] [' + info.callerName + ':' + info.line + '] ' + message + '</p>';
 		
 		// Add the error to the output
 		k.links.echo.innerHTML = output + k.links.echo.innerHTML;
@@ -768,7 +807,11 @@ k.debug.log = function(message, error, id){
 	
 	k.state.debug.messages[id].count++;
 	
-	var cspan =  document.getElementById('count'+id);
+	var cspan = document.getElementById('count'+id);
+	
+	var cp = document.getElementById('p'+id);
+	
+	if(k.state.debug.messages[id].count == 2) cp.className = 'two';
 	
 	cspan.innerHTML = k.state.debug.messages[id].count;
 	

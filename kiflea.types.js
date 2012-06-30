@@ -704,7 +704,14 @@ k.Types.Object = {
 	 * The position of our character
 	 * @type	{Object}
 	 */
-	position: {x: 0, y:0, zx: 0.0, zy: 0.0},
+	position: {
+		x: 0, y:0,
+		zx: 0.0, zy: 0.0,
+		
+		/**
+		 * @type	{k.Types.CoordinatesClick}
+		 */
+		coord: {}},
 	
 	/**
 	 * The map our object is currently on

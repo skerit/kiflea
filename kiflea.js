@@ -161,7 +161,7 @@ k.settings.server.ADDRESS = "ws://kipdola.be";
  * What's our target FPS?
  * @define {integer}
  */
-k.settings.engine.fps = 250;
+k.settings.engine.fps = 25;
 
 /**
  * The default background color to draw on the canvas
@@ -544,16 +544,17 @@ k.links.createObject = function(id, x, y, mapname){
 	// Create the position object
 	r.position = {};
 	
+	var coord = k.operations.coord.getByMap(x, y);
+	
 	// Set the x and y parameters
 	r.position.x = x;
 	r.position.zx = x;
 	r.position.y = y;
 	r.position.zy = y;
+	r.position.coord = coord;
 	
 	// Set the map
 	r.map = map;
-	
-	var coord = k.operations.coord.getByMap(x, y);
 	
 	// Create fake previous steps
 	var step = {
@@ -812,10 +813,11 @@ k.links.getTileByAlias = function(alias, mapname){
 
 /**
  * Get an animation cache object or create one
- * @param	{k.Types.Tile}	tile
+ * @param	{k.Types.Tile}		tile
+ * @param	{k.Types.Object}	object
  * @returns	{k.Types.Animation}
  */
-k.links.getAnimation = function(tile, objectId, extraId){
+k.links.getAnimation = function(tile, object, extraId){
 	
 	/**
 	 * World-animated tiles are identified by their tilenumber (so every instance
@@ -823,10 +825,13 @@ k.links.getAnimation = function(tile, objectId, extraId){
 	 * Object-animated tiles are identified by their objectId.
 	 * We need something to store one or the other in
 	 */
-    if(objectId === undefined) {
+    if(object === undefined) {
         var animationId = tile.tilegid;
+		objectid = undefined;
     } else {
-        var animationId = objectId + '-' + extraId + '-' + tile.tilegid;
+		k.debug.log('Trying to get object animation');
+        var animationId = object.id + '-' + extraId + '-' + tile.tilegid;
+		k.debug.log('Get animation for ' + animationId);
     }
 	
     // Check if this tile already exists in the array
@@ -835,7 +840,7 @@ k.links.getAnimation = function(tile, objectId, extraId){
         k.state.animation.tiles[tile.tileset.name][animationId] = {
 			'id': animationId,
 			'tileset': tile.tileset,
-			'objectId': objectId,
+			'objectId': objectid,
             'played': 0,
             'framessince': 0,
             'fps': tile.properties['fps'],
