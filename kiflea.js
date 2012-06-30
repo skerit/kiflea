@@ -706,13 +706,13 @@ k.links.getSector = function(coord, layer){
 								15: 1
 						}
 					},
-					coord: coord,
+					coord: k.operations.coord.getBySector(coord.sec),
 					map: layer.map,
 					layer: layer
 				};
 	} else {
 		// Update the coord information!
-		base[coord.sec]['coord'] = coord;
+		base[coord.sec]['coord'] = k.operations.coord.getBySector(coord.sec);
 	}
 
 	return base[coord.sec];

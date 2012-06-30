@@ -397,14 +397,7 @@ k.operations.renderLayer = function(layerName){
 				k.links.canvas.buffer.drawImage(sector.element,
 												tile.coord.absX,
 												tile.coord.absY);
-				
-				// BUG: This shouldn't happen, but it does.
-				// The sector coordinate gets overwritten somewhere along this process.
-				if(tile.coord.absX !== sector.coord.absX) {
-					logOnce(tile, 'bug01tile');
-					logOnce(sector, 'bug01sector');
-				}
-				
+			
 				// Draw it to the debug screen if it's selected
 				if(debugnr == sector.coord.sec) k.debug.drawSector(debugnr);
 				

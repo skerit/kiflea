@@ -377,6 +377,20 @@ k.operations.coord.getBySecLex = function(sector, seclex){
 }
 
 /**
+ * Get the coordinates by a sector number
+ * @param    {integer}   sectornr
+ * @returns  {k.Types.CoordinatesClick}
+ */
+k.operations.coord.getBySector = function(sectornr){
+	
+	var mapX = (sectornr % ~~(k.sel.map.tpr / k.settings.engine.SECTORSIZE)) * k.settings.engine.SECTORSIZE;
+	var mapY = ~~(sectornr / ~~(k.sel.map.tpr / k.settings.engine.SECTORSIZE))  * k.settings.engine.SECTORSIZE;
+	
+	return k.operations.coord.getByMap(mapX, mapY);
+	
+}
+
+/**
  * Get the tilenumber based on the canvas tile numbers
  * @param    {integer}   x	The x-tile number on the canvas
  * @param    {integer}   y	The y-tile number on the canvas

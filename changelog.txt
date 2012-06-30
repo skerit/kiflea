@@ -1,8 +1,12 @@
 --- Saturday 2012-06-30 ---
 * Made the new debug function produce more data, like caller info and line nr
-* We've got non-fluid objects back, but there are certain artifacts popping up
+* We've got non-fluid objects back, but there are certain artefacts popping up
   here and there. And the head gets cut off sometimes:
   need to add sector padding!
+* Artefacts have been fixed! The getSector function always supplied the coord
+  back it was given, but that could have been from INSIDE the sector, so it was
+  wrong. Now we have a function that'll give you a sector coord based on the
+  sector number alone.
 
 --- Friday 2012-06-29 ---
 * Modified the drawGrid debug function, the sector lines are now drawn
