@@ -697,12 +697,52 @@ k.debug.hash = function(string) {
 }
 
 /**
+ * Get information on the function's caller
+ * 
+ * @returns {Object}
+ */
+k.debug.callerInfo = function(){
+	
+    try {
+		throw Error('');
+	} catch(err) {
+		
+		var caller_line = err.stack.split("\n")[4];
+		var index = caller_line.indexOf("at ");
+		var clean = caller_line.slice(index+2, caller_line.length);
+		
+		var last = clean.substring(0, clean.lastIndexOf(':'));
+		var line = last.substring(last.lastIndexOf(':')+1, last.length);
+		
+		var callerName = clean.substring(0, clean.indexOf('('));
+		
+		var isModule = callerName.indexOf('Object.');
+		
+		if (isModule > -1) {
+			callerName = callerName.substring(isModule+7, callerName.length);
+		}
+		
+		return {
+			error: err,
+			stack: err.stack,
+			callerName: trim(callerName),
+			line: line
+		}
+	}
+}
+
+/**
  * Log an error
  */
 k.debug.log = function(message, error, id){
 	
 	if(id === undefined) id = k.debug.hash(message);
-	if(error === undefined) error = {'message': '', 'number': ''};
+	if(error === undefined) {
+		error = {'message': '',
+				 'number': ''};
+	}
+	
+	var info = k.debug.callerInfo();
 	
 	if(k.state.debug.messages[id] === undefined){
 		
@@ -710,12 +750,17 @@ k.debug.log = function(message, error, id){
 			id: id,
 			count: 0,
 			message: message,
+			from: {
+				name: info.callerName,
+				line: info.line,
+				code: arguments.callee.caller,
+				stack: info.stack
+			},
 			error: {'message': error.message,
-					'number': error.number},
-			caller: arguments.callee.caller
+					'number': error.number}
 		}
 		
-		var output = '<p id="p' + id + '">[<span id="count' + id + '" class="msi"></span>]' + message + '</p>';
+		var output = '<p id="p' + id + '">[<span id="count' + id + '" class="msi"></span>] [' + info.callerName + ':' + info.line + '] ' + message + '</p>';
 		
 		// Add the error to the output
 		k.links.echo.innerHTML = output + k.links.echo.innerHTML;

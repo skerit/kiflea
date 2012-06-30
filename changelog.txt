@@ -1,3 +1,6 @@
+--- Saturday 2012-06-30 ---
+* Made the new debug function produce more data, like caller info and line nr
+
 --- Friday 2012-06-29 ---
 * Modified the drawGrid debug function, the sector lines are now drawn
   correctly and move along with the map.

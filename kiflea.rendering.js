@@ -452,6 +452,12 @@ k.operations.renderLayer = function(layerName){
 				// Draw the sector onto the buffer
 				k.links.canvas.buffer.drawImage(sector.element, sector.coord.absX, sector.coord.absY);
 				
+				/*// Draw the object first
+				if(layer.properties['drawUsers']==1){
+					if(k.state.position[k.sel.map.name][tile.coord.lex] !== undefined)
+						k.operations.render.objects(k.state.position[k.sel.map.name][tile.coord.lex]);
+				}*/
+				
 				// Increase the sector's drawn counter
 				k.state.debug.sectorsDrawn++;
 				
@@ -515,7 +521,6 @@ k.operations.prepareLayerSector = function(sector){
 						
                     }
                 }
-				
             }
 			
 			// Decrease the tile dirtyness
@@ -525,60 +530,6 @@ k.operations.prepareLayerSector = function(sector){
         }
 		
 		secY++;
-    }
-}
-
-/**
- * Render a specific layer of our current map
- * @param    layerName   {string}    The name of the layer to draw
- */
-k.operations.renderLayerOld = function(layerName){
-	
-	var layer = k.links.getLayer(layerName);
-
-    // Loop through every row (+ the extra rows)
-    for (var tileY = 0;
-		 tileY <= k.links.canvas.tpr + k.settings.engine.drawextras; tileY++) {
-        
-        // And for every tile in that row (+ the drawExtras)
-        for (var tileX = (0-k.settings.engine.drawextras);
-			 tileX <= k.links.canvas.tpc; tileX++) {
-			
-			var tile = k.links.getTileByCanvas(tileX, tileY, layerName);
-			
-			var so = k.operations.coord.getByMap(k.sel.position.x, k.sel.position.y);
-		
-            // Do we have to do something to this tile?
-            if(k.links.canvas.prepareTile(tile)){
-				
-				// Draw the object first
-				if(layer.properties['drawUsers']==1){
-					if(k.state.position[k.sel.map.name][tile.coord.lex] !== undefined)
-						k.operations.render.objects(k.state.position[k.sel.map.name][tile.coord.lex]);
-				}
-				
-				if(tile.tilegid && tile.properties['draw'] === undefined) {
-		
-					k.operations.render.drawTile(tile.tilegid,
-							 tile.coord.absX,
-							 tile.coord.absY + k.links.canvas.map.tileHeight);
-				
-					// Draw shadows
-					if(layer.properties['drawShadow']==1){
-						if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
-							
-							k.links.canvas.buffer.fillStyle = "rgba(30, 30, 30, 0.5)";
-							k.links.canvas.buffer.fillRect(tile.coord.absX,
-														   tile.coord.absY,
-														   k.links.canvas.map.tileWidth/3,
-														   k.links.canvas.map.tileHeight);
-						}
-					}
-				}
-                
-            }
-			
-        }
     }
 }
 
