@@ -400,7 +400,9 @@ k.Types.Sector = {
 	 * The map this is on
 	 * @type	{k.Types.Map}
 	 */
-	map: {}
+	map: {},
+	
+	padding: 0
 }
 
 /**

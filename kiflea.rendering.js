@@ -395,8 +395,8 @@ k.operations.renderLayer = function(layerName){
 
 				// Draw the sector onto the buffer
 				k.links.canvas.buffer.drawImage(sector.element,
-												tile.coord.absX,
-												tile.coord.absY);
+												tile.coord.absX - sector.padding,
+												tile.coord.absY - sector.padding);
 			
 				// Draw it to the debug screen if it's selected
 				if(debugnr == sector.coord.sec) k.debug.drawSector(debugnr);
@@ -449,8 +449,8 @@ k.operations.prepareLayerSector = function(sector){
             if(tile.dirty && tile.properties.draw === undefined){
 				
 				// Clear the tile
-				sector.ctx.clearRect(coord.secAbsX,
-									coord.secAbsY-sector.map.tileHeight,
+				sector.ctx.clearRect(coord.secAbsX + sector.padding,
+									coord.secAbsY-sector.map.tileHeight  + sector.padding,
 									sector.map.tileWidth,
 									sector.map.tileHeight);
 				
@@ -1018,7 +1018,7 @@ k.operations.render.drawTileSpecific = function(tileSetName, tileNumber, dx, dy,
     try {
 		
         // Draw the tile on the canvas
-        ctx.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx, dy, tileWidth, tileHeight);
+        ctx.drawImage(sourceimage, sx, sy, tileWidth, tileHeight, dx + sector.padding, dy  + sector.padding, tileWidth, tileHeight);
 
     } catch (error) {
         k.debug.log('[drawTileSpecific] Error: ' + error.code + ' - ' +
