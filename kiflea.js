@@ -680,10 +680,12 @@ k.links.getSector = function(coord, layer){
 	if(base[coord.sec] === undefined) {
 	
 		var selement = document.createElement('canvas');
+		
+		var padding = layer.map.tileWidth;
 	
 		// Set the resolution of the buffer element
-		selement.width = layer.map.sectorWidth;
-		selement.height = layer.map.sectorHeight;
+		selement.width = layer.map.sectorWidth + (padding * 2);
+		selement.height = layer.map.sectorHeight + (padding * 2);
 	
 		// Get the buffer context
 		var sctx = selement.getContext('2d');
@@ -743,7 +745,8 @@ k.links.getSector = function(coord, layer){
 					},
 					coord: k.operations.coord.getBySector(coord.sec),
 					map: layer.map,
-					layer: layer
+					layer: layer,
+					padding: padding
 				};
 	} else {
 		// Update the coord information!
