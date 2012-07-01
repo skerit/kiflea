@@ -633,6 +633,41 @@ k.links.getLayer = function(layername, mapname){
 }
 
 /**
+ * Get a neighbour of a give sector
+ * @param	{k.Types.Sector}	sector
+ * @param	{string}			neighbour
+ * @returns	{k.Types.Sector}
+ */
+k.links.getSectorNeighbour = function(sector, neighbour){
+	
+	var x = ~~(sector.coord.mapX / k.settings.engine.SECTORSIZE);
+	var y = ~~(sector.coord.mapY / k.settings.engine.SECTORSIZE);
+	
+	var neighbourswitch = k.operations.coord.neighbourswitch[neighbour](x, y);
+	
+	var sec = neighbourswitch.x + neighbourswitch.y * sector.map.spr;
+	
+	var coord = k.operations.coord.getBySector(sec);
+	
+	return k.links.getSector(coord, sector.layer);
+	
+}
+
+/**
+ * Get neighbour data
+ */
+k.operations.coord.neighbourswitch = {
+	'right': 	function(x, y){return {x: x+1, y: y}},
+	'rightup':	function(x, y){return {x: x+1, y: y-1}},
+	'up':		function(x, y){return {x: x, y: y-1}},
+	'leftup':	function(x, y){return {x: x-1, y: y-1}},
+	'left':		function(x, y){return {x: x-1, y: y}},
+	'leftdown':	function(x, y){return {x: x-1, y: y+1}},
+	'down':		function(x, y){return {x: x, y: y+1}},
+	'rightdown':function(x, y){return {x: x+1, y: y+1}}
+}
+
+/**
  * Get a certain sector, and create it if it does not exist
  * @param	{k.Types.CoordinatesClick}	coord
  * @param	{k.Types.mapLayer}			layer
