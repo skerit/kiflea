@@ -402,7 +402,12 @@ k.classes.Canvas = function(canvasId){
 														stepPrev.position.y - height)
 				
 				var sector = k.links.getSector(coord, layer);
-				that.dirty.set.byCoordSector(coord, sector, duration);
+				/**
+				 * Decrease the duration for the previous position by one,
+				 * because if it's higher than our current positions certain
+				 * movements could cause the head to be cut off
+				 */
+				that.dirty.set.byCoordSector(coord, sector, duration-1);
 				
 				var coord = k.operations.coord.getByMap(stepNow.position.x + width,
 														stepNow.position.y - height)
