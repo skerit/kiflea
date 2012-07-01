@@ -22,6 +22,8 @@
  */
 k.operations.renderFrame = function(){
 	
+	k.state.debug.rendercount++;
+	
 	// Prepare the canvas for a render
     k.links.canvas.beginRender();
 	
@@ -384,12 +386,12 @@ k.operations.renderLayer = function(layerName){
 			var sector = k.links.getSector(tile.coord, layer);
 			
 			if(k.state.engine.mappOffsetX != 0 || k.state.engine.mappOffsetY != 0 || sector.dirty.self.counter > 0){
-			
+				
 				// Set this sector as dirty for another 3 frames if we're moving
 				if(k.state.engine.mappOffsetX != 0 || k.state.engine.mappOffsetY != 0){
-					k.links.canvas.dirty.set.sectorFamily(sector, 3); 
+					k.links.canvas.dirty.set.sectorFamily(sector, 3);
 				}
-				
+
 				// Prepare the sector: redraw tiles if needed
 				k.operations.prepareLayerSector(sector);
 
@@ -397,16 +399,27 @@ k.operations.renderLayer = function(layerName){
 				k.links.canvas.buffer.drawImage(sector.element,
 												tile.coord.absX - sector.padding,
 												tile.coord.absY - sector.padding);
-			
+				
+				k.links.canvas.dirty.set.sector(sector, 0);
+
 				// Draw it to the debug screen if it's selected
-				if(debugnr == sector.coord.sec) k.debug.drawSector(debugnr);
+				if(k.settings.debug.LAYERS && debugnr == sector.coord.sec) k.debug.drawSector(debugnr);
 				
 				// Increase the sector's drawn counter
 				k.state.debug.sectorsDrawn++;
 				
+				if(k.state.engine.drawn[sector.map.name] === undefined)
+					k.state.engine.drawn[sector.map.name] = {};
+				
+				if(k.state.engine.drawn[sector.map.name][sector.coord.sec] === undefined)
+					k.state.engine.drawn[sector.map.name][sector.coord.sec] = {};
+				
+				k.state.engine.drawn[sector.map.name][sector.coord.sec][sector.layer.name] = true;
+				
 				// Reset the sector dirty booleans
 				sector.dirty.self.increased = false;
 				sector.dirty.self.decreased = false;
+				
 			}
 			
 		}
@@ -427,6 +440,7 @@ des = function(x, y) {
  */
 k.operations.prepareLayerSector = function(sector){
 	
+	var sectorDirty = false;
 	var secY = 0;
 	
 	for(var mapY = sector.coord.mapY;
@@ -448,9 +462,20 @@ k.operations.prepareLayerSector = function(sector){
             // Do we have to do something to this tile?
             if(tile.dirty && tile.properties.draw === undefined){
 				
+				// Only 1 tile is needed to turn this sector dirty
+				sectorDirty = true;
+				
+				// If this is the top of the sector, clear that too
+				if(coord.secY == 0) {
+					sector.ctx.clearRect(coord.secAbsX + sector.padding,
+									coord.secAbsY-sector.map.tileHeight,
+									sector.map.tileWidth,
+									sector.map.tileHeight);
+				}
+				
 				// Clear the tile
 				sector.ctx.clearRect(coord.secAbsX + sector.padding,
-									coord.secAbsY-sector.map.tileHeight  + sector.padding,
+									coord.secAbsY-sector.map.tileHeight + sector.padding,
 									sector.map.tileWidth,
 									sector.map.tileHeight);
 				
@@ -471,8 +496,8 @@ k.operations.prepareLayerSector = function(sector){
                     if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
                         
                         sector.ctx.fillStyle = "rgba(30, 30, 30, 0.5)";
-                        sector.ctx.fillRect(coord.secAbsX,
-											coord.secAbsY-k.sel.map.tileHeight,
+                        sector.ctx.fillRect(coord.secAbsX + sector.padding,
+											coord.secAbsY-k.sel.map.tileHeight + sector.padding,
 											k.sel.map.tileWidth/3,
 											k.sel.map.tileHeight);
                     }
@@ -487,6 +512,12 @@ k.operations.prepareLayerSector = function(sector){
 		
 		secY++;
     }
+	
+	if(sectorDirty){
+		// Set this sector's (and all its affiliated sectors') dirtyness
+		k.links.canvas.dirty.set.sectorFamily(sector, 1);
+	}
+	
 }
 
 /**

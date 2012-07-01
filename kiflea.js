@@ -122,6 +122,12 @@ k.settings.debug.DIRTY = false;
 k.settings.debug.FPS = true;
 
 /**
+ * Draw sector information to the debug canvas
+ * @define	{boolean}
+ */
+k.settings.debug.LAYERS = true;
+
+/**
  * Show debug info on pathfinding
  * @define {boolean}
  */
@@ -267,6 +273,11 @@ k.state.debug.tilesDrawn = 0;
 k.state.debug.sectorsDrawn = 0;
 
 /**
+ * The itteration
+ */
+k.state.debug.rendercount = 0;
+
+/**
  * A collection of debug messages
  */
 k.state.debug.messages = {};
@@ -330,6 +341,9 @@ k.state.engine.msr = 0;		// The real ms time (fake ms + time between draws)
 k.state.engine.fpsf = 0;		// The fake fps (1000 / msf)
 k.state.engine.fpsr = 0;		// The real fps (1000 / msf)
 k.state.engine.loop = 0;		// The loop to redraw the screen
+
+k.state.engine.drawn = {};
+k.state.engine.sectorDirty = {};
 
 k.state.walk.indexPrev = 0;		// The position of our previous coördinates in our user object. Recalculated at startEngine
 k.state.walk.indexNow = 1;		// The position of our current coördinates in our user object. Recalculated at startEngine
@@ -686,6 +700,19 @@ k.links.getSectorNeighbour = function(sector, neighbour){
 	
 	return k.links.getSector(coord, sector.layer);
 	
+}
+
+/**
+ * Get a bottom sector by its number
+ * @returns	{k.Types.Sector}
+ */
+k.links.getSectorBottom = function(sectornr){
+	var coord = k.operations.coord.getBySector(sectornr);
+	
+	// Get first layer
+	for (var layer in k.sel.map.layers) break;
+	
+	return k.links.getSector(coord, k.sel.map.layers[layer]);
 }
 
 /**

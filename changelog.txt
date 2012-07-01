@@ -7,6 +7,11 @@
   back it was given, but that could have been from INSIDE the sector, so it was
   wrong. Now we have a function that'll give you a sector coord based on the
   sector number alone.
+* In order to draw objects over 2 sectors we had to choose for a padding system
+  (adding a bit of clear space around sectors) or drawing the object twice.
+  After some tests, padding was the best option.
+* Also fixed some setSectorFamily problems. Certain layers used to be drawn more
+  than others, and that isn't good.
 
 --- Friday 2012-06-29 ---
 * Modified the drawGrid debug function, the sector lines are now drawn

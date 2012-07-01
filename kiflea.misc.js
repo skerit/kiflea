@@ -671,14 +671,14 @@ k.debug.drawSector = function(sectornumber) {
 		if (k.cache.map[map][layer][sectornumber] !== undefined){
 			
 			// Draw a full image here
-			dc.drawImage(k.cache.map[map][layer][sectornumber]['element'], 10, 10);
+			dc.drawImage(k.cache.map[map][layer][sectornumber]['element'], 10-k.sel.map.tileWidth, 10-k.sel.map.tileHeight);
 			
 			// And separate layers over the rest of the canvas
 			var x = 10 + 10*nr + (nr * k.settings.engine.SECTORSIZE * 32);
 			var y = 10 + 10*nry + (nry * k.settings.engine.SECTORSIZE * 32);
 			dc.fillStyle = 'rgba(100,100,100,0.6)';
 			dc.fillRect(x, y, k.settings.engine.SECTORSIZE * 32, k.settings.engine.SECTORSIZE * 32)
-			dc.drawImage(k.cache.map[map][layer][sectornumber]['element'], x, y);
+			dc.drawImage(k.cache.map[map][layer][sectornumber]['element'], x-k.sel.map.tileWidth, y-k.sel.map.tileHeight);
 			
 			// Get the dirty tiles
 			var fade = k.cache.map[map][layer][sectornumber].fade.tiles;
@@ -695,6 +695,7 @@ k.debug.drawSector = function(sectornumber) {
 			}
 		}
 		
+
 		nr++;
 		
 		if(nr == 3) {

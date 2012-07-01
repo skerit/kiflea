@@ -309,6 +309,7 @@ k.classes.Canvas = function(canvasId){
 	 */
 	this.dirty.set.sector = function(sector, duration){
 		
+		var old = sector.dirty.self.counter;
 		
 		if (duration){
 			// Increase the sector's data if it's the first time
@@ -323,6 +324,7 @@ k.classes.Canvas = function(canvasId){
 					sector.fade.self.counter++;
 				}
 			}
+			
 		} else {
 			// Decrease the sector's data if it's the first time
 			if (!sector.dirty.self.decreased){
@@ -337,6 +339,7 @@ k.classes.Canvas = function(canvasId){
 				}
 			}
 		}
+		
 	}
 	
 	/**
@@ -346,20 +349,32 @@ k.classes.Canvas = function(canvasId){
 	this.dirty.set.sectorFamily = function(sector, duration){
 		
 		if(duration === undefined) duration = 1;
-		
+		if(duration == 0){
+			k.debug.log('Error: sectorFamily only meant to increase dirtyness');
+			return;
+		}
+
 		// Loop through every layer in this sector's map
 		for(var layername in sector.map.layers){
+			
+			var mdur = duration;
 			
 			// For some reason, this fails upon starting up. Maybe the layers aren't ready yet.
 			try {
 				var nsec = k.links.getSector(sector.coord, sector.map.layers[layername]);
 			} catch(error) {
-				
+				k.debug.log('Error getting sector layer');
+			}
+
+			if(k.state.engine.drawn[nsec.map.name] !== undefined &&
+			   k.state.engine.drawn[nsec.map.name][nsec.coord.sec] !== undefined &&
+			   k.state.engine.drawn[nsec.map.name][nsec.coord.sec][nsec.layer.name] !== undefined){
+				mdur = duration-1;
 			}
 			
-			// Set this sector's dirtyness
-			that.dirty.set.sector(nsec, duration);
+			if(mdur < 0) mdur = 0;
 			
+			nsec.dirty.self.counter = mdur;
 		}
 	}
 	
@@ -371,7 +386,7 @@ k.classes.Canvas = function(canvasId){
 	this.dirty.set.byObject = function(object, duration){
 
 		// Set the default duration to 1 if none is supplied
-		if(duration === undefined) duration = 1;
+		if(duration === undefined) duration = 3;
 
 		// If it's our user, set the offset dirtyness too
 		if(object.id == k.sel.id) that.dirty.set.offset(duration);
@@ -407,7 +422,7 @@ k.classes.Canvas = function(canvasId){
 				 * because if it's higher than our current positions certain
 				 * movements could cause the head to be cut off
 				 */
-				that.dirty.set.byCoordSector(coord, sector, duration-1);
+				that.dirty.set.byCoordSector(coord, sector, duration);
 				
 				var coord = k.operations.coord.getByMap(stepNow.position.x + width,
 														stepNow.position.y - height)
@@ -424,17 +439,6 @@ k.classes.Canvas = function(canvasId){
 					that.dirty.set.byCoordSector(coord, sector, duration);
 				}
 				
-				/*
-				that.dirty.set.byMap(stepPrev.position.x + width,
-									 stepPrev.position.y - height, duration);
-				
-				that.dirty.set.byMap(stepNow.position.x + width,
-									 stepNow.position.y - height, duration);
-				
-				if(stepNext) {
-					that.dirty.set.byMap(stepNext.position.x + width,
-										 stepNext.position.y - height,duration);
-				}*/
 			}
 		}
 	}
@@ -522,11 +526,6 @@ k.classes.Canvas = function(canvasId){
 				sector.dirty.tiles[coord.secLex] = duration;
 			}
 			
-			/**
-			 * Set this sector's (and all its affiliated sectors') dirtyness
-			 */
-			that.dirty.set.sectorFamily(sector, duration);
-			
 		} else {
 			if(sector.fade.tiles[coord.secLex] > 0){
 				sector.fade.tiles[coord.secLex]--;
@@ -536,15 +535,7 @@ k.classes.Canvas = function(canvasId){
 			if(sector.dirty.tiles[coord.secLex] > 0){
 				sector.dirty.tiles[coord.secLex]--;
 			}
-			
-			/**
-			 * Decrease this sector's dirtyness, but only this sector,
-			 * not its affiliated layers, because they still need to be drawn
-			 */
-			that.dirty.set.sector(sector, duration);
-			
 		}
-		
 	}
 	
 	/**
@@ -683,6 +674,10 @@ k.classes.Canvas = function(canvasId){
 		
 		// Start the real fps counter
 		that.state.msrTimer = now();
+		
+		// Clear the drawn object
+		k.state.engine.drawn = {};
+
 	}
 	
 	/**
