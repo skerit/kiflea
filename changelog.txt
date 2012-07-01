@@ -12,6 +12,7 @@
   After some tests, padding was the best option.
 * Also fixed some setSectorFamily problems. Certain layers used to be drawn more
   than others, and that isn't good.
+* Fixed smooth walking of objects, but it causes a massive performance hit
 
 --- Friday 2012-06-29 ---
 * Modified the drawGrid debug function, the sector lines are now drawn

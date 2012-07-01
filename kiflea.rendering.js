@@ -441,77 +441,82 @@ des = function(x, y) {
 k.operations.prepareLayerSector = function(sector){
 	
 	var sectorDirty = false;
-	var secY = 0;
 	
-	for(var mapY = sector.coord.mapY;
-		mapY < sector.coord.mapY + k.settings.engine.SECTORSIZE;
-		mapY++){
+	// Loop twice through this. One time to clear the dirty tiles, another time to fill them
+	// This is needed for objects
+	for(var hasBeenCleared = 0; hasBeenCleared < 2; hasBeenCleared++){
 		
-		var secX = 0;
+		for(var mapY = sector.coord.mapY;
+			mapY < sector.coord.mapY + k.settings.engine.SECTORSIZE;
+			mapY++){
+			
+			for(var mapX = sector.coord.mapX;
+				mapX < sector.coord.mapX + k.settings.engine.SECTORSIZE;
+				mapX++){
+				
+				var coord = k.operations.coord.getByMap(mapX, mapY, sector.map.name);
+				
+				var tile = k.links.getTileByCoordSector(coord, sector);
+				
+				var layer = sector.layer;
+				
+				// Do we have to do something to this tile?
+				if(tile.dirty && tile.properties.draw === undefined){
+					
+					if(!hasBeenCleared){
+						
+						// Only 1 tile is needed to turn this sector dirty
+						sectorDirty = true;
+						
+						// If this is the top of the sector, clear that too
+						if(coord.secY == 0) {
+							sector.ctx.clearRect(coord.secAbsX + sector.padding,
+											coord.secAbsY-sector.map.tileHeight,
+											sector.map.tileWidth,
+											sector.map.tileHeight);
+						}
 		
-		for(var mapX = sector.coord.mapX;
-			mapX < sector.coord.mapX + k.settings.engine.SECTORSIZE;
-			mapX++){
-			
-			var coord = k.operations.coord.getByMap(mapX, mapY, sector.map.name);
-			
-			var tile = k.links.getTileByCoordSector(coord, sector);
-			
-			var layer = sector.layer;
-			
-            // Do we have to do something to this tile?
-            if(tile.dirty && tile.properties.draw === undefined){
-				
-				// Only 1 tile is needed to turn this sector dirty
-				sectorDirty = true;
-				
-				// If this is the top of the sector, clear that too
-				if(coord.secY == 0) {
-					sector.ctx.clearRect(coord.secAbsX + sector.padding,
-									coord.secAbsY-sector.map.tileHeight,
-									sector.map.tileWidth,
-									sector.map.tileHeight);
-				}
-				
-				// Clear the tile
-				sector.ctx.clearRect(coord.secAbsX + sector.padding,
-									coord.secAbsY-sector.map.tileHeight + sector.padding,
-									sector.map.tileWidth,
-									sector.map.tileHeight);
-				
-				// Draw the object first
-				if(sector.layer.properties['drawUsers']==1){
-					if(k.state.position[k.sel.map.name][tile.coord.lex] !== undefined) {
-						k.debug.log('Drawing object to ' + coord.sec + ' on layer ' + sector.layer.name);
-						k.operations.render.objects(k.state.position[k.sel.map.name][tile.coord.lex], sector);
+						// Clear the tile
+						sector.ctx.clearRect(coord.secAbsX + sector.padding,
+											coord.secAbsY-sector.map.tileHeight + sector.padding,
+											sector.map.tileWidth,
+											sector.map.tileHeight);
+						
+						// Skip to the next clearing iteration
+						continue;
+					}
+					
+					// Draw the object first
+					if(sector.layer.properties['drawUsers']==1){
+						if(k.state.position[k.sel.map.name][tile.coord.lex] !== undefined) {
+							k.debug.log('Drawing object to ' + coord.sec + ' on layer ' + sector.layer.name);
+							k.operations.render.objects(k.state.position[k.sel.map.name][tile.coord.lex], sector);
+						}
+					}
+					
+					if(tile.tilenr >= 0) k.operations.render.drawTile(tile, coord, sector);
+					
+					k.state.debug.tilesDrawn++;
+					
+					// Draw shadows
+					if(layer.properties['drawShadow']==1){
+						if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
+							
+							sector.ctx.fillStyle = "rgba(30, 30, 30, 0.5)";
+							sector.ctx.fillRect(coord.secAbsX + sector.padding,
+												coord.secAbsY-k.sel.map.tileHeight + sector.padding,
+												k.sel.map.tileWidth/3,
+												k.sel.map.tileHeight);
+						}
 					}
 				}
 				
-				if(tile.tilenr >= 0) k.operations.render.drawTile(tile, coord, sector);
+				// Decrease the tile dirtyness
+				k.links.canvas.dirty.set.byCoordSector(coord, sector, 0);
 				
-				k.state.debug.tilesDrawn++;
-				
-                // Draw shadows
-                if(layer.properties['drawShadow']==1){
-                    if(k.links.canvas.map.shadowTiles[tile.coord.lex] !== undefined){
-                        
-                        sector.ctx.fillStyle = "rgba(30, 30, 30, 0.5)";
-                        sector.ctx.fillRect(coord.secAbsX + sector.padding,
-											coord.secAbsY-k.sel.map.tileHeight + sector.padding,
-											k.sel.map.tileWidth/3,
-											k.sel.map.tileHeight);
-                    }
-                }
-            }
-			
-			// Decrease the tile dirtyness
-			k.links.canvas.dirty.set.byCoordSector(coord, sector, 0);
-			
-			secX++;
-        }
-		
-		secY++;
-    }
+			}
+		}
+	}
 	
 	if(sectorDirty){
 		// Set this sector's (and all its affiliated sectors') dirtyness
@@ -624,11 +629,16 @@ function getTileProperty(tileSetName, tileNumber, propertyName){
  * @param	{string}			extraId
  */
 k.operations.render.drawAnimated = function(tile, object, extraId){
+	
+	var ex = 0;
+	var ey = 0;
 
 	if(object !== undefined) {
 		var layer = k.links.getLayer('Walkinglayer', object.map.name);
 		var sector = k.links.getSector(object.position.coord, layer);
 		var coord = object.position.coord;
+		ex = k.state.engine.mappOffsetX;
+		ey = k.state.engine.mappOffsetY;
 	} else {
 		var sector = tile.sector;
 		var coord = tile.coord;
@@ -655,8 +665,8 @@ k.operations.render.drawAnimated = function(tile, object, extraId){
         k.operations.render.drawTileSpecific(
                          animation.tileset.name,   // The name of the tileset
                          adjustedFrame, // The number of the tile
-                         coord.secAbsX,            // The destination x position
-                         coord.secAbsY,             // The destination y position
+                         coord.secAbsX + ex,            // The destination x position
+                         coord.secAbsY + ey,             // The destination y position
 						 sector,
 						 object
                          );
@@ -761,11 +771,15 @@ k.operations.render.drawTile = function(tile, coord, sector, object, extraId){
 
 	// Declarations
 	var movingObject;    // Is the object moving?
+	var ex = 0;
+	var ey = 0;
 
     // If this isn't an object the sourcemap is the current map we're on
     if(object !== undefined) {
 	    if(object.path.length > (k.state.walk.indexNow + 1)) movingObject = true;
 		tile.coord = deepCopy(coord);
+		ex = k.state.engine.mappOffsetX;
+		ey = k.state.engine.mappOffsetY;
     }
 
     if(tile.properties['beginanimation'] != undefined || movingObject == true){
@@ -778,7 +792,7 @@ k.operations.render.drawTile = function(tile, coord, sector, object, extraId){
     } else {
     
         try {
-            k.operations.render.drawTileSpecific(tile.tileset.name, tile.tilenr+1, tile.coord.secAbsX, tile.coord.secAbsY, sector, object);
+            k.operations.render.drawTileSpecific(tile.tileset.name, tile.tilenr+1, tile.coord.secAbsX + ex, tile.coord.secAbsY + ey, sector, object);
         } catch(error) {
 			k.debug.log('Error drawing tile "<b>' + tile.tilenr + '</b>" from tileSet "<b>' + tile.tileset.name + '</b>" to coordinates (<b>' + tile.coord.secAbsX + '</b>,<b>' + tile.coord.secAbsY + '</b>)', error);
         }
