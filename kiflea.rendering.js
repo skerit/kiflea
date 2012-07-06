@@ -89,6 +89,10 @@ k.operations.renderFrame = function(){
 							uc.absY,
 							k.sel.map.tileWidth,
 							k.sel.map.tileHeight);*/
+		
+		// Clear the buffer, because we probably no longer need it
+		k.links.canvas.buffer.clearRect(0, 0, 480, 480);
+		k.links.canvas.ctx.clearRect(0, 0, 480, 480);
 	}
 
     // Clear the sameFrame variable, used by animated tiles
@@ -394,9 +398,14 @@ k.operations.renderLayer = function(layerName){
 
 				// Prepare the sector: redraw tiles if needed
 				k.operations.prepareLayerSector(sector);
-
-				// Draw the sector onto the buffer
-				k.links.canvas.buffer.drawImage(sector.element,
+				
+				layer.canvasLayer.ctx.clearRect(tile.coord.absX,
+									tile.coord.absY,
+									k.sel.map.tileWidth * k.settings.engine.SECTORSIZE,
+									k.sel.map.tileHeight * k.settings.engine.SECTORSIZE);
+				
+				// Draw the sector onto its own layer
+				layer.canvasLayer.ctx.drawImage(sector.element,
 												tile.coord.absX - sector.padding,
 												tile.coord.absY - sector.padding);
 				

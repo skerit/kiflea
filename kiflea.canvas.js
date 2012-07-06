@@ -51,6 +51,9 @@ k.classes.Container = function(containerId){
 	// Create the master canvas layer
 	var masterCanvas = new k.classes.Layer(1000, this);
 	
+	// Store all the layers in here
+	this.layers = {};
+	
 	// Retrieve the master canvas DOM node, this gives us access to its drawing functions
 	this.ctx = masterCanvas.ctx;
 
@@ -135,6 +138,21 @@ k.classes.Container = function(containerId){
 
 	// Get the buffer context
 	this.buffer = this.bufferElement.getContext('2d');
+	
+	/**
+	 * Add a new layer to the container
+	 * @param	{integer}			position
+	 * @returns	{k.classes.Layer}
+	 */
+	this.addLayer = function(position){
+		
+		// Only create a new layer if it doesn't exist yet
+		if(that.layers[position] === undefined){
+			that.layers[position] = new k.classes.Layer(position, that);
+		}
+		
+		return that.layers[position];
+	}
 
 	/**
 	 * Copy the buffer over to the actual canvas
@@ -362,6 +380,12 @@ k.classes.Container = function(containerId){
 	 */
 	this.dirty.set.sectorFamily = function(sector, duration){
 		
+		// Only set this sector, as we'll be drawing to separate layers from now on
+		// Eventually, this method will be removed
+		/*sector.dirty.self.counter = duration;
+		
+		return;*/
+	
 		if(duration === undefined) duration = 1;
 		if(duration == 0){
 			k.debug.log('Error: sectorFamily only meant to increase dirtyness');

@@ -169,7 +169,8 @@ k.operations.load.processMap = function(xml, sourcename) {
 				'height': $(this).attr('height'),
 				'opacity': $(this).attr('opacity'),
 				'properties': properties,
-				'nr': layerOrder
+				'nr': layerOrder,
+				'canvasLayer': k.links.canvas.addLayer(layerOrder)
 			};
 	
 		});

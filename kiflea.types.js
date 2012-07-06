@@ -575,7 +575,13 @@ k.Types.mapLayer = {
 	 * A link to the map object
 	 * @type	{k.Types.Map}
 	 */
-	map: {}
+	map: {},
+	
+	/**
+	 * A link to the canvas layer
+	 * @type	{k.classes.Layer}
+	 */
+	canvasLayer: {}
 
 }
 
