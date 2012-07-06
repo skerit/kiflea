@@ -776,6 +776,8 @@ k.debug.callerInfo = function(){
  */
 k.debug.log = function(message, error, id){
 	
+	if(!k.settings.debug.HTML) return;
+	
 	var info = k.debug.callerInfo();
 	
 	if(id === undefined) id = k.debug.hash(info.callerName + message);

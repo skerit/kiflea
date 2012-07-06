@@ -92,16 +92,15 @@ k = {
 k.settings.debug.DEBUG = true;
 
 /**
+ * Enable HTML output?
+ */
+k.settings.debug.HTML = true;
+
+/**
  * show debug info on movement
  * @define {boolean}
  */
 k.settings.debug.MOVEMENT = false;
-
-/**
- * Show debug info on HUD changes
- * @define {boolean}
- */
-k.settings.debug.HUD = false;
 
 /**
  * Draw debug grid

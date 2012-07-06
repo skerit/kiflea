@@ -474,6 +474,31 @@ k.operations.prepareLayerSector = function(sector){
 											coord.secAbsY-sector.map.tileHeight,
 											sector.map.tileWidth,
 											sector.map.tileHeight);
+						} else if (coord.secY == k.settings.engine.SECTORSIZE - 1) {
+							sector.ctx.clearRect(coord.secAbsX + sector.padding,
+											coord.secAbsY+sector.map.tileHeight,
+											sector.map.tileWidth,
+											sector.map.tileHeight);
+						}
+						
+						if(coord.secX == 0) {
+							sector.ctx.clearRect(coord.secAbsX + sector.padding + sector.map.tileWidth,
+											coord.secAbsY,
+											sector.map.tileWidth,
+											sector.map.tileHeight);
+						} else if (coord.secX == k.settings.engine.SECTORSIZE - 1) {
+							sector.ctx.clearRect(coord.secAbsX + sector.padding + sector.map.tileWidth,
+											coord.secAbsY,
+											sector.map.tileWidth,
+											sector.map.tileHeight);
+						}
+						
+						// Clear the upper right tile
+						if(coord.secX == k.settings.engine.SECTORSIZE - 1 && coord.secY == 0) {
+							sector.ctx.clearRect(coord.secAbsX + sector.padding + sector.map.tileWidth,
+											coord.secAbsY-sector.map.tileHeight,
+											sector.map.tileWidth,
+											sector.map.tileHeight);
 						}
 		
 						// Clear the tile
