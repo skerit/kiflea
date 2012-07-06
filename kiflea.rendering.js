@@ -443,7 +443,7 @@ k.operations.prepareLayerSector = function(sector){
 	var sectorDirty = false;
 	
 	// Loop twice through this. One time to clear the dirty tiles, another time to fill them
-	// This is needed for objects
+	// This is needed for objects. There's a break at the end if nothing is dirty
 	for(var hasBeenCleared = 0; hasBeenCleared < 2; hasBeenCleared++){
 		
 		for(var mapY = sector.coord.mapY;
@@ -516,6 +516,10 @@ k.operations.prepareLayerSector = function(sector){
 				
 			}
 		}
+		
+		// Do not loop through it a second time if the sector is completely clear
+		if(!sectorDirty) break;
+		
 	}
 	
 	if(sectorDirty){
