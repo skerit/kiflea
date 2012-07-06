@@ -29,6 +29,18 @@
 		#titlogo img {float:left;max-width: 150px;}
 		#titlogo h2 {margin-top: 0px;padding-top: 20px;}
 		#info {margin-left: 600px;height:700px;}
+		
+		.canvascontainer {
+			position: relative;
+			margin: auto;
+		}
+		
+		.canvascontainer canvas {
+			position: absolute;
+			left: 0;
+			top: 0;
+		}
+		
 	</style>
 	<!--[if IE]><script type="text/javascript" src="excanvas.compiled.js"></script><![endif]-->
     <!--<script type="text/javascript" src="objSort.js"></script>-->
@@ -165,7 +177,7 @@
 				<h2 class="title">Kipdola's Flat Earth Engine</h2>
 			</div>
 			
-			<canvas id="flatearth" width="480" height="480"></canvas>
+			<div id="flatearth" width="480" height="480" class="canvascontainer"></div>
 			<br/>
 			<button id="clearecho" onclick="k.links.echo.innerHTML = '';">Clear echo div</button>
 			<button id="toggleengine" onclick="k.operations.toggleEngine();">Toggle engine</button>

@@ -1,3 +1,7 @@
+--- Friday 2012-07-06 ---
+* Started work on creating a single canvas PER map layer, this should simplify
+  the code and increase the framerate even more.
+
 --- Saturday 2012-06-30 ---
 * Made the new debug function produce more data, like caller info and line nr
 * We've got non-fluid objects back, but there are certain artefacts popping up

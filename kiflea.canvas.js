@@ -18,28 +18,42 @@
 */
 
 /**
- * Initialize a canvas element
+ * Initialize a canvas container element
  * @classDescription  This class creates a new canvas.
- * @param  {string}   canvasId  The id of the canvas to load
+ * @param  {string}   containerId  The id of the div where to put the canvases
  * @return {object}   Return our own Canvas element
  * @constructor
  */
-k.classes.Canvas = function(canvasId){
+k.classes.Container = function(containerId){
 
 	/**
-	 * @type {k.classes.Canvas} A reference for inner functions to reach parent
+	 * @type {k.classes.Container} A reference for inner functions to reach parent
 	 */
 	var that = this;
 	
-	this.canvasId = canvasId;
-
-	// Retrieve the canvas DOM node, this gives us access to its drawing functions
-	this.ctx = document.getElementById(canvasId).getContext('2d');
-
-	// Get the width and height of the element
-	this.width = document.getElementById(canvasId).width;
-	this.height = document.getElementById(canvasId).height;
+	// Store the ID of the div container
+	this.containerId = containerId;
 	
+	// Get the container
+	this.container = document.getElementById(containerId);
+	
+	// Get the width and height of the element
+	this.width = this.container.getAttribute('width');
+	this.height = this.container.getAttribute('height');
+	
+	// Set the size of the container
+	this.container.style.width = this.width;
+	this.container.style.height = this.height;
+	
+	// Use this as an id for the "master" canvas, the one at the top
+	this.masterId = containerId + '-1000';
+	
+	// Create the master canvas layer
+	var masterCanvas = new k.classes.Layer(1000, this);
+	
+	// Retrieve the master canvas DOM node, this gives us access to its drawing functions
+	this.ctx = masterCanvas.ctx;
+
 	// How many tiles do we show on the canvas?
 	this.tpr = 0;
 	this.tpc = 0;
@@ -129,7 +143,7 @@ k.classes.Canvas = function(canvasId){
 		this.ctx.drawImage(this.bufferElement, 0 ,0);
 
 		// If the RECORD variable is true, add the current frame to the movie
-		if(k.settings.debug.RECORD) this.movie.addImage(document.getElementById(this.canvasId));
+		if(k.settings.debug.RECORD) this.movie.addImage(document.getElementById(this.containerId));
 		
 		// Draw the dirty rectangle fades if we want it
 		if(k.settings.debug.DIRTY) that.drawFadeness();
@@ -838,11 +852,11 @@ k.classes.Canvas = function(canvasId){
 	}
 
 	// Disable "selecting" the canvas when clicked.
-	var element = document.getElementById(canvasId);
+	var element = document.getElementById(containerId);
 	element.onselectstart = function () { return false; }
 
 	// What to do when the mouse moves over this canvas
-	$('#'+canvasId).mousemove( function(e) {
+	$('#'+containerId).mousemove( function(e) {
 
 		that.mouse.x = e.pageX-this.offsetLeft;
 		that.mouse.y = e.pageY-this.offsetTop;
@@ -850,7 +864,7 @@ k.classes.Canvas = function(canvasId){
 	});
 
 	// Store the mouse position when pressing down a button
-	$('#'+canvasId).mousedown(function(e){
+	$('#'+containerId).mousedown(function(e){
 
 		that.mouse.downx = e.pageX-this.offsetLeft;
 		that.mouse.downy = e.pageY-this.offsetTop;
@@ -858,7 +872,7 @@ k.classes.Canvas = function(canvasId){
 	});
 
 	// Store the mouse position when releasing (clicking) down a button
-	$('#'+canvasId).mouseup(function(e){
+	$('#'+containerId).mouseup(function(e){
 
 		that.mouse.upx = e.pageX-this.offsetLeft;
 		that.mouse.upy = e.pageY-this.offsetTop;
@@ -882,4 +896,38 @@ k.classes.Canvas = function(canvasId){
 	} else {
 		this.loaded = false;
 	}
+}
+
+/**
+ * Create a new canvas layer and add it to the DOM
+ * 
+ * @param   {integer} 				position
+ * @param	{k.classes.Container}	container
+ * 
+ * @return {object}   Return our own Canvas element
+ * @constructor
+ */
+k.classes.Layer = function(position, container) {
+	
+	// Create the new element
+	this.element = document.createElement('canvas');
+	
+	// Define the id
+	this.id = container.containerId + '-' + position;
+	
+	// Store the z-index (which is the position)
+	this.zindex = position;
+	
+	// Set the basis attributes
+	this.element.setAttribute('id', this.id);
+	this.element.setAttribute('width', container.width);
+	this.element.setAttribute('height', container.height);
+	this.element.className = 'canvaslayer-' + this.zindex;
+	this.element.style.zIndex = this.zindex;
+	
+	// Add the new element to the container
+	container.container.appendChild(this.element);
+	
+	// Get the ctx
+	this.ctx = this.element.getContext('2d');
 }
