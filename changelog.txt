@@ -1,3 +1,9 @@
+--- Fridag 2012-07-06 ---
+* If a sector has been checked for dirty tiles,
+  and none have been found, skip the second iteration.
+* Added a few debug options. Also fixed the cleaning up of padding
+  (basic implementation, though)
+
 --- Saturday 2012-06-30 ---
 * Made the new debug function produce more data, like caller info and line nr
 * We've got non-fluid objects back, but there are certain artefacts popping up

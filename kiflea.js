@@ -166,7 +166,7 @@ k.settings.server.ADDRESS = "ws://kipdola.be";
  * What's our target FPS?
  * @define {integer}
  */
-k.settings.engine.fps = 525;
+k.settings.engine.fps = 25;
 
 /**
  * The default background color to draw on the canvas
