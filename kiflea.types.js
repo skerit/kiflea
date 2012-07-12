@@ -300,7 +300,13 @@ k.Types.Sector = {
 			 * The actual dirty counter
 			 * @type	{Integer}
 			 */
-			counter: 0
+			counter: 0,
+			
+			/**
+			 * Some sectors are completely empty
+			 * @type	{Boolean}
+			 */
+			empty: undefined
 			
 		},
 		
@@ -575,7 +581,13 @@ k.Types.mapLayer = {
 	 * A link to the map object
 	 * @type	{k.Types.Map}
 	 */
-	map: {}
+	map: {},
+	
+	/**
+	 * A link to the canvas layer
+	 * @type	{k.classes.Layer}
+	 */
+	canvasLayer: {}
 
 }
 

@@ -223,10 +223,10 @@ k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea/';
 k.settings.engine.SECTORSIZE = 4;
 
 /**
- * The id of the canvas element
+ * The id of the element where the canvases should go
  * @define {string}
  */
-k.settings.ids.CANVAS = 'flatearth';
+k.settings.ids.CANVASCONTAINER = 'flatearth';
 
 /**
  * The id of the echo div
@@ -498,7 +498,7 @@ k.operations.startEngine = function() {
     k.state.counter = now();
 
     // Create a new canvas object
-    k.links.canvas = new k.classes.Canvas(k.settings.ids.CANVAS);
+    k.links.canvas = new k.classes.Container(k.settings.ids.CANVASCONTAINER);
 
 	// Check for websocket
 	if (!("WebSocket" in window)){

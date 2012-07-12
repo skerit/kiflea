@@ -1,8 +1,18 @@
---- Fridag 2012-07-06 ---
+
+--- Thursday 2012-07-12 ---
+* Sector layers that contain no tiles, and never will (certain layers are empty
+  most of the time, untill an object walks over them) will not be drawn.
+  This saves us a lot of sector draws.
+
+--- Friday 2012-07-06 ---
 * If a sector has been checked for dirty tiles,
   and none have been found, skip the second iteration.
 * Added a few debug options. Also fixed the cleaning up of padding
   (basic implementation, though)
+* Started work on creating a single canvas PER map layer, this should simplify
+  the code and increase the framerate even more.
+* Implementation is already working, but in a simple, drop-in kind of way.
+  (No optimization whatsoever)
 
 --- Saturday 2012-06-30 ---
 * Made the new debug function produce more data, like caller info and line nr

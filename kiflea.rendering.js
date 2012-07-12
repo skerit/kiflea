@@ -89,6 +89,10 @@ k.operations.renderFrame = function(){
 							uc.absY,
 							k.sel.map.tileWidth,
 							k.sel.map.tileHeight);*/
+		
+		// Clear the buffer, because we probably no longer need it
+		k.links.canvas.buffer.clearRect(0, 0, 480, 480);
+		k.links.canvas.ctx.clearRect(0, 0, 480, 480);
 	}
 
     // Clear the sameFrame variable, used by animated tiles
@@ -391,22 +395,30 @@ k.operations.renderLayer = function(layerName){
 				if(k.state.engine.mappOffsetX != 0 || k.state.engine.mappOffsetY != 0){
 					k.links.canvas.dirty.set.sectorFamily(sector, 3);
 				}
-
-				// Prepare the sector: redraw tiles if needed
-				k.operations.prepareLayerSector(sector);
-
-				// Draw the sector onto the buffer
-				k.links.canvas.buffer.drawImage(sector.element,
-												tile.coord.absX - sector.padding,
-												tile.coord.absY - sector.padding);
+				
+				layer.canvasLayer.ctx.clearRect(tile.coord.absX,
+									tile.coord.absY,
+									k.sel.map.tileWidth * k.settings.engine.SECTORSIZE,
+									k.sel.map.tileHeight * k.settings.engine.SECTORSIZE);
+				
+				if (sector.dirty.self.empty == false || sector.dirty.self.empty === undefined) {
+					// Prepare the sector: redraw tiles if needed
+					k.operations.prepareLayerSector(sector);
+				
+					// Draw the sector onto its own layer
+					layer.canvasLayer.ctx.drawImage(sector.element,
+													tile.coord.absX - sector.padding,
+													tile.coord.absY - sector.padding);
+					
+					// Increase the sector's drawn counter
+					k.state.debug.sectorsDrawn++;
+				
+				}
 				
 				k.links.canvas.dirty.set.sector(sector, 0);
 
 				// Draw it to the debug screen if it's selected
 				if(k.settings.debug.LAYERS && debugnr == sector.coord.sec) k.debug.drawSector(debugnr);
-				
-				// Increase the sector's drawn counter
-				k.state.debug.sectorsDrawn++;
 				
 				if(k.state.engine.drawn[sector.map.name] === undefined)
 					k.state.engine.drawn[sector.map.name] = {};
@@ -441,6 +453,7 @@ des = function(x, y) {
 k.operations.prepareLayerSector = function(sector){
 	
 	var sectorDirty = false;
+	var sectorEmpty = true; // Does this sector actually contain anything?
 	
 	// Loop twice through this. One time to clear the dirty tiles, another time to fill them
 	// This is needed for objects. There's a break at the end if nothing is dirty
@@ -539,12 +552,27 @@ k.operations.prepareLayerSector = function(sector){
 				// Decrease the tile dirtyness
 				k.links.canvas.dirty.set.byCoordSector(coord, sector, 0);
 				
+				// Remember if this sector actually holds any tiles
+				if(sector.dirty.self.empty === undefined){
+					
+					/**
+					 * If the tile is bigger or equal to zero, this sector is not empty.
+					 * If it has the property 'drawUsers' it's also not empty
+					 */
+					if(tile.tilenr >= 0 || sector.layer.properties['drawUsers'] == 1) sectorEmpty = false;
+				}
+				
 			}
 		}
 		
 		// Do not loop through it a second time if the sector is completely clear
 		if(!sectorDirty) break;
 		
+	}
+	
+	// Write back the emptyness
+	if(sector.dirty.self.empty === undefined){
+		sector.dirty.self.empty = sectorEmpty;
 	}
 	
 	if(sectorDirty){
