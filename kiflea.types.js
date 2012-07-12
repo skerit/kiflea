@@ -300,7 +300,13 @@ k.Types.Sector = {
 			 * The actual dirty counter
 			 * @type	{Integer}
 			 */
-			counter: 0
+			counter: 0,
+			
+			/**
+			 * Some sectors are completely empty
+			 * @type	{Boolean}
+			 */
+			empty: undefined
 			
 		},
 		

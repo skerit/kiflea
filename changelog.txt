@@ -1,3 +1,8 @@
+--- Thursday 2012-07-12 ---
+* Sector layers that contain no tiles, and never will (certain layers are empty
+  most of the time, untill an object walks over them) will not be drawn.
+  This saves us a lot of sector draws.
+
 --- Friday 2012-07-06 ---
 * Started work on creating a single canvas PER map layer, this should simplify
   the code and increase the framerate even more.
