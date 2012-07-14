@@ -170,7 +170,8 @@ k.operations.keyboard.onKeyDown = function(keypress) {
             k.operations.keyboard.doKey(keypress);
             break;
     }
-    return false;
+    
+	//return false;
 };
 
 /**

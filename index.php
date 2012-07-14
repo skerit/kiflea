@@ -41,6 +41,17 @@
 			top: 0;
 		}
 		
+		.debugsettings {
+			position:fixed;
+			top:10px;
+			left:50%;
+			width: 650px;
+			background: rgba(204,204,255,0.85);
+		}
+		
+		.debugsettings .group {
+			float:left;
+		}
 	</style>
 	<!--[if IE]><script type="text/javascript" src="excanvas.compiled.js"></script><![endif]-->
     <!--<script type="text/javascript" src="objSort.js"></script>-->
@@ -179,7 +190,8 @@
 			
 			<div id="flatearth" width="480" height="480" class="canvascontainer"></div>
 			<br/>
-			<button id="clearecho" onclick="k.links.echo.innerHTML = '';">Clear echo div</button>
+			<!--<button id="clearecho" onclick="k.links.echo.innerHTML = '';">Clear echo div</button>-->
+			<button onclick="k.debug.showSettings();">Open settings</button>
 			<button id="toggleengine" onclick="k.operations.toggleEngine();">Toggle engine</button>
 			<button id="togglegrid" onclick="k.settings.debug.GRID=!k.settings.debug.GRID;">Toggle grid</button>
 			<button id="togglefps" onclick="k.settings.debug.FPS=!k.settings.debug.FPS;">Toggle FPS</button><br/>

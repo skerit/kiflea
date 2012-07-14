@@ -1,3 +1,7 @@
+--- Friday 2012-07-14 ---
+* Added a simple debug settings window.
+* Settings can now be stored in localStorage, overriding defaults.
+  Most settings (like fps and sectorsize) require a refresh, though.
 
 --- Thursday 2012-07-12 ---
 * Sector layers that contain no tiles, and never will (certain layers are empty

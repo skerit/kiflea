@@ -901,12 +901,12 @@ k.classes.Container = function(containerId){
 		that.mouse.upx = e.pageX-this.offsetLeft;
 		that.mouse.upy = e.pageY-this.offsetTop;
 		
-		console.log(k.operations.coord.getByMouse(that.mouse.upx, that.mouse.upy));
 		var sector = k.links.getSector(k.operations.coord.getByMouse(that.mouse.upx, that.mouse.upy), k.links.canvas.map.layers.Ground);
-		console.log(sector);
-		
-		
-		dc.drawImage(sector.element, 100, 100);
+
+		console.log(k.operations.coord.getByMouse(that.mouse.upx, that.mouse.upy));
+		debugnr = sector.coord.sec;
+		$('#sectornr').val(sector.coord.sec);
+		k.debug.drawSector(debugnr);
 
 	});
 

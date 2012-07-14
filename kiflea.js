@@ -220,7 +220,7 @@ k.settings.engine.BASEURL = 'http://kipdola.be/subdomain/kiflea/';
  * How big can a map sector be?
  * @define	{integer}
  */
-k.settings.engine.SECTORSIZE = 4;
+k.settings.engine.SECTORSIZE = 5;
 
 /**
  * The id of the element where the canvases should go
@@ -343,6 +343,8 @@ k.state.engine.loop = 0;		// The loop to redraw the screen
 
 k.state.engine.drawn = {};
 k.state.engine.sectorDirty = {};
+
+k.state.engine.tileTemplate = {};
 
 k.state.walk.indexPrev = 0;		// The position of our previous coördinates in our user object. Recalculated at startEngine
 k.state.walk.indexNow = 1;		// The position of our current coördinates in our user object. Recalculated at startEngine
@@ -480,6 +482,14 @@ var movie;
  * After that it initiates the renderloop
  */
 k.operations.startEngine = function() {
+	
+	// Overwrite the settings with our local settings
+	k.debug.applyLocalSettings();
+	
+	// Generate the sector tile template
+	for (var start = 0; start < (k.settings.engine.SECTORSIZE*k.settings.engine.SECTORSIZE); start++){
+		k.state.engine.tileTemplate[start] = 1;
+	}
 	
     // Link these output debug variables to the innerHTML content
     if (document.getElementById(k.settings.ids.DEBUG)) {
@@ -760,24 +770,7 @@ k.links.getSector = function(coord, layer){
 							decreased: false,
 							counter: 1
 						},
-						tiles: {
-								0: 1,
-								1: 1,
-								2: 1,
-								3: 1,
-								4: 1,
-								5: 1,
-								6: 1,
-								7: 1,
-								8: 1,
-								9: 1,
-								10: 1,
-								11: 1,
-								12: 1,
-								13: 1,
-								14: 1,
-								15: 1
-						}
+						tiles: deepCopy(k.state.engine.tileTemplate)
 					},
 					fade: {
 						self: {
@@ -785,24 +778,7 @@ k.links.getSector = function(coord, layer){
 							decreased: false,
 							counter: 1
 						},
-						tiles: {
-								0: 1,
-								1: 1,
-								2: 1,
-								3: 1,
-								4: 1,
-								5: 1,
-								6: 1,
-								7: 1,
-								8: 1,
-								9: 1,
-								10: 1,
-								11: 1,
-								12: 1,
-								13: 1,
-								14: 1,
-								15: 1
-						}
+						tiles: deepCopy(k.state.engine.tileTemplate)
 					},
 					coord: k.operations.coord.getBySector(coord.sec),
 					map: layer.map,

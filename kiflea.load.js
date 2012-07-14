@@ -77,8 +77,8 @@ k.operations.load.processMap = function(xml, sourcename) {
 		oneMap['sectorHeight'] = k.settings.engine.SECTORSIZE * oneMap['tileHeight'];
 		oneMap['tpr'] = oneMap['width'];
 		oneMap['tpc'] = oneMap['height'];
-		oneMap['spr'] = oneMap['width'] / k.settings.engine.SECTORSIZE;
-		oneMap['spc'] = oneMap['height'] / k.settings.engine.SECTORSIZE;
+		oneMap['spr'] = ~~(oneMap['width'] / k.settings.engine.SECTORSIZE);
+		oneMap['spc'] = ~~(oneMap['height'] / k.settings.engine.SECTORSIZE);
 		oneMap['name'] = sourcename;
 		oneMap['alias'] = {};
 		

@@ -818,5 +818,110 @@ k.debug.log = function(message, error, id){
 	
 	cspan.innerHTML = k.state.debug.messages[id].count;
 	
+}
+
+/**
+ * Load settings from localStorage
+ */
+k.debug.applyLocalSettings = function() {
 	
+	var settings = k.debug.getLocalSettings();
+	
+	if(settings){
+		k.settings = settings;
+	}
+}
+
+/**
+ * Get local settings
+ */
+k.debug.getLocalSettings = function() {
+	
+	var allsettingsJSON = window.sessionStorage.getItem("settings");
+	if(typeof allsettingsJSON == 'string') var allsettings = JSON.parse(allsettingsJSON);
+	else allsettings = false;
+	
+	return allsettings;
+}
+
+/**
+ * Show the settings
+ */
+k.debug.showSettings = function() {
+	
+	var html = '<div class="debugsettings">';
+	
+	var renderGroup = function(group, settingsgroup, childnr, parentgroupid) {
+		
+		var id = group-' + group + '-' + childnr + ';
+		var html = '<div id="' + id + '" class="group" data-group="' + group + '"><h3>' + group + '</h3>';
+		
+		for (var setting in k.settings[group]){
+			
+			var inputType;
+			var checked = '';
+			
+			if (typeof k.settings[group][setting] == 'string') inputType = 'text';
+			else if (typeof k.settings[group][setting] == 'number') inputType = 'number';
+			else if (typeof k.settings[group][setting] == 'object') inputType = 'object';
+			else if (typeof k.settings[group][setting] == 'boolean') {
+				inputType = 'checkbox';
+				if(k.settings[group][setting]) checked = 'checked';
+				else checked = '';
+			}
+			
+			if (inputType == 'text' || inputType == 'number' || inputType == 'checkbox'){
+				html += '<label><input type="' + inputType + '" data-group="'
+								+ group + '" data-child="' + childnr + '" data-parent="' + parentgroupid + '" data-setting="' + setting
+								+ '" class="debugsetting" value="' + k.settings[group][setting] + '" ' + checked + '></input>' + setting + '</label><br/>'
+			} else {
+				//html += '<label><input type="text" disabled></input>' + setting + '</label><br/>';
+				//console.log('rendering subgroup: ' + k.settings[group][setting]);
+				//renderGroup(setting, k.settings[group][setting], childnr+1, id);
+			}
+			
+		}
+		
+		html += '</div>';
+		return html;
+	}
+	
+	for (var group in k.settings){
+		html += renderGroup(group, k.settings[group], 0);
+	}
+	
+	html += '<br/><button id="savesettings">Save</button></div>';
+	
+	$('body').append(html);
+	$('#savesettings').click(function() {
+		
+		var allsettingsJSON = window.sessionStorage.getItem("settings");
+		if(typeof allsettingsJSON == 'string') var allsettings = JSON.parse(allsettingsJSON);
+		else var allsettings = deepCopy(k.settings);
+		
+		$('.debugsetting').each(function(index, value){
+			$i = $(value);
+			var type = $i.attr('type');
+			var group = $i.attr('data-group');
+			var setting = $i.attr('data-setting');
+			var settingvalue = $i.attr('value');
+			
+			if(type == 'text')	{
+				allsettings[group][setting] = settingvalue;
+			}
+			else if(type == 'number'){
+				allsettings[group][setting] = parseInt(settingvalue);
+			}
+			else {
+				
+			}
+			
+		});
+		
+		window.sessionStorage.setItem("settings", JSON.stringify(allsettings));
+		k.debug.applyLocalSettings();
+		
+		$('.debugsettings').remove();
+	});
+
 }
